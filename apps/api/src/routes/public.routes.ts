@@ -25,7 +25,10 @@ import { getPublicSettings } from '../services/settings.service.js';
 export const publicRouter = Router();
 
 const cache = (res: Response, seconds = env.PUBLIC_CACHE_SECONDS) =>
-  res.set('Cache-Control', `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=${seconds * 5}`);
+  res.set(
+    'Cache-Control',
+    `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=${seconds * 5}`,
+  );
 
 publicRouter.get('/properties', async (req, res) => {
   const q = parseQuery(propertySearchSchema, req);
@@ -83,7 +86,13 @@ publicRouter.get('/faqs', async (req, res) => {
   const category = typeof req.query.category === 'string' ? req.query.category : undefined;
   const allowed = ['general', 'tenants', 'owners', 'commercial'];
   cache(res);
-  ok(res, await faqs.listPublicFaqs({ category: category && allowed.includes(category) ? category : undefined, home: req.query.home === 'true' }));
+  ok(
+    res,
+    await faqs.listPublicFaqs({
+      category: category && allowed.includes(category) ? category : undefined,
+      home: req.query.home === 'true',
+    }),
+  );
 });
 
 publicRouter.get('/settings', async (_req, res) => {
@@ -93,14 +102,23 @@ publicRouter.get('/settings', async (_req, res) => {
 
 publicRouter.post('/enquiries', limiters.publicForm, async (req, res) => {
   const input = parseBody(enquiryCreateSchema, req);
-  const result = await leads.createEnquiry(input, { ipHash: hashIp(req.ip), userAgent: req.get('user-agent') });
+  const result = await leads.createEnquiry(input, {
+    ipHash: hashIp(req.ip),
+    userAgent: req.get('user-agent'),
+  });
   res.set('Cache-Control', 'no-store');
   created(res, { leadId: result.leadId, message: 'Thank you. Our team will contact you shortly.' });
 });
 
 publicRouter.post('/property-submissions', limiters.publicForm, async (req, res) => {
   const input = parseBody(propertySubmissionCreateSchema, req);
-  const result = await leads.createSubmission(input, { ipHash: hashIp(req.ip), userAgent: req.get('user-agent') });
+  const result = await leads.createSubmission(input, {
+    ipHash: hashIp(req.ip),
+    userAgent: req.get('user-agent'),
+  });
   res.set('Cache-Control', 'no-store');
-  created(res, { leadId: result.leadId, message: 'Thank you. Our team will review your property and call you.' });
+  created(res, {
+    leadId: result.leadId,
+    message: 'Thank you. Our team will review your property and call you.',
+  });
 });

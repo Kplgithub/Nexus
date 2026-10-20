@@ -113,7 +113,12 @@ await runScript('seed:base', async () => {
       sortOrder: 0,
       intro:
         'Jaipur offers a wide range of rental options, from apartments and independent houses in established residential colonies to offices, shops and showrooms along the city’s main commercial roads. Browse current NEXUS listings below or tell us what you are looking for.',
-      localities: JAIPUR_LOCALITIES.map((l) => ({ name: l.name, slug: slugify(l.name), active: true, intro: l.intro ?? '' })),
+      localities: JAIPUR_LOCALITIES.map((l) => ({
+        name: l.name,
+        slug: slugify(l.name),
+        active: true,
+        intro: l.intro ?? '',
+      })),
     });
     console.warn('Created Jaipur with', JAIPUR_LOCALITIES.length, 'localities');
   } else {
@@ -134,5 +139,9 @@ await runScript('seed:base', async () => {
     console.warn('Created', FAQS.length, 'FAQs');
   }
 
-  await SiteSettings.updateOne({ key: 'site' }, { $setOnInsert: { key: 'site', data: DEFAULT_SETTINGS } }, { upsert: true });
+  await SiteSettings.updateOne(
+    { key: 'site' },
+    { $setOnInsert: { key: 'site', data: DEFAULT_SETTINGS } },
+    { upsert: true },
+  );
 });

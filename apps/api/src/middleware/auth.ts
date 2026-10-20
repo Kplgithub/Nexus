@@ -28,16 +28,23 @@ const cookieBase = () => ({
   ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
 });
 
-export function issueSession(res: Response, admin: { id: string; role: AdminRole; tokenVersion: number }) {
+export function issueSession(
+  res: Response,
+  admin: { id: string; role: AdminRole; tokenVersion: number },
+) {
   const csrf = randomToken(24);
   const maxAgeMs = env.SESSION_TTL_HOURS * 60 * 60 * 1000;
-  const token = jwt.sign({ tv: admin.tokenVersion, role: admin.role, csrf } satisfies Omit<SessionClaims, 'sub'>, env.JWT_SECRET, {
-    subject: admin.id,
-    expiresIn: `${env.SESSION_TTL_HOURS}h`,
-    algorithm: 'HS256',
-    issuer: 'nexus-api',
-    audience: 'nexus-admin',
-  });
+  const token = jwt.sign(
+    { tv: admin.tokenVersion, role: admin.role, csrf } satisfies Omit<SessionClaims, 'sub'>,
+    env.JWT_SECRET,
+    {
+      subject: admin.id,
+      expiresIn: `${env.SESSION_TTL_HOURS}h`,
+      algorithm: 'HS256',
+      issuer: 'nexus-api',
+      audience: 'nexus-admin',
+    },
+  );
   res.cookie(SESSION_COOKIE, token, { ...cookieBase(), httpOnly: true, maxAge: maxAgeMs });
   // Readable by the admin UI so it can echo the value in the CSRF header.
   res.cookie(CSRF_COOKIE, csrf, { ...cookieBase(), httpOnly: false, maxAge: maxAgeMs });
@@ -72,10 +79,16 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
 
   if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     const header = req.get(CSRF_HEADER);
-    if (!header || !safeEqual(header, claims.csrf)) throw forbidden('Security check failed. Refresh the page and try again.');
+    if (!header || !safeEqual(header, claims.csrf))
+      throw forbidden('Security check failed. Refresh the page and try again.');
   }
 
-  req.admin = { id: String(admin._id), email: admin.email, name: admin.name, role: admin.role as AdminRole };
+  req.admin = {
+    id: String(admin._id),
+    email: admin.email,
+    name: admin.name,
+    role: admin.role as AdminRole,
+  };
   req.csrfToken = claims.csrf;
   next();
 }

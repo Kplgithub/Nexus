@@ -4,7 +4,18 @@ import * as models from '../models/misc.models.js';
 import { runScript } from './run.js';
 
 await runScript('db:indexes', async () => {
-  const all = [Property, models.Admin, models.Enquiry, models.PropertySubmission, models.City, models.Faq, models.SiteSettings, models.SlugRedirect, models.AuditLog, models.Counter];
+  const all = [
+    Property,
+    models.Admin,
+    models.Enquiry,
+    models.PropertySubmission,
+    models.City,
+    models.Faq,
+    models.SiteSettings,
+    models.SlugRedirect,
+    models.AuditLog,
+    models.Counter,
+  ];
   for (const m of all) {
     await m.syncIndexes();
     console.warn(`indexes ok: ${m.modelName}`);

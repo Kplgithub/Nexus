@@ -39,7 +39,9 @@ describe('whatsappLink', () => {
 
 describe('slugify', () => {
   it('produces clean slugs', () => {
-    expect(slugify('2 BHK Flat in Vaishali Nagar, Jaipur!')).toBe('2-bhk-flat-in-vaishali-nagar-jaipur');
+    expect(slugify('2 BHK Flat in Vaishali Nagar, Jaipur!')).toBe(
+      '2-bhk-flat-in-vaishali-nagar-jaipur',
+    );
     expect(slugify('Shop & Showroom')).toBe('shop-and-showroom');
   });
 });
@@ -56,7 +58,12 @@ describe('formatting', () => {
 
 describe('propertySearchSchema', () => {
   it('drops invalid values instead of failing', () => {
-    const q = propertySearchSchema.parse({ category: 'castle', minRent: 'abc', page: '-4', sort: 'x' });
+    const q = propertySearchSchema.parse({
+      category: 'castle',
+      minRent: 'abc',
+      page: '-4',
+      sort: 'x',
+    });
     expect(q.category).toBeUndefined();
     expect(q.minRent).toBeUndefined();
     expect(q.page).toBe(1);
@@ -68,7 +75,10 @@ describe('propertySearchSchema', () => {
     expect(q.maxRent).toBe(30000);
   });
   it('drops property types outside the category', () => {
-    const q = propertySearchSchema.parse({ category: 'commercial', propertyType: 'office,apartment' });
+    const q = propertySearchSchema.parse({
+      category: 'commercial',
+      propertyType: 'office,apartment',
+    });
     expect(q.propertyType).toEqual(['office']);
   });
   it('ignores locality without city', () => {
@@ -94,34 +104,56 @@ describe('propertyCreateSchema', () => {
     expect(propertyCreateSchema.safeParse(baseProperty).success).toBe(true);
   });
   it('requires bedrooms and bathrooms for apartments', () => {
-    const r = propertyCreateSchema.safeParse({ ...baseProperty, category: 'residential', propertyType: 'apartment' });
+    const r = propertyCreateSchema.safeParse({
+      ...baseProperty,
+      category: 'residential',
+      propertyType: 'apartment',
+    });
     expect(r.success).toBe(false);
     const paths = r.error?.issues.map((i) => i.path.join('.'));
     expect(paths).toContain('bedrooms');
     expect(paths).toContain('bathrooms');
   });
   it('rejects negative rent', () => {
-    expect(propertyCreateSchema.safeParse({ ...baseProperty, monthlyRent: -1 }).success).toBe(false);
+    expect(propertyCreateSchema.safeParse({ ...baseProperty, monthlyRent: -1 }).success).toBe(
+      false,
+    );
   });
   it('rejects a type from another category', () => {
-    expect(propertyCreateSchema.safeParse({ ...baseProperty, propertyType: 'villa' }).success).toBe(false);
+    expect(propertyCreateSchema.safeParse({ ...baseProperty, propertyType: 'villa' }).success).toBe(
+      false,
+    );
   });
   it('rejects publishing without photos', () => {
-    expect(propertyCreateSchema.safeParse({ ...baseProperty, status: 'published' }).success).toBe(false);
+    expect(propertyCreateSchema.safeParse({ ...baseProperty, status: 'published' }).success).toBe(
+      false,
+    );
   });
   it('strips markup characters', () => {
-    const r = propertyCreateSchema.parse({ ...baseProperty, title: 'Office <script>near</script> park' });
+    const r = propertyCreateSchema.parse({
+      ...baseProperty,
+      title: 'Office <script>near</script> park',
+    });
     expect(r.title).not.toMatch(/[<>]/);
   });
 });
 
 describe('enquiryCreateSchema', () => {
   it('requires consent', () => {
-    expect(enquiryCreateSchema.safeParse({ name: 'Asha', phone: '9521750202' }).success).toBe(false);
-    expect(enquiryCreateSchema.safeParse({ name: 'Asha', phone: '9521750202', consent: true }).success).toBe(true);
+    expect(enquiryCreateSchema.safeParse({ name: 'Asha', phone: '9521750202' }).success).toBe(
+      false,
+    );
+    expect(
+      enquiryCreateSchema.safeParse({ name: 'Asha', phone: '9521750202', consent: true }).success,
+    ).toBe(true);
   });
   it('treats empty email as absent', () => {
-    const r = enquiryCreateSchema.parse({ name: 'Asha', phone: '9521750202', email: '', consent: true });
+    const r = enquiryCreateSchema.parse({
+      name: 'Asha',
+      phone: '9521750202',
+      email: '',
+      consent: true,
+    });
     expect(r.email).toBeUndefined();
   });
 });

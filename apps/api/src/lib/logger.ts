@@ -17,5 +17,10 @@ export const logger = pino({
   },
   ...(isProd
     ? {}
-    : { transport: { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:HH:MM:ss' } } }),
+    : {
+        transport: {
+          target: 'pino-pretty',
+          options: { colorize: true, translateTime: 'SYS:HH:MM:ss' },
+        },
+      }),
 });

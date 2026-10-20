@@ -6,7 +6,10 @@ import { AppError, validationError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 
 export function notFoundHandler(req: Request, res: Response) {
-  res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: `Route ${req.method} ${req.path} not found` } });
+  res.status(404).json({
+    ok: false,
+    error: { code: 'NOT_FOUND', message: `Route ${req.method} ${req.path} not found` },
+  });
 }
 
 // Express recognises error middleware by its four arguments.
@@ -17,7 +20,11 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (err instanceof AppError) error = err;
   else if (err instanceof ZodError) error = validationError(err);
   else if (err instanceof MulterError) {
-    error = new AppError(400, 'UPLOAD_ERROR', err.code === 'LIMIT_FILE_SIZE' ? 'Image is too large' : 'Upload rejected');
+    error = new AppError(
+      400,
+      'UPLOAD_ERROR',
+      err.code === 'LIMIT_FILE_SIZE' ? 'Image is too large' : 'Upload rejected',
+    );
   } else if (err instanceof mongoose.Error.ValidationError) {
     const details: Record<string, string[]> = {};
     for (const [path, e] of Object.entries(err.errors)) details[path] = [e.message];
@@ -34,13 +41,18 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     error = new AppError(500, 'INTERNAL_ERROR', 'Something went wrong. Please try again.');
   }
 
-  if (error.status >= 500) logger.error({ err, path: req.path, method: req.method }, 'Unhandled error');
+  if (error.status >= 500)
+    logger.error({ err, path: req.path, method: req.method }, 'Unhandled error');
   else logger.debug({ code: error.code, path: req.path }, error.message);
 
   // Never leak stack traces or driver messages.
   res.status(error.status).json({
     ok: false,
-    error: { code: error.code, message: error.message, ...(error.details ? { details: error.details } : {}) },
+    error: {
+      code: error.code,
+      message: error.message,
+      ...(error.details ? { details: error.details } : {}),
+    },
   });
 }
 
@@ -49,5 +61,9 @@ function isDuplicateKey(err: unknown): boolean {
 }
 
 function isPayloadTooLarge(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && (err as { type?: string }).type === 'entity.too.large';
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    (err as { type?: string }).type === 'entity.too.large'
+  );
 }

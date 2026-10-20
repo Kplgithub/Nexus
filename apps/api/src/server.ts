@@ -6,7 +6,9 @@ import { logger } from './lib/logger.js';
 async function main() {
   await connectDb();
   const app = createApp();
-  const server = app.listen(env.PORT, env.HOST, () => logger.info(`API listening on http://${env.HOST}:${env.PORT}`));
+  const server = app.listen(env.PORT, env.HOST, () =>
+    logger.info(`API listening on http://${env.HOST}:${env.PORT}`),
+  );
   server.keepAliveTimeout = 65_000; // longer than Nginx's upstream keepalive
   server.headersTimeout = 66_000;
 

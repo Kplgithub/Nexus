@@ -7,7 +7,12 @@ const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 
 // Argon2id with OWASP-recommended parameters.
-const HASH_OPTS = { type: argon2.argon2id, memoryCost: 19_456, timeCost: 2, parallelism: 1 } as const;
+const HASH_OPTS = {
+  type: argon2.argon2id,
+  memoryCost: 19_456,
+  timeCost: 2,
+  parallelism: 1,
+} as const;
 
 export const hashPassword = (password: string) => argon2.hash(password, HASH_OPTS);
 
@@ -17,7 +22,10 @@ async function burnTime(password: string) {
   await argon2.verify(dummyHash, password).catch(() => false);
 }
 
-export async function login(email: string, password: string): Promise<AdminUser & { tokenVersion: number }> {
+export async function login(
+  email: string,
+  password: string,
+): Promise<AdminUser & { tokenVersion: number }> {
   const admin = await Admin.findOne({ email }).select('+passwordHash');
   if (!admin || !admin.active) {
     // Spend comparable time so response timing doesn't reveal which emails exist.
@@ -40,7 +48,8 @@ export async function login(email: string, password: string): Promise<AdminUser 
   admin.failedLogins = 0;
   admin.lockedUntil = null;
   admin.lastLoginAt = new Date();
-  if (argon2.needsRehash(admin.passwordHash, HASH_OPTS)) admin.passwordHash = await hashPassword(password);
+  if (argon2.needsRehash(admin.passwordHash, HASH_OPTS))
+    admin.passwordHash = await hashPassword(password);
   await admin.save();
   return {
     id: String(admin._id),

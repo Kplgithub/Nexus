@@ -145,7 +145,11 @@ const faqSchema = new Schema(
   {
     question: { type: String, required: true, maxlength: 200 },
     answer: { type: String, required: true, maxlength: 3000 },
-    category: { type: String, enum: ['general', 'tenants', 'owners', 'commercial'], default: 'general' },
+    category: {
+      type: String,
+      enum: ['general', 'tenants', 'owners', 'commercial'],
+      default: 'general',
+    },
     sortOrder: { type: Number, default: 0 },
     published: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },

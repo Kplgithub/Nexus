@@ -60,14 +60,22 @@ function toDto(e: EnquiryLean): EnquiryDto {
     message: e.message,
     property:
       e.property && e.propertySnapshot?.slug
-        ? { id: String(e.property), title: e.propertySnapshot.title ?? '', slug: e.propertySnapshot.slug }
+        ? {
+            id: String(e.property),
+            title: e.propertySnapshot.title ?? '',
+            slug: e.propertySnapshot.slug,
+          }
         : null,
     sourcePage: e.sourcePage ?? null,
     preferredContactTime: e.preferredContactTime ?? null,
     status: e.status,
     followUpAt: e.followUpAt ? e.followUpAt.toISOString() : null,
     assignedTo: e.assignedTo ?? null,
-    notes: (e.notes ?? []).map((n) => ({ text: n.text, by: n.by, at: new Date(n.at).toISOString() })),
+    notes: (e.notes ?? []).map((n) => ({
+      text: n.text,
+      by: n.by,
+      at: new Date(n.at).toISOString(),
+    })),
     consentAt: e.consentAt.toISOString(),
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
@@ -90,7 +98,9 @@ async function requirePhone(raw: string): Promise<string> {
 }
 
 function looksAutomated(input: { website?: string; elapsedMs?: number }) {
-  return Boolean(input.website) || (input.elapsedMs !== undefined && input.elapsedMs < MIN_HUMAN_MS);
+  return (
+    Boolean(input.website) || (input.elapsedMs !== undefined && input.elapsedMs < MIN_HUMAN_MS)
+  );
 }
 
 export async function createEnquiry(
@@ -101,7 +111,10 @@ export async function createEnquiry(
 
   let property: { _id: Types.ObjectId; title: string; slug: string } | null = null;
   if (input.propertyId) {
-    property = await Property.findOne({ _id: input.propertyId, status: { $in: ['published', 'rented'] } })
+    property = await Property.findOne({
+      _id: input.propertyId,
+      status: { $in: ['published', 'rented'] },
+    })
       .select('title slug')
       .lean();
   }
@@ -154,7 +167,11 @@ export async function createEnquiry(
 export async function listEnquiries(q: z.output<typeof adminEnquiryQuerySchema>) {
   const f = enquiryFilter(q);
   const [rows, total] = await Promise.all([
-    Enquiry.find(f).sort({ createdAt: -1 }).skip((q.page - 1) * q.limit).limit(q.limit).lean<EnquiryLean[]>(),
+    Enquiry.find(f)
+      .sort({ createdAt: -1 })
+      .skip((q.page - 1) * q.limit)
+      .limit(q.limit)
+      .lean<EnquiryLean[]>(),
     Enquiry.countDocuments(f),
   ]);
   return { items: rows.map(toDto), meta: paginate(q.page, q.limit, total) };
@@ -175,7 +192,13 @@ function enquiryFilter(q: z.output<typeof adminEnquiryQuerySchema>): FilterQuery
   }
   if (q.q) {
     const rx = new RegExp(escapeRegex(q.q), 'i');
-    f.$or = [{ name: rx }, { phone: rx }, { email: rx }, { leadId: rx }, { 'propertySnapshot.title': rx }];
+    f.$or = [
+      { name: rx },
+      { phone: rx },
+      { email: rx },
+      { leadId: rx },
+      { 'propertySnapshot.title': rx },
+    ];
   }
   return f;
 }
@@ -186,7 +209,11 @@ export async function getEnquiry(id: string) {
   return toDto(e);
 }
 
-export async function updateEnquiry(id: string, patch: z.output<typeof enquiryUpdateSchema>, by: string) {
+export async function updateEnquiry(
+  id: string,
+  patch: z.output<typeof enquiryUpdateSchema>,
+  by: string,
+) {
   const e = await Enquiry.findById(id);
   if (!e) throw notFound('Enquiry not found');
   if (patch.status) e.status = patch.status;
@@ -197,10 +224,28 @@ export async function updateEnquiry(id: string, patch: z.output<typeof enquiryUp
   return toDto(e.toObject() as unknown as EnquiryLean);
 }
 
-export async function exportEnquiriesCsv(q: z.output<typeof adminEnquiryQuerySchema>): Promise<string> {
-  const rows = await Enquiry.find(enquiryFilter(q)).sort({ createdAt: -1 }).limit(10_000).lean<EnquiryLean[]>();
+export async function exportEnquiriesCsv(
+  q: z.output<typeof adminEnquiryQuerySchema>,
+): Promise<string> {
+  const rows = await Enquiry.find(enquiryFilter(q))
+    .sort({ createdAt: -1 })
+    .limit(10_000)
+    .lean<EnquiryLean[]>();
   return toCsv(
-    ['Lead ID', 'Created', 'Status', 'Type', 'Name', 'Phone', 'Email', 'Property', 'Message', 'Follow-up', 'Assigned to', 'Latest note'],
+    [
+      'Lead ID',
+      'Created',
+      'Status',
+      'Type',
+      'Name',
+      'Phone',
+      'Email',
+      'Property',
+      'Message',
+      'Follow-up',
+      'Assigned to',
+      'Latest note',
+    ],
     rows.map((e) => [
       e.leadId,
       e.createdAt.toISOString(),
@@ -249,12 +294,19 @@ function submissionDto(s: SubmissionLean): SubmissionDto {
     availableFrom: s.availableFrom ? s.availableFrom.toISOString() : null,
     description: s.description,
     status: s.status,
-    notes: (s.notes ?? []).map((n) => ({ text: n.text, by: n.by, at: new Date(n.at).toISOString() })),
+    notes: (s.notes ?? []).map((n) => ({
+      text: n.text,
+      by: n.by,
+      at: new Date(n.at).toISOString(),
+    })),
     createdAt: s.createdAt.toISOString(),
   };
 }
 
-export async function createSubmission(input: z.output<typeof propertySubmissionCreateSchema>, meta: RequestMeta) {
+export async function createSubmission(
+  input: z.output<typeof propertySubmissionCreateSchema>,
+  meta: RequestMeta,
+) {
   const phone = await requirePhone(input.phone);
   const spam = looksAutomated(input);
   const leadId = await nextLeadId('L');
@@ -282,20 +334,35 @@ export async function createSubmission(input: z.output<typeof propertySubmission
   return { leadId };
 }
 
-export async function listSubmissions(q: { status?: string; page: number; limit: number; q?: string }) {
-  const f: FilterQuery<SubmissionLean> = q.status ? { status: q.status } : { status: { $ne: 'spam' } };
+export async function listSubmissions(q: {
+  status?: string;
+  page: number;
+  limit: number;
+  q?: string;
+}) {
+  const f: FilterQuery<SubmissionLean> = q.status
+    ? { status: q.status }
+    : { status: { $ne: 'spam' } };
   if (q.q) {
     const rx = new RegExp(escapeRegex(q.q), 'i');
     f.$or = [{ ownerName: rx }, { phone: rx }, { locality: rx }, { leadId: rx }];
   }
   const [rows, total] = await Promise.all([
-    PropertySubmission.find(f).sort({ createdAt: -1 }).skip((q.page - 1) * q.limit).limit(q.limit).lean<SubmissionLean[]>(),
+    PropertySubmission.find(f)
+      .sort({ createdAt: -1 })
+      .skip((q.page - 1) * q.limit)
+      .limit(q.limit)
+      .lean<SubmissionLean[]>(),
     PropertySubmission.countDocuments(f),
   ]);
   return { items: rows.map(submissionDto), meta: paginate(q.page, q.limit, total) };
 }
 
-export async function updateSubmission(id: string, patch: z.output<typeof submissionUpdateSchema>, by: string) {
+export async function updateSubmission(
+  id: string,
+  patch: z.output<typeof submissionUpdateSchema>,
+  by: string,
+) {
   const s = await PropertySubmission.findById(id);
   if (!s) throw notFound('Submission not found');
   if (patch.status) s.status = patch.status;

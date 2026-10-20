@@ -36,8 +36,10 @@ await runScript('seed:admin', async () => {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const name = process.env.ADMIN_NAME?.trim() || 'Administrator';
   const role = (process.env.ADMIN_ROLE ?? 'owner') as AdminRole;
-  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Set ADMIN_EMAIL to a valid email');
-  if (!ADMIN_ROLES.includes(role)) throw new Error(`ADMIN_ROLE must be one of ${ADMIN_ROLES.join(', ')}`);
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+    throw new Error('Set ADMIN_EMAIL to a valid email');
+  if (!ADMIN_ROLES.includes(role))
+    throw new Error(`ADMIN_ROLE must be one of ${ADMIN_ROLES.join(', ')}`);
 
   const password = process.env.ADMIN_PASSWORD ?? (await promptHidden('New admin password: '));
   const check = passwordPolicy.safeParse(password);

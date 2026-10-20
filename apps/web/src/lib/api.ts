@@ -1,0 +1,127 @@
+import 'server-only';
+import type {
+  ApiResponse,
+  City,
+  Faq,
+  PaginationMeta,
+  PropertyCard,
+  PublicProperty,
+  SiteSettings,
+} from '@nexus/shared';
+import { FALLBACK_SETTINGS, REVALIDATE_SECONDS } from './site';
+
+const API = (process.env.API_INTERNAL_URL ?? 'http://localhost:4000').replace(/\/$/, '');
+
+export class ApiUnavailableError extends Error {}
+export class ApiNotFoundError extends Error {}
+
+type FetchOpts = { revalidate?: number | false; tags?: string[] };
+
+/** Server-side GET against the API. Throws ApiNotFoundError on 404 and ApiUnavailableError on network/5xx. */
+async function get<T>(
+  path: string,
+  opts: FetchOpts = {},
+): Promise<{ data: T; meta?: PaginationMeta }> {
+  let res: Response;
+  try {
+    res = await fetch(`${API}/api/v1${path}`, {
+      headers: { Accept: 'application/json' },
+      next: { revalidate: opts.revalidate ?? REVALIDATE_SECONDS, tags: opts.tags },
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err) {
+    throw new ApiUnavailableError(`API unreachable: ${(err as Error).message}`);
+  }
+  if (res.status === 404) throw new ApiNotFoundError(path);
+  let body: ApiResponse<T>;
+  try {
+    body = (await res.json()) as ApiResponse<T>;
+  } catch {
+    throw new ApiUnavailableError(`Invalid API response (${res.status})`);
+  }
+  if (!body.ok) throw new ApiUnavailableError(body.error.message);
+  return { data: body.data, meta: body.meta };
+}
+
+export async function getSettings(): Promise<SiteSettings> {
+  try {
+    return (await get<SiteSettings>('/settings', { tags: ['settings'] })).data;
+  } catch {
+    return FALLBACK_SETTINGS;
+  }
+}
+
+export async function searchProperties(qs: string) {
+  const { data, meta } = await get<PropertyCard[]>(`/properties${qs ? `?${qs}` : ''}`, {
+    tags: ['properties'],
+  });
+  return { items: data, meta: meta! };
+}
+
+export type DetailResponse =
+  | { property: PublicProperty; similar: PropertyCard[]; redirectTo?: undefined }
+  | { redirectTo: string; property?: undefined; similar?: undefined };
+
+export async function getProperty(slug: string): Promise<DetailResponse | null> {
+  try {
+    return (
+      await get<DetailResponse>(`/properties/${encodeURIComponent(slug)}`, {
+        tags: ['properties', `property:${slug}`],
+      })
+    ).data;
+  } catch (err) {
+    if (err instanceof ApiNotFoundError) return null;
+    throw err;
+  }
+}
+
+export async function getHome() {
+  try {
+    return (
+      await get<{ featured: PropertyCard[]; recent: PropertyCard[] }>('/home', {
+        tags: ['properties'],
+      })
+    ).data;
+  } catch {
+    return { featured: [], recent: [] };
+  }
+}
+
+export async function getLocations(): Promise<City[]> {
+  try {
+    return (await get<City[]>('/locations', { tags: ['locations'] })).data;
+  } catch {
+    return [];
+  }
+}
+
+export async function getCity(slug: string): Promise<City | null> {
+  try {
+    return (await get<City>(`/locations/${encodeURIComponent(slug)}`, { tags: ['locations'] }))
+      .data;
+  } catch (err) {
+    if (err instanceof ApiNotFoundError) return null;
+    throw err;
+  }
+}
+
+export async function getFaqs(opts: { category?: string; home?: boolean } = {}): Promise<Faq[]> {
+  const qs = new URLSearchParams();
+  if (opts.category) qs.set('category', opts.category);
+  if (opts.home) qs.set('home', 'true');
+  try {
+    return (await get<Faq[]>(`/faqs${qs.size ? `?${qs}` : ''}`, { tags: ['faqs'] })).data;
+  } catch {
+    return [];
+  }
+}
+
+export async function getSitemapProperties(): Promise<{ slug: string; updatedAt: string }[]> {
+  try {
+    return (
+      await get<{ slug: string; updatedAt: string }[]>('/sitemap/properties', { revalidate: 300 })
+    ).data;
+  } catch {
+    return [];
+  }
+}

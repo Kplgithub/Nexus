@@ -10,7 +10,9 @@ const envSchema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().positive().default(4000),
     HOST: z.string().default('0.0.0.0'),
-    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .default('info'),
 
     MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
 
@@ -52,18 +54,39 @@ const envSchema = z
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production') {
       if (env.UPLOAD_DRIVER !== 'cloudinary') {
-        ctx.addIssue({ code: 'custom', path: ['UPLOAD_DRIVER'], message: 'Use cloudinary in production' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['UPLOAD_DRIVER'],
+          message: 'Use cloudinary in production',
+        });
       }
       if (!env.COOKIE_SECURE) {
-        ctx.addIssue({ code: 'custom', path: ['COOKIE_SECURE'], message: 'COOKIE_SECURE must be true in production' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['COOKIE_SECURE'],
+          message: 'COOKIE_SECURE must be true in production',
+        });
       }
       if (env.CORS_ORIGINS.includes('*')) {
-        ctx.addIssue({ code: 'custom', path: ['CORS_ORIGINS'], message: 'Wildcard CORS is not allowed in production' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['CORS_ORIGINS'],
+          message: 'Wildcard CORS is not allowed in production',
+        });
       }
     }
     if (env.UPLOAD_DRIVER === 'cloudinary') {
-      for (const key of ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'] as const) {
-        if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} is required for cloudinary uploads` });
+      for (const key of [
+        'CLOUDINARY_CLOUD_NAME',
+        'CLOUDINARY_API_KEY',
+        'CLOUDINARY_API_SECRET',
+      ] as const) {
+        if (!env[key])
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: `${key} is required for cloudinary uploads`,
+          });
       }
     }
   });
@@ -73,7 +96,9 @@ export type Env = z.infer<typeof envSchema>;
 function loadEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
+    const issues = parsed.error.issues
+      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
+      .join('\n');
     // Fail fast and loudly; never print values, only names.
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
@@ -83,5 +108,7 @@ function loadEnv(): Env {
 export const env = loadEnv();
 export const isProd = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
-export const corsOrigins = env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+export const corsOrigins = env.CORS_ORIGINS.split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 export const mailEnabled = Boolean(env.SMTP_HOST && env.MAIL_FROM);

@@ -3,19 +3,31 @@ import { Property } from '../models/property.model.js';
 import { Enquiry, PropertySubmission } from '../models/misc.models.js';
 
 export async function getDashboard(): Promise<DashboardStats> {
-  const [byStatus, demo, enqByStatus, followUpsDue, newSubs, recentProps, recentEnq] = await Promise.all([
-    Property.aggregate<{ _id: string; n: number }>([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
-    Property.countDocuments({ isDemo: true }),
-    Enquiry.aggregate<{ _id: string; n: number }>([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
-    Enquiry.countDocuments({ followUpAt: { $lte: new Date() }, status: { $in: ['new', 'contacted', 'qualified'] } }),
-    PropertySubmission.countDocuments({ status: 'new' }),
-    Property.find().sort({ createdAt: -1 }).limit(6).select('title slug status monthlyRent createdAt').lean(),
-    Enquiry.find({ status: { $ne: 'spam' } })
-      .sort({ createdAt: -1 })
-      .limit(6)
-      .select('leadId name status createdAt property propertySnapshot')
-      .lean(),
-  ]);
+  const [byStatus, demo, enqByStatus, followUpsDue, newSubs, recentProps, recentEnq] =
+    await Promise.all([
+      Property.aggregate<{ _id: string; n: number }>([
+        { $group: { _id: '$status', n: { $sum: 1 } } },
+      ]),
+      Property.countDocuments({ isDemo: true }),
+      Enquiry.aggregate<{ _id: string; n: number }>([
+        { $group: { _id: '$status', n: { $sum: 1 } } },
+      ]),
+      Enquiry.countDocuments({
+        followUpAt: { $lte: new Date() },
+        status: { $in: ['new', 'contacted', 'qualified'] },
+      }),
+      PropertySubmission.countDocuments({ status: 'new' }),
+      Property.find()
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .select('title slug status monthlyRent createdAt')
+        .lean(),
+      Enquiry.find({ status: { $ne: 'spam' } })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .select('leadId name status createdAt property propertySnapshot')
+        .lean(),
+    ]);
   const ps = Object.fromEntries(byStatus.map((r) => [r._id, r.n])) as Record<string, number>;
   const es = Object.fromEntries(enqByStatus.map((r) => [r._id, r.n])) as Record<string, number>;
   const sum = (o: Record<string, number>, skip: string[] = []) =>
@@ -55,7 +67,11 @@ export async function getDashboard(): Promise<DashboardStats> {
       createdAt: (e.createdAt as Date).toISOString(),
       property:
         e.property && e.propertySnapshot?.slug
-          ? { id: String(e.property), title: e.propertySnapshot.title ?? '', slug: e.propertySnapshot.slug }
+          ? {
+              id: String(e.property),
+              title: e.propertySnapshot.title ?? '',
+              slug: e.propertySnapshot.slug,
+            }
           : null,
     })),
   };

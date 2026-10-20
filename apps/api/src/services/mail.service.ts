@@ -22,7 +22,10 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
  * Notify the business about a new lead. Runs after the lead is saved and never
  * affects the visitor's response: a mail outage must not lose or block leads.
  */
-export async function notifyNewLead(subject: string, fields: Record<string, string | null | undefined>) {
+export async function notifyNewLead(
+  subject: string,
+  fields: Record<string, string | null | undefined>,
+) {
   const t = getTransport();
   if (!t) return;
   const settings = await getSettings();
@@ -30,7 +33,10 @@ export async function notifyNewLead(subject: string, fields: Record<string, stri
   if (!to) return;
   const rows = Object.entries(fields)
     .filter(([, v]) => v)
-    .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#555">${esc(k)}</td><td>${esc(String(v))}</td></tr>`)
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#555">${esc(k)}</td><td>${esc(String(v))}</td></tr>`,
+    )
     .join('');
   const text = Object.entries(fields)
     .filter(([, v]) => v)

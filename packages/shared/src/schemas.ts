@@ -38,8 +38,6 @@ const optionalMoney = money.nullable().optional();
 
 const count = (max: number) => z.number().int().min(0).max(max);
 
-const trimmed = (min: number, max: number) => z.string().trim().min(min).max(max);
-
 const slug = z.string().trim().toLowerCase().max(100).regex(SLUG_PATTERN, 'Invalid slug');
 
 export const objectIdSchema = z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id');
@@ -64,10 +62,10 @@ const csvList = <T extends readonly [string, ...string[]]>(values: T) =>
     .optional()
     .transform((v) => {
       if (!v) return undefined;
-      const parts = (Array.isArray(v) ? v : v.split(','))
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const allowed = parts.filter((p): p is T[number] => (values as readonly string[]).includes(p));
+      const parts = (Array.isArray(v) ? v : v.split(',')).map((s) => s.trim()).filter(Boolean);
+      const allowed = parts.filter((p): p is T[number] =>
+        (values as readonly string[]).includes(p),
+      );
       return allowed.length ? Array.from(new Set(allowed)) : undefined;
     });
 
@@ -87,7 +85,9 @@ const queryEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z
     .string()
     .optional()
-    .transform((v) => (v && (values as readonly string[]).includes(v) ? (v as T[number]) : undefined));
+    .transform((v) =>
+      v && (values as readonly string[]).includes(v) ? (v as T[number]) : undefined,
+    );
 
 const queryBool = z
   .union([z.string(), z.boolean()])
@@ -110,7 +110,9 @@ const querySlug = z
 export const propertySearchSchema = z
   .object({
     category: queryEnum(CATEGORIES as unknown as readonly [Category, ...Category[]]),
-    propertyType: csvList(ALL_PROPERTY_TYPES as unknown as readonly [PropertyType, ...PropertyType[]]),
+    propertyType: csvList(
+      ALL_PROPERTY_TYPES as unknown as readonly [PropertyType, ...PropertyType[]],
+    ),
     city: querySlug,
     locality: querySlug,
     minRent: queryNumber(0, MAX_MONEY_INR),
@@ -259,24 +261,51 @@ function refineProperty(p: Partial<PropertyBaseInput>, ctx: z.RefinementCtx) {
   }
   if (p.propertyType && TYPES_REQUIRING_ROOMS.includes(p.propertyType)) {
     if (p.bedrooms === undefined || p.bedrooms === null) {
-      ctx.addIssue({ code: 'custom', path: ['bedrooms'], message: 'Bedrooms are required for this property type' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['bedrooms'],
+        message: 'Bedrooms are required for this property type',
+      });
     }
     if (p.bathrooms === undefined || p.bathrooms === null) {
-      ctx.addIssue({ code: 'custom', path: ['bathrooms'], message: 'Bathrooms are required for this property type' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['bathrooms'],
+        message: 'Bathrooms are required for this property type',
+      });
     }
   }
   if (
-    p.floorNumber !== undefined && p.floorNumber !== null &&
-    p.totalFloors !== undefined && p.totalFloors !== null &&
+    p.floorNumber !== undefined &&
+    p.floorNumber !== null &&
+    p.totalFloors !== undefined &&
+    p.totalFloors !== null &&
     p.floorNumber > p.totalFloors
   ) {
-    ctx.addIssue({ code: 'custom', path: ['floorNumber'], message: 'Floor cannot exceed total floors' });
+    ctx.addIssue({
+      code: 'custom',
+      path: ['floorNumber'],
+      message: 'Floor cannot exceed total floors',
+    });
   }
-  if (p.images && p.coverImageIndex !== undefined && p.images.length > 0 && p.coverImageIndex >= p.images.length) {
-    ctx.addIssue({ code: 'custom', path: ['coverImageIndex'], message: 'Cover image must be one of the uploaded images' });
+  if (
+    p.images &&
+    p.coverImageIndex !== undefined &&
+    p.images.length > 0 &&
+    p.coverImageIndex >= p.images.length
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['coverImageIndex'],
+      message: 'Cover image must be one of the uploaded images',
+    });
   }
   if (p.status === 'published' && p.images && p.images.length === 0) {
-    ctx.addIssue({ code: 'custom', path: ['images'], message: 'Add at least one photo before publishing' });
+    ctx.addIssue({
+      code: 'custom',
+      path: ['images'],
+      message: 'Add at least one photo before publishing',
+    });
   }
 }
 
@@ -417,7 +446,10 @@ export const passwordPolicy = z
   .string()
   .min(12, 'Use at least 12 characters')
   .max(200)
-  .refine((v) => /[a-z]/.test(v) && /[A-Z]/.test(v) && /\d/.test(v), 'Use upper- and lower-case letters and a number');
+  .refine(
+    (v) => /[a-z]/.test(v) && /[A-Z]/.test(v) && /\d/.test(v),
+    'Use upper- and lower-case letters and a number',
+  );
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(200),
@@ -469,9 +501,22 @@ const optionalUrl = z
 export const siteSettingsSchema = z.object({
   businessName: plainText(2, 80),
   tagline: plainText(0, 80),
-  phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Use international format, e.g. +919521750202'),
-  whatsapp: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Use international format'),
-  email: z.string().trim().toLowerCase().email().max(120).optional().or(z.literal('').transform(() => undefined)),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+[1-9]\d{7,14}$/, 'Use international format, e.g. +919521750202'),
+  whatsapp: z
+    .string()
+    .trim()
+    .regex(/^\+[1-9]\d{7,14}$/, 'Use international format'),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email()
+    .max(120)
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   address: z
     .object({
       line1: plainText(0, 120).default(''),
@@ -491,15 +536,20 @@ export const siteSettingsSchema = z.object({
       youtube: optionalUrl,
       x: optionalUrl,
     })
-    .default({}),
-  home: z
-    .object({
-      heroHeadline: plainText(5, 90),
-      heroSubheadline: plainText(5, 220),
-      heroImageUrl: optionalUrl,
-      showRecent: z.boolean().default(true),
-      showFeatured: z.boolean().default(true),
+    .default({
+      facebook: undefined,
+      instagram: undefined,
+      linkedin: undefined,
+      youtube: undefined,
+      x: undefined,
     }),
+  home: z.object({
+    heroHeadline: plainText(5, 90),
+    heroSubheadline: plainText(5, 220),
+    heroImageUrl: optionalUrl,
+    showRecent: z.boolean().default(true),
+    showFeatured: z.boolean().default(true),
+  }),
   allowInternationalEnquiries: z.boolean().default(false),
   enquiryNotificationEmail: z
     .string()

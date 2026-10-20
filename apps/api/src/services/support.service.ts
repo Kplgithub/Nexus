@@ -6,7 +6,11 @@ import type { AuthedAdmin } from '../middleware/auth.js';
 export async function nextLeadId(prefix: 'E' | 'L'): Promise<string> {
   const year = new Date().getFullYear();
   const key = `${prefix}-${year}`;
-  const c = await Counter.findOneAndUpdate({ _id: key }, { $inc: { seq: 1 } }, { upsert: true, new: true }).lean();
+  const c = await Counter.findOneAndUpdate(
+    { _id: key },
+    { $inc: { seq: 1 } },
+    { upsert: true, new: true },
+  ).lean();
   return `NX-${prefix}-${year}-${String(c!.seq).padStart(5, '0')}`;
 }
 

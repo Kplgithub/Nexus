@@ -15,7 +15,12 @@ await runScript('demo:remove', async () => {
   const enq = await Enquiry.deleteMany({ property: { $in: ids } });
   await SlugRedirect.deleteMany({ property: { $in: ids } });
   const props = await Property.deleteMany({ _id: { $in: ids } });
-  console.warn(`Removed ${props.deletedCount} demo listings and ${enq.deletedCount} related enquiries.`);
+  console.warn(
+    `Removed ${props.deletedCount} demo listings and ${enq.deletedCount} related enquiries.`,
+  );
   const leftover = await Property.countDocuments({ 'images.isDemo': true });
-  if (leftover) console.warn(`Warning: ${leftover} non-demo listing(s) still use demo images. Replace them before launch.`);
+  if (leftover)
+    console.warn(
+      `Warning: ${leftover} non-demo listing(s) still use demo images. Replace them before launch.`,
+    );
 });

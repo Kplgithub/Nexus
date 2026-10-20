@@ -1,7 +1,16 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
-import { commercial, createAdmin, resetDb, residential, seedJaipur, signIn, startDb, stopDb } from './helpers.js';
+import {
+  commercial,
+  createAdmin,
+  resetDb,
+  residential,
+  seedJaipur,
+  signIn,
+  startDb,
+  stopDb,
+} from './helpers.js';
 import { Property } from '../src/models/property.model.js';
 import { openApiDocument } from '../src/docs/openapi.js';
 
@@ -41,8 +50,12 @@ describe('property creation and validation', () => {
   });
 
   it('rejects negative or fractional rent', async () => {
-    expect((await s.post('/api/v1/admin/properties', residential({ monthlyRent: -5 }))).status).toBe(422);
-    expect((await s.post('/api/v1/admin/properties', residential({ monthlyRent: 1000.5 }))).status).toBe(422);
+    expect(
+      (await s.post('/api/v1/admin/properties', residential({ monthlyRent: -5 }))).status,
+    ).toBe(422);
+    expect(
+      (await s.post('/api/v1/admin/properties', residential({ monthlyRent: 1000.5 }))).status,
+    ).toBe(422);
   });
 
   it('rejects unknown localities', async () => {
@@ -143,11 +156,44 @@ describe('publishing workflow and public visibility', () => {
 
 describe('public search and filtering', () => {
   beforeEach(async () => {
-    await create(residential({ status: 'published', title: 'Budget 1 BHK flat', monthlyRent: 9000, bedrooms: 1, bathrooms: 1 }));
-    await create(residential({ status: 'published', title: 'Family 3 BHK flat', monthlyRent: 30000, bedrooms: 3, bathrooms: 2, furnishingStatus: 'furnished' }));
-    await create(residential({ status: 'published', title: 'Two bedroom flat', localitySlug: 'malviya-nagar', monthlyRent: 18000, amenities: ['gym'] }));
+    await create(
+      residential({
+        status: 'published',
+        title: 'Budget 1 BHK flat',
+        monthlyRent: 9000,
+        bedrooms: 1,
+        bathrooms: 1,
+      }),
+    );
+    await create(
+      residential({
+        status: 'published',
+        title: 'Family 3 BHK flat',
+        monthlyRent: 30000,
+        bedrooms: 3,
+        bathrooms: 2,
+        furnishingStatus: 'furnished',
+      }),
+    );
+    await create(
+      residential({
+        status: 'published',
+        title: 'Two bedroom flat',
+        localitySlug: 'malviya-nagar',
+        monthlyRent: 18000,
+        amenities: ['gym'],
+      }),
+    );
     await create(commercial({ status: 'published' }));
-    await create(commercial({ status: 'published', title: 'Retail shop on main road', propertyType: 'shop', monthlyRent: 40000, parking: 'none' }));
+    await create(
+      commercial({
+        status: 'published',
+        title: 'Retail shop on main road',
+        propertyType: 'shop',
+        monthlyRent: 40000,
+        parking: 'none',
+      }),
+    );
   });
 
   const search = (qs: string) => request(app).get(`/api/v1/properties?${qs}`);
@@ -180,9 +226,13 @@ describe('public search and filtering', () => {
   });
 
   it('sorts by rent', async () => {
-    const asc = (await search('sort=rent_asc')).body.data.map((p: { monthlyRent: number }) => p.monthlyRent);
+    const asc = (await search('sort=rent_asc')).body.data.map(
+      (p: { monthlyRent: number }) => p.monthlyRent,
+    );
     expect(asc).toEqual([...asc].sort((a: number, b: number) => a - b));
-    const desc = (await search('sort=rent_desc')).body.data.map((p: { monthlyRent: number }) => p.monthlyRent);
+    const desc = (await search('sort=rent_desc')).body.data.map(
+      (p: { monthlyRent: number }) => p.monthlyRent,
+    );
     expect(desc[0]).toBe(85000);
   });
 
@@ -210,14 +260,18 @@ describe('public search and filtering', () => {
     const list = await search('category=residential&sort=rent_asc');
     const detail = await request(app).get(`/api/v1/properties/${list.body.data[1].slug}`);
     expect(detail.body.data.similar.length).toBeGreaterThan(0);
-    expect(detail.body.data.similar.every((p: { category: string }) => p.category === 'residential')).toBe(true);
+    expect(
+      detail.body.data.similar.every((p: { category: string }) => p.category === 'residential'),
+    ).toBe(true);
   });
 
   it('exposes location counts', async () => {
     const r = await request(app).get('/api/v1/locations');
     const jaipur = r.body.data[0];
     expect(jaipur.publishedCount).toBe(5);
-    expect(jaipur.localities.find((l: { slug: string }) => l.slug === 'malviya-nagar').publishedCount).toBe(1);
+    expect(
+      jaipur.localities.find((l: { slug: string }) => l.slug === 'malviya-nagar').publishedCount,
+    ).toBe(1);
   });
 });
 
@@ -225,7 +279,13 @@ describe('api docs', () => {
   it('documents every route family', async () => {
     const res = await request(app).get('/api/openapi.json');
     expect(res.status).toBe(200);
-    for (const path of ['/properties', '/enquiries', '/admin/properties', '/admin/enquiries', '/admin/uploads']) {
+    for (const path of [
+      '/properties',
+      '/enquiries',
+      '/admin/properties',
+      '/admin/enquiries',
+      '/admin/uploads',
+    ]) {
       expect(Object.keys(openApiDocument.paths)).toContain(path);
     }
   });

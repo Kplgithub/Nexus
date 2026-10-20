@@ -23,14 +23,18 @@ type Detected = { mime: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/avif'
 /** Identify the real file type from its first bytes. The client-supplied MIME type is never trusted. */
 export function detectImageType(buf: Buffer): Detected | null {
   if (buf.length < 12) return null;
-  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { mime: 'image/jpeg', ext: 'jpg' };
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff)
+    return { mime: 'image/jpeg', ext: 'jpg' };
   if (buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
     return { mime: 'image/png', ext: 'png' };
   }
   if (buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') {
     return { mime: 'image/webp', ext: 'webp' };
   }
-  if (buf.toString('ascii', 4, 8) === 'ftyp' && ['avif', 'avis'].includes(buf.toString('ascii', 8, 12))) {
+  if (
+    buf.toString('ascii', 4, 8) === 'ftyp' &&
+    ['avif', 'avis'].includes(buf.toString('ascii', 8, 12))
+  ) {
     return { mime: 'image/avif', ext: 'avif' };
   }
   return null;
@@ -50,7 +54,15 @@ export async function storeImage(buf: Buffer): Promise<UploadedImage> {
             folder: env.CLOUDINARY_FOLDER,
             resource_type: 'image',
             // Strip EXIF (incl. GPS) and cap the stored original at 2560px.
-            transformation: [{ width: 2560, height: 2560, crop: 'limit', quality: 'auto:good', flags: 'strip_profile' }],
+            transformation: [
+              {
+                width: 2560,
+                height: 2560,
+                crop: 'limit',
+                quality: 'auto:good',
+                flags: 'strip_profile',
+              },
+            ],
             overwrite: false,
             unique_filename: true,
           },
@@ -58,7 +70,12 @@ export async function storeImage(buf: Buffer): Promise<UploadedImage> {
         );
         stream.end(buf);
       });
-      return { url: result.secure_url, publicId: result.public_id, width: result.width, height: result.height };
+      return {
+        url: result.secure_url,
+        publicId: result.public_id,
+        width: result.width,
+        height: result.height,
+      };
     } catch (err) {
       logger.error({ err }, 'Cloudinary upload failed');
       throw new AppError(502, 'UPLOAD_FAILED', 'Image storage is unavailable. Please try again.');
@@ -70,7 +87,10 @@ export async function storeImage(buf: Buffer): Promise<UploadedImage> {
   await mkdir(dir, { recursive: true });
   const name = `${randomUUID()}.${type.ext}`;
   await writeFile(path.join(dir, name), buf);
-  return { url: `${env.LOCAL_UPLOAD_PUBLIC_URL.replace(/\/$/, '')}/${name}`, publicId: `local/${name}` };
+  return {
+    url: `${env.LOCAL_UPLOAD_PUBLIC_URL.replace(/\/$/, '')}/${name}`,
+    publicId: `local/${name}`,
+  };
 }
 
 /** Best-effort removal; orphaned files are logged rather than failing the admin action. */

@@ -14,7 +14,8 @@ export class AppError extends Error {
 
 export const badRequest = (message: string, details?: Record<string, string[]>) =>
   new AppError(400, 'BAD_REQUEST', message, details);
-export const unauthorized = (message = 'Please sign in') => new AppError(401, 'UNAUTHORIZED', message);
+export const unauthorized = (message = 'Please sign in') =>
+  new AppError(401, 'UNAUTHORIZED', message);
 export const forbidden = (message = 'You do not have permission to do that') =>
   new AppError(403, 'FORBIDDEN', message);
 export const notFound = (message = 'Not found') => new AppError(404, 'NOT_FOUND', message);
@@ -31,5 +32,10 @@ export function zodDetails(error: ZodError): Record<string, string[]> {
 }
 
 export function validationError(error: ZodError) {
-  return new AppError(422, 'VALIDATION_ERROR', 'Please check the highlighted fields', zodDetails(error));
+  return new AppError(
+    422,
+    'VALIDATION_ERROR',
+    'Please check the highlighted fields',
+    zodDetails(error),
+  );
 }

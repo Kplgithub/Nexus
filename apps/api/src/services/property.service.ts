@@ -28,7 +28,15 @@ const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : nul
 
 function cover(p: Lean) {
   const img = p.images[p.coverImageIndex] ?? p.images[0];
-  return img ? { url: img.url, alt: img.alt || p.title, width: img.width ?? undefined, height: img.height ?? undefined, isDemo: img.isDemo ?? false } : null;
+  return img
+    ? {
+        url: img.url,
+        alt: img.alt || p.title,
+        width: img.width ?? undefined,
+        height: img.height ?? undefined,
+        isDemo: img.isDemo ?? false,
+      }
+    : null;
 }
 
 export function toPublic(p: Lean): PublicProperty {
@@ -40,7 +48,7 @@ export function toPublic(p: Lean): PublicProperty {
     highlights: p.highlights ?? [],
     category: p.category as PublicProperty['category'],
     propertyType: p.propertyType as PublicProperty['propertyType'],
-    status: (p.status === 'rented' ? 'rented' : 'published'),
+    status: p.status === 'rented' ? 'rented' : 'published',
     city: { slug: p.citySlug, name: p.cityName },
     locality: { slug: p.localitySlug, name: p.localityName },
     state: p.state ?? '',
@@ -179,7 +187,9 @@ const SORTS: Record<PropertySearch['sort'], Record<string, SortOrder>> = {
   rent_desc: { monthlyRent: -1, _id: -1 },
 };
 
-export async function searchPublic(q: PropertySearch): Promise<{ items: PropertyCard[]; meta: PaginationMeta }> {
+export async function searchPublic(
+  q: PropertySearch,
+): Promise<{ items: PropertyCard[]; meta: PaginationMeta }> {
   const filter = buildPublicFilter(q);
   const [rows, total] = await Promise.all([
     Property.find(filter)
@@ -204,7 +214,10 @@ export async function getPublicBySlug(slug: string): Promise<PublicDetailResult>
   }
   const redirect = await SlugRedirect.findOne({ fromSlug: slug }).lean();
   if (redirect) {
-    const target = await Property.findOne({ _id: redirect.property, status: { $in: ['published', 'rented'] } })
+    const target = await Property.findOne({
+      _id: redirect.property,
+      status: { $in: ['published', 'rented'] },
+    })
       .select('slug')
       .lean();
     if (target) return { kind: 'redirect', slug: target.slug };
@@ -229,7 +242,9 @@ async function findSimilar(p: Lean, limit = 4): Promise<PropertyCard[]> {
     .limit(limit * 3)
     .lean<Lean[]>();
   // Prefer listings in the same locality, then the rest of the city.
-  close.sort((a, b) => Number(b.localitySlug === p.localitySlug) - Number(a.localitySlug === p.localitySlug));
+  close.sort(
+    (a, b) => Number(b.localitySlug === p.localitySlug) - Number(a.localitySlug === p.localitySlug),
+  );
   close.splice(limit);
   if (close.length >= limit) return close.map(toCard);
   const more = await Property.find({ ...base, _id: { $nin: [p._id, ...close.map((c) => c._id)] } })
@@ -243,7 +258,11 @@ async function findSimilar(p: Lean, limit = 4): Promise<PropertyCard[]> {
 export async function listHomeSections() {
   const visible = { status: 'published', listingVisibility: 'public' } as const;
   const [featured, recent] = await Promise.all([
-    Property.find({ ...visible, featured: true }).select(CARD_FIELDS).sort({ publishedAt: -1 }).limit(6).lean<Lean[]>(),
+    Property.find({ ...visible, featured: true })
+      .select(CARD_FIELDS)
+      .sort({ publishedAt: -1 })
+      .limit(6)
+      .lean<Lean[]>(),
     Property.find(visible).select(CARD_FIELDS).sort({ publishedAt: -1 }).limit(6).lean<Lean[]>(),
   ]);
   return { featured: featured.map(toCard), recent: recent.map(toCard) };
@@ -251,7 +270,12 @@ export async function listHomeSections() {
 
 /** Lightweight list for the XML sitemap. */
 export async function sitemapEntries() {
-  const rows = await Property.find({ status: 'published', listingVisibility: 'public' })
+  // Demo listings are noindex, so they stay out of the sitemap too.
+  const rows = await Property.find({
+    status: 'published',
+    listingVisibility: 'public',
+    isDemo: { $ne: true },
+  })
     .select('slug updatedAt')
     .sort({ updatedAt: -1 })
     .limit(45_000)
@@ -263,11 +287,17 @@ export async function sitemapEntries() {
 /* Admin                                                               */
 /* ------------------------------------------------------------------ */
 
-export async function uniqueSlug(base: string, excludeId?: Types.ObjectId | string): Promise<string> {
+export async function uniqueSlug(
+  base: string,
+  excludeId?: Types.ObjectId | string,
+): Promise<string> {
   const root = slugify(base) || 'property';
   for (let i = 0; i < 50; i++) {
     const candidate = i === 0 ? root : `${root}-${i + 1}`;
-    const exists = await Property.exists({ slug: candidate, ...(excludeId ? { _id: { $ne: excludeId } } : {}) });
+    const exists = await Property.exists({
+      slug: candidate,
+      ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+    });
     const redirected = await SlugRedirect.exists({ fromSlug: candidate });
     if (!exists && !redirected) return candidate;
   }
@@ -286,7 +316,11 @@ export async function listAdmin(q: z.output<typeof adminPropertyQuerySchema>) {
     f.$or = [{ title: rx }, { slug: rx }, { localityName: rx }, { ownerReference: rx }];
   }
   const [rows, total] = await Promise.all([
-    Property.find(f).sort({ updatedAt: -1 }).skip((q.page - 1) * q.limit).limit(q.limit).lean<Lean[]>(),
+    Property.find(f)
+      .sort({ updatedAt: -1 })
+      .skip((q.page - 1) * q.limit)
+      .limit(q.limit)
+      .lean<Lean[]>(),
     Property.countDocuments(f),
   ]);
   const ids = rows.map((r) => r._id);
@@ -307,9 +341,14 @@ export async function getAdmin(id: string): Promise<AdminProperty> {
   return toAdmin(p);
 }
 
-export async function createProperty(input: PropertyCreate, adminId: string): Promise<AdminProperty> {
+export async function createProperty(
+  input: PropertyCreate,
+  adminId: string,
+): Promise<AdminProperty> {
   const loc = await resolveLocation(input.citySlug, input.localitySlug);
-  const slug = input.slug ? await ensureSlugFree(input.slug) : await uniqueSlug(`${input.title} ${loc.localityName}`);
+  const slug = input.slug
+    ? await ensureSlugFree(input.slug)
+    : await uniqueSlug(`${input.title} ${loc.localityName}`);
   const doc = await Property.create({
     ...input,
     slug,
@@ -335,13 +374,20 @@ async function ensureSlugFree(slug: string, excludeId?: Types.ObjectId | string)
   return slug;
 }
 
-export async function updateProperty(id: string, patch: PropertyUpdate, adminId: string): Promise<AdminProperty> {
+export async function updateProperty(
+  id: string,
+  patch: PropertyUpdate,
+  adminId: string,
+): Promise<AdminProperty> {
   const doc = await Property.findById(id);
   if (!doc) throw notFound('Property not found');
 
   const current = doc.toObject() as unknown as Lean;
   const merged = { ...current, ...patch };
-  const check = propertyValidateMerged(stripNulls(merged));
+  // Re-check cross-field rules against the merged document (nulls = "not set").
+  const check = propertyValidateMerged(
+    stripNulls(JSON.parse(JSON.stringify(merged))) as Parameters<typeof propertyValidateMerged>[0],
+  );
   if (!check.success) throw validationError(check.error);
 
   const set: Record<string, unknown> = { ...patch, updatedBy: adminId };
@@ -369,7 +415,9 @@ export async function updateProperty(id: string, patch: PropertyUpdate, adminId:
   // Remove images that were dropped from the gallery.
   if (patch.images) {
     const keep = new Set(patch.images.map((i) => i.publicId).filter(Boolean));
-    const removed = current.images.map((i) => i.publicId).filter((p): p is string => !!p && !keep.has(p));
+    const removed = current.images
+      .map((i) => i.publicId)
+      .filter((p): p is string => !!p && !keep.has(p));
     if (removed.length) void deleteImages(removed);
   }
 

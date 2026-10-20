@@ -27,7 +27,8 @@ beforeEach(async () => {
 
 const upload = (files: { buf: Buffer; name: string; type: string }[]) => {
   let req = s.agent.post('/api/v1/admin/uploads').set('X-CSRF-Token', s.csrf);
-  for (const f of files) req = req.attach('files', f.buf, { filename: f.name, contentType: f.type });
+  for (const f of files)
+    req = req.attach('files', f.buf, { filename: f.name, contentType: f.type });
   return req;
 };
 
@@ -40,7 +41,11 @@ describe('image uploads', () => {
   it('accepts real images and rejects disguised files, per file', async () => {
     const res = await upload([
       { buf: PNG, name: 'room.png', type: 'image/png' },
-      { buf: Buffer.from('<svg onload=alert(1)></svg> padding'), name: 'evil.jpg', type: 'image/jpeg' },
+      {
+        buf: Buffer.from('<svg onload=alert(1)></svg> padding'),
+        name: 'evil.jpg',
+        type: 'image/jpeg',
+      },
     ]);
     expect(res.status).toBe(200);
     expect(res.body.data[0].ok).toBe(true);
@@ -62,50 +67,83 @@ describe('image uploads', () => {
 
 describe('end-to-end journey (API level)', () => {
   it.each([
-    ['residential', { category: 'residential', propertyType: 'apartment', bedrooms: 2, bathrooms: 2, localitySlug: 'vaishali-nagar' }, 'category=residential&city=jaipur&minRent=10000&maxRent=25000&bedrooms=2'],
-    ['commercial', { category: 'commercial', propertyType: 'office', localitySlug: 'c-scheme' }, 'category=commercial&city=jaipur&locality=c-scheme&propertyType=office&maxRent=25000'],
-  ])('%s: create → upload → publish → search → view → enquire → manage', async (_label, typeFields, qs) => {
-    // 1–2. Admin is signed in (beforeEach) and creates a property.
-    const created = await s.post('/api/v1/admin/properties', {
-      title: 'Journey test listing for verification',
-      description: 'A listing created during the automated journey test to verify the full workflow end to end.',
-      citySlug: 'jaipur',
-      monthlyRent: 20000,
-      areaValue: 900,
-      areaUnit: 'sqft',
-      furnishingStatus: 'semi-furnished',
-      ...typeFields,
-    });
-    expect(created.status).toBe(201);
-    const id = created.body.data.id;
+    [
+      'residential',
+      {
+        category: 'residential',
+        propertyType: 'apartment',
+        bedrooms: 2,
+        bathrooms: 2,
+        localitySlug: 'vaishali-nagar',
+      },
+      'category=residential&city=jaipur&minRent=10000&maxRent=25000&bedrooms=2',
+    ],
+    [
+      'commercial',
+      { category: 'commercial', propertyType: 'office', localitySlug: 'c-scheme' },
+      'category=commercial&city=jaipur&locality=c-scheme&propertyType=office&maxRent=25000',
+    ],
+  ])(
+    '%s: create → upload → publish → search → view → enquire → manage',
+    async (_label, typeFields, qs) => {
+      // 1–2. Admin is signed in (beforeEach) and creates a property.
+      const created = await s.post('/api/v1/admin/properties', {
+        title: 'Journey test listing for verification',
+        description:
+          'A listing created during the automated journey test to verify the full workflow end to end.',
+        citySlug: 'jaipur',
+        monthlyRent: 20000,
+        areaValue: 900,
+        areaUnit: 'sqft',
+        furnishingStatus: 'semi-furnished',
+        ...typeFields,
+      });
+      expect(created.status).toBe(201);
+      const id = created.body.data.id;
 
-    // 3. Upload images, attach them, publish.
-    const up = await upload([{ buf: PNG, name: 'front.png', type: 'image/png' }]);
-    const image = up.body.data[0].image;
-    expect((await s.patch(`/api/v1/admin/properties/${id}`, { images: [{ ...image, alt: 'Front view' }] })).status).toBe(200);
-    expect((await s.post(`/api/v1/admin/properties/${id}/status`, { status: 'published' })).status).toBe(200);
+      // 3. Upload images, attach them, publish.
+      const up = await upload([{ buf: PNG, name: 'front.png', type: 'image/png' }]);
+      const image = up.body.data[0].image;
+      expect(
+        (
+          await s.patch(`/api/v1/admin/properties/${id}`, {
+            images: [{ ...image, alt: 'Front view' }],
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (await s.post(`/api/v1/admin/properties/${id}/status`, { status: 'published' })).status,
+      ).toBe(200);
 
-    // 4–5. Visible publicly and found by search.
-    const results = await request(app).get(`/api/v1/properties?${qs}`);
-    expect(results.body.data.map((p: { id: string }) => p.id)).toContain(id);
+      // 4–5. Visible publicly and found by search.
+      const results = await request(app).get(`/api/v1/properties?${qs}`);
+      expect(results.body.data.map((p: { id: string }) => p.id)).toContain(id);
 
-    // 6. Details page data.
-    const slug = created.body.data.slug;
-    const detail = await request(app).get(`/api/v1/properties/${slug}`);
-    expect(detail.status).toBe(200);
-    expect(detail.body.data.property.images[0].alt).toBe('Front view');
+      // 6. Details page data.
+      const slug = created.body.data.slug;
+      const detail = await request(app).get(`/api/v1/properties/${slug}`);
+      expect(detail.status).toBe(200);
+      expect(detail.body.data.property.images[0].alt).toBe('Front view');
 
-    // 7–8. Visitor enquiry is saved.
-    const enq = await request(app)
-      .post('/api/v1/enquiries')
-      .send({ name: 'Visitor', phone: '9829044444', consent: true, propertyId: id, elapsedMs: 9000, message: 'Please call me' });
-    expect(enq.status).toBe(201);
-    expect(await Enquiry.countDocuments({ property: id })).toBe(1);
+      // 7–8. Visitor enquiry is saved.
+      const enq = await request(app).post('/api/v1/enquiries').send({
+        name: 'Visitor',
+        phone: '9829044444',
+        consent: true,
+        propertyId: id,
+        elapsedMs: 9000,
+        message: 'Please call me',
+      });
+      expect(enq.status).toBe(201);
+      expect(await Enquiry.countDocuments({ property: id })).toBe(1);
 
-    // 9. Admin views and updates it.
-    const list = await s.get(`/api/v1/admin/enquiries?propertyId=${id}`);
-    expect(list.body.data[0].leadId).toBe(enq.body.data.leadId);
-    const upd = await s.patch(`/api/v1/admin/enquiries/${list.body.data[0].id}`, { status: 'qualified' });
-    expect(upd.body.data.status).toBe('qualified');
-  });
+      // 9. Admin views and updates it.
+      const list = await s.get(`/api/v1/admin/enquiries?propertyId=${id}`);
+      expect(list.body.data[0].leadId).toBe(enq.body.data.leadId);
+      const upd = await s.patch(`/api/v1/admin/enquiries/${list.body.data[0].id}`, {
+        status: 'qualified',
+      });
+      expect(upd.body.data.status).toBe('qualified');
+    },
+  );
 });

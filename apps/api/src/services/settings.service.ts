@@ -41,7 +41,18 @@ export async function getPublicSettings(): Promise<Omit<SiteSettings, 'enquiryNo
   const s = await getSettings();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { enquiryNotificationEmail: _hidden, ...rest } = s;
-  return s.showAddress ? rest : { ...rest, address: { line1: '', line2: '', city: s.address.city, state: s.address.state, pincode: '' } };
+  return s.showAddress
+    ? rest
+    : {
+        ...rest,
+        address: {
+          line1: '',
+          line2: '',
+          city: s.address.city,
+          state: s.address.state,
+          pincode: '',
+        },
+      };
 }
 
 export async function updateSettings(patch: Partial<SiteSettings>): Promise<SiteSettings> {

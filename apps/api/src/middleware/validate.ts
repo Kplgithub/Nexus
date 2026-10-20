@@ -27,7 +27,10 @@ export function parseId(req: Request, name = 'id'): string {
  * For PATCH requests: keep only keys the client actually sent. Prevents schema
  * defaults (e.g. status: "draft") from silently overwriting stored values.
  */
-export function onlySentKeys<T extends Record<string, unknown>>(parsed: T, raw: unknown): Partial<T> {
+export function onlySentKeys<T extends Record<string, unknown>>(
+  parsed: T,
+  raw: unknown,
+): Partial<T> {
   if (!raw || typeof raw !== 'object') return {};
   const sent = new Set(Object.keys(raw));
   return Object.fromEntries(Object.entries(parsed).filter(([k]) => sent.has(k))) as Partial<T>;

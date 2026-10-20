@@ -1,0 +1,280 @@
+@import 'tailwindcss';
+
+/*
+ * NEXUS design tokens. Brand colours are fixed by the brand owner:
+ *   primary #02667B · accent #2FAEA6 · background #FFFFFF · surface #F8F9FA · text #000000
+ * Every other shade below is derived from them for borders, hovers and tints.
+ */
+@theme {
+  --color-brand: #02667b;
+  --color-brand-700: #014e5e;
+  --color-brand-800: #013b47;
+  --color-brand-50: #e8f2f4;
+  --color-brand-100: #cfe3e8;
+  --color-accent: #2faea6;
+  --color-accent-50: #eaf7f6;
+  --color-accent-100: #d2efec;
+  --color-accent-700: #1f7d77;
+  --color-bg: #ffffff;
+  --color-surface: #f8f9fa;
+  --color-ink: #000000;
+  --color-ink-soft: #3d4a4e;
+  --color-ink-muted: #5b6a6e;
+  --color-line: #e2e8ea;
+  --color-line-strong: #c9d4d7;
+  --color-danger: #b42318;
+  --color-danger-50: #fef3f2;
+  --color-success: #067647;
+  --color-success-50: #ecfdf3;
+  --color-warn: #b54708;
+  --color-warn-50: #fffaeb;
+
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 0.875rem;
+  --shadow-card: 0 1px 2px rgb(1 59 71 / 0.06), 0 4px 16px -6px rgb(1 59 71 / 0.1);
+  --shadow-lift: 0 2px 4px rgb(1 59 71 / 0.06), 0 16px 32px -12px rgb(1 59 71 / 0.18);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--color-accent-100);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-page {
+      padding-inline: 2rem;
+    }
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.625rem 1.125rem;
+    border-radius: 0.625rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    line-height: 1.25;
+    transition:
+      background-color 150ms,
+      color 150ms,
+      border-color 150ms,
+      box-shadow 150ms;
+    white-space: nowrap;
+  }
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-brand);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-brand-700);
+  }
+  .btn-accent {
+    background: var(--color-accent);
+    color: var(--color-ink);
+  }
+  .btn-accent:hover:not(:disabled) {
+    background: #29a098;
+  }
+  .btn-outline {
+    border: 1px solid var(--color-line-strong);
+    background: #fff;
+    color: var(--color-brand-800);
+  }
+  .btn-outline:hover:not(:disabled) {
+    border-color: var(--color-brand);
+    background: var(--color-brand-50);
+  }
+  .btn-ghost {
+    color: var(--color-brand-800);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-brand-50);
+  }
+  .btn-danger {
+    background: var(--color-danger);
+    color: #fff;
+  }
+  .btn-sm {
+    min-height: 2.25rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-ink-soft);
+    margin-bottom: 0.375rem;
+  }
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 2.75rem;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 0.625rem;
+    background: #fff;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    color: var(--color-ink);
+    transition:
+      border-color 150ms,
+      box-shadow 150ms;
+  }
+  .field::placeholder {
+    color: #8a979a;
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px rgb(47 174 166 / 0.3);
+  }
+  .field[aria-invalid='true'] {
+    border-color: var(--color-danger);
+  }
+  textarea.field {
+    min-height: 7rem;
+    resize: vertical;
+  }
+  select.field {
+    appearance: none;
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2302667B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+  .field-error {
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-danger);
+  }
+  .field-hint {
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-ink-muted);
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .eyebrow {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-brand);
+  }
+
+  .prose-nexus {
+    color: var(--color-ink-soft);
+    line-height: 1.75;
+  }
+  .prose-nexus h2 {
+    color: var(--color-ink);
+    font-size: 1.375rem;
+    font-weight: 700;
+    margin: 2rem 0 0.75rem;
+  }
+  .prose-nexus h3 {
+    color: var(--color-ink);
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .prose-nexus p,
+  .prose-nexus ul,
+  .prose-nexus ol {
+    margin: 0 0 1rem;
+  }
+  .prose-nexus ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+  }
+  .prose-nexus ol {
+    list-style: decimal;
+    padding-left: 1.25rem;
+  }
+  .prose-nexus a {
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, #eef2f3 0%, #f6f8f9 50%, #eef2f3 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 0.5rem;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

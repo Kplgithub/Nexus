@@ -54,7 +54,8 @@ export function createApp() {
       pinoHttp({
         logger,
         autoLogging: { ignore: (req) => req.url === '/api/v1/health' },
-        customLogLevel: (_req, res, err) => (err || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'),
+        customLogLevel: (_req, res, err) =>
+          err || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info',
       }),
     );
   }
@@ -66,9 +67,21 @@ export function createApp() {
   app.get('/api/v1/health', async (_req, res) => {
     const dbUp = mongoose.connection.readyState === 1;
     let dbPing = false;
-    if (dbUp) dbPing = await mongoose.connection.db!.admin().ping().then(() => true).catch(() => false);
+    if (dbUp)
+      dbPing = await mongoose.connection
+        .db!.admin()
+        .ping()
+        .then(() => true)
+        .catch(() => false);
     res.set('Cache-Control', 'no-store');
-    res.status(dbPing ? 200 : 503).json({ ok: dbPing, data: { status: dbPing ? 'ok' : 'degraded', db: dbPing ? 'up' : 'down', uptime: Math.round(process.uptime()) } });
+    res.status(dbPing ? 200 : 503).json({
+      ok: dbPing,
+      data: {
+        status: dbPing ? 'ok' : 'degraded',
+        db: dbPing ? 'up' : 'down',
+        uptime: Math.round(process.uptime()),
+      },
+    });
   });
 
   app.use('/api/v1', limiters.global);
@@ -77,7 +90,11 @@ export function createApp() {
 
   if (env.ENABLE_API_DOCS) {
     app.get('/api/openapi.json', (_req, res) => res.json(openApiDocument));
-    app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, { customSiteTitle: 'NEXUS API' }));
+    app.use(
+      '/api/docs',
+      swaggerUi.serve,
+      swaggerUi.setup(openApiDocument, { customSiteTitle: 'NEXUS API' }),
+    );
   }
 
   if (env.UPLOAD_DRIVER === 'local') {

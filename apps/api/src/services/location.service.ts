@@ -15,7 +15,14 @@ type CityLean = {
   intro: string;
   seoTitle?: string | null;
   seoDescription?: string | null;
-  localities: { name: string; slug: string; active: boolean; intro: string; seoTitle?: string | null; seoDescription?: string | null }[];
+  localities: {
+    name: string;
+    slug: string;
+    active: boolean;
+    intro: string;
+    seoTitle?: string | null;
+    seoDescription?: string | null;
+  }[];
 };
 
 function toDto(c: CityLean, counts?: Map<string, number>): CityDto {
@@ -70,7 +77,10 @@ export async function listPublicLocations(): Promise<CityDto[]> {
 }
 
 export async function listAllLocations(): Promise<CityDto[]> {
-  const [cities, counts] = await Promise.all([City.find().sort({ sortOrder: 1, name: 1 }).lean<CityLean[]>(), visibleCounts()]);
+  const [cities, counts] = await Promise.all([
+    City.find().sort({ sortOrder: 1, name: 1 }).lean<CityLean[]>(),
+    visibleCounts(),
+  ]);
   return cities.map((c) => toDto(c, counts));
 }
 
@@ -87,9 +97,13 @@ export async function getPublicCity(slug: string): Promise<CityDto> {
 /** Resolve slugs to display names for a property. Throws 400 if the location isn't configured. */
 export async function resolveLocation(citySlug: string, localitySlug: string) {
   const city = await City.findOne({ slug: citySlug }).lean<CityLean>();
-  if (!city) throw badRequest('Unknown city', { citySlug: ['Add this city under Locations first'] });
+  if (!city)
+    throw badRequest('Unknown city', { citySlug: ['Add this city under Locations first'] });
   const locality = city.localities.find((l) => l.slug === localitySlug);
-  if (!locality) throw badRequest('Unknown locality', { localitySlug: ['Add this locality under Locations first'] });
+  if (!locality)
+    throw badRequest('Unknown locality', {
+      localitySlug: ['Add this locality under Locations first'],
+    });
   return { cityName: city.name, localityName: locality.name, state: city.state };
 }
 
@@ -106,7 +120,11 @@ function normaliseLocalities<T extends { name: string; slug?: string }>(list: T[
 export async function createCity(input: z.output<typeof cityCreateSchema>) {
   const slug = input.slug || slugify(input.name);
   if (await City.exists({ slug })) throw conflict('A city with this slug already exists');
-  const doc = await City.create({ ...input, slug, localities: normaliseLocalities(input.localities) });
+  const doc = await City.create({
+    ...input,
+    slug,
+    localities: normaliseLocalities(input.localities),
+  });
   return toDto(doc.toObject() as unknown as CityLean);
 }
 
@@ -119,19 +137,28 @@ export async function updateCity(id: string, patch: z.output<typeof cityUpdateSc
   }
   if (patch.localities) {
     const next = normaliseLocalities(patch.localities);
-    const removed = city.localities.map((l) => l.slug).filter((s) => !next.some((n) => n.slug === s));
+    const removed = city.localities
+      .map((l) => l.slug)
+      .filter((s) => !next.some((n) => n.slug === s));
     if (removed.length) {
       const inUse = await Property.exists({ citySlug: city.slug, localitySlug: { $in: removed } });
-      if (inUse) throw conflict('A locality you removed still has listings. Deactivate it instead.');
+      if (inUse)
+        throw conflict('A locality you removed still has listings. Deactivate it instead.');
     }
     patch = { ...patch, localities: next };
   }
   city.set(patch);
   await city.save();
   // Keep denormalised names on listings in sync.
-  await Property.updateMany({ citySlug: city.slug }, { $set: { cityName: city.name, state: city.state } });
+  await Property.updateMany(
+    { citySlug: city.slug },
+    { $set: { cityName: city.name, state: city.state } },
+  );
   for (const l of city.localities) {
-    await Property.updateMany({ citySlug: city.slug, localitySlug: l.slug }, { $set: { localityName: l.name } });
+    await Property.updateMany(
+      { citySlug: city.slug, localitySlug: l.slug },
+      { $set: { localityName: l.name } },
+    );
   }
   return toDto(city.toObject() as unknown as CityLean);
 }

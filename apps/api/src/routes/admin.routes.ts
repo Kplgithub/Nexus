@@ -48,8 +48,16 @@ adminRouter.post('/auth/login', limiters.login, async (req, res) => {
   const { email, password } = parseBody(loginSchema, req);
   const admin = await auth.login(email, password);
   const csrfToken = issueSession(res, admin);
-  await audit({ id: admin.id, email: admin.email, name: admin.name, role: admin.role }, 'login', 'admin', admin.id);
-  ok(res, { admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role }, csrfToken });
+  await audit(
+    { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
+    'login',
+    'admin',
+    admin.id,
+  );
+  ok(res, {
+    admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
+    csrfToken,
+  });
 });
 
 adminRouter.post('/auth/logout', (_req, res) => {
@@ -88,7 +96,9 @@ adminRouter.get('/properties', async (req, res) => {
   ok(res, items, meta);
 });
 
-adminRouter.get('/properties/:id', async (req, res) => ok(res, await properties.getAdmin(parseId(req))));
+adminRouter.get('/properties/:id', async (req, res) =>
+  ok(res, await properties.getAdmin(parseId(req))),
+);
 
 adminRouter.post('/properties', requireRole('editor'), async (req, res) => {
   const input = parseBody(propertyCreateSchema, req);
@@ -128,21 +138,40 @@ const upload = multer({
   limits: { fileSize: IMAGE_MAX_BYTES, files: 10, fields: 5 },
 });
 
-adminRouter.post('/uploads', limiters.upload, requireRole('editor'), upload.array('files', 10), async (req, res) => {
-  const files = (req.files as Express.Multer.File[] | undefined) ?? [];
-  if (!files.length) throw badRequest('Choose at least one image');
-  // Upload sequentially and report per-file results so one bad file doesn't lose the rest.
-  const results: ({ ok: true; image: Awaited<ReturnType<typeof storeImage>>; name: string } | { ok: false; name: string; error: string })[] = [];
-  for (const f of files) {
-    try {
-      results.push({ ok: true, name: f.originalname, image: await storeImage(f.buffer) });
-    } catch (err) {
-      results.push({ ok: false, name: f.originalname, error: err instanceof Error ? err.message : 'Upload failed' });
+adminRouter.post(
+  '/uploads',
+  limiters.upload,
+  requireRole('editor'),
+  upload.array('files', 10),
+  async (req, res) => {
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+    if (!files.length) throw badRequest('Choose at least one image');
+    // Upload sequentially and report per-file results so one bad file doesn't lose the rest.
+    const results: (
+      | { ok: true; image: Awaited<ReturnType<typeof storeImage>>; name: string }
+      | { ok: false; name: string; error: string }
+    )[] = [];
+    for (const f of files) {
+      try {
+        results.push({ ok: true, name: f.originalname, image: await storeImage(f.buffer) });
+      } catch (err) {
+        results.push({
+          ok: false,
+          name: f.originalname,
+          error: err instanceof Error ? err.message : 'Upload failed',
+        });
+      }
     }
-  }
-  await audit(req.admin, 'upload', 'image', undefined, `${results.filter((r) => r.ok).length} file(s)`);
-  ok(res, results);
-});
+    await audit(
+      req.admin,
+      'upload',
+      'image',
+      undefined,
+      `${results.filter((r) => r.ok).length} file(s)`,
+    );
+    ok(res, results);
+  },
+);
 
 /* ---------------- Enquiries ---------------- */
 
@@ -152,15 +181,24 @@ adminRouter.get('/enquiries', async (req, res) => {
 });
 
 adminRouter.get('/enquiries/export.csv', requireRole('admin'), async (req, res) => {
-  const csv = await leads.exportEnquiriesCsv({ ...parseQuery(adminEnquiryQuerySchema, req), page: 1, limit: 100 });
+  const csv = await leads.exportEnquiriesCsv({
+    ...parseQuery(adminEnquiryQuerySchema, req),
+    page: 1,
+    limit: 100,
+  });
   await audit(req.admin, 'export', 'enquiry', undefined, 'CSV export');
   res
     .set('Content-Type', 'text/csv; charset=utf-8')
-    .set('Content-Disposition', `attachment; filename="nexus-enquiries-${new Date().toISOString().slice(0, 10)}.csv"`)
+    .set(
+      'Content-Disposition',
+      `attachment; filename="nexus-enquiries-${new Date().toISOString().slice(0, 10)}.csv"`,
+    )
     .send(csv);
 });
 
-adminRouter.get('/enquiries/:id', async (req, res) => ok(res, await leads.getEnquiry(parseId(req))));
+adminRouter.get('/enquiries/:id', async (req, res) =>
+  ok(res, await leads.getEnquiry(parseId(req))),
+);
 
 adminRouter.patch('/enquiries/:id', async (req, res) => {
   const id = parseId(req);
@@ -186,7 +224,10 @@ adminRouter.get('/submissions', async (req, res) => {
 
 adminRouter.patch('/submissions/:id', async (req, res) => {
   const id = parseId(req);
-  ok(res, await leads.updateSubmission(id, parseBody(submissionUpdateSchema, req), req.admin!.name));
+  ok(
+    res,
+    await leads.updateSubmission(id, parseBody(submissionUpdateSchema, req), req.admin!.name),
+  );
 });
 
 /* ---------------- Locations ---------------- */
@@ -217,7 +258,9 @@ adminRouter.delete('/locations/:id', requireRole('admin'), async (req, res) => {
 /* ---------------- FAQs ---------------- */
 
 adminRouter.get('/faqs', async (_req, res) => ok(res, await faqs.listAllFaqs()));
-adminRouter.post('/faqs', requireRole('editor'), async (req, res) => created(res, await faqs.createFaq(parseBody(faqCreateSchema, req))));
+adminRouter.post('/faqs', requireRole('editor'), async (req, res) =>
+  created(res, await faqs.createFaq(parseBody(faqCreateSchema, req))),
+);
 adminRouter.patch('/faqs/:id', requireRole('editor'), async (req, res) => {
   const id = parseId(req);
   ok(res, await faqs.updateFaq(id, onlySentKeys(parseBody(faqUpdateSchema, req), req.body)));

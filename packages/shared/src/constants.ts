@@ -10,14 +10,7 @@ export type Category = (typeof CATEGORIES)[number];
 export const ACTIVE_CATEGORIES: readonly Category[] = ['residential', 'commercial'];
 
 export const PROPERTY_TYPES = {
-  residential: [
-    'apartment',
-    'independent-house',
-    'builder-floor',
-    'villa',
-    'studio',
-    'pg',
-  ],
+  residential: ['apartment', 'independent-house', 'builder-floor', 'villa', 'studio', 'pg'],
   commercial: [
     'office',
     'shop',

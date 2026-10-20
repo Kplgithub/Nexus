@@ -28,10 +28,22 @@ export async function resetDb() {
   clearSettingsCache();
 }
 
-export const ADMIN = { email: 'owner@example.test', password: 'Correct-Horse-9-Battery', name: 'Test Owner' };
+export const ADMIN = {
+  email: 'owner@example.test',
+  password: 'Correct-Horse-9-Battery',
+  name: 'Test Owner',
+};
 
-export async function createAdmin(role: 'owner' | 'admin' | 'editor' = 'owner', email = ADMIN.email) {
-  return Admin.create({ email, name: ADMIN.name, role, passwordHash: await hashPassword(ADMIN.password) });
+export async function createAdmin(
+  role: 'owner' | 'admin' | 'editor' = 'owner',
+  email = ADMIN.email,
+) {
+  return Admin.create({
+    email,
+    name: ADMIN.name,
+    role,
+    passwordHash: await hashPassword(ADMIN.password),
+  });
 }
 
 export async function seedJaipur() {
@@ -50,8 +62,11 @@ export async function seedJaipur() {
 /** Supertest agent that is signed in and sends the CSRF header automatically. */
 export async function signIn(app: Express, email = ADMIN.email) {
   const agent = request.agent(app);
-  const res = await agent.post('/api/v1/admin/auth/login').send({ email, password: ADMIN.password });
-  if (res.status !== 200) throw new Error(`login failed: ${res.status} ${JSON.stringify(res.body)}`);
+  const res = await agent
+    .post('/api/v1/admin/auth/login')
+    .send({ email, password: ADMIN.password });
+  if (res.status !== 200)
+    throw new Error(`login failed: ${res.status} ${JSON.stringify(res.body)}`);
   const csrf: string = res.body.data.csrfToken;
   return {
     agent,
@@ -63,11 +78,16 @@ export async function signIn(app: Express, email = ADMIN.email) {
   };
 }
 
-export const IMG = { url: 'https://res.cloudinary.com/demo/image/upload/sample.jpg', publicId: 'demo/sample', alt: 'Front view' };
+export const IMG = {
+  url: 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+  publicId: 'demo/sample',
+  alt: 'Front view',
+};
 
 export const residential = (overrides: Record<string, unknown> = {}) => ({
   title: '2 BHK apartment near Gandhi Path',
-  description: 'A bright two-bedroom apartment with good ventilation and covered parking for one car.',
+  description:
+    'A bright two-bedroom apartment with good ventilation and covered parking for one car.',
   category: 'residential',
   propertyType: 'apartment',
   citySlug: 'jaipur',
@@ -89,7 +109,8 @@ export const residential = (overrides: Record<string, unknown> = {}) => ({
 
 export const commercial = (overrides: Record<string, unknown> = {}) => ({
   title: 'Furnished office near Ashok Marg',
-  description: 'Ready-to-move office with twenty workstations, a cabin, conference room and pantry.',
+  description:
+    'Ready-to-move office with twenty workstations, a cabin, conference room and pantry.',
   category: 'commercial',
   propertyType: 'office',
   citySlug: 'jaipur',

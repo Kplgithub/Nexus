@@ -1,0 +1,62 @@
+# Production stack: Next.js + API behind the host's Nginx (see deploy/nginx/nexus.conf).
+# MongoDB is expected to be MongoDB Atlas (recommended). For a self-hosted database,
+# uncomment the `mongo` service and point MONGODB_URI at it.
+#
+#   cd /srv/nexus && docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d --build
+
+name: nexus
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: nexus-api:${RELEASE:-latest}
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      TRUST_PROXY: 1
+    ports:
+      - '127.0.0.1:4000:4000' # only reachable through Nginx
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '5' }
+    # depends_on: [mongo]
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_NOINDEX: ${NEXT_PUBLIC_NOINDEX:-false}
+    image: nexus-web:${RELEASE:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_INTERNAL_URL: http://api:4000
+      REVALIDATE_SECONDS: ${REVALIDATE_SECONDS:-60}
+      IMAGE_HOSTS: ${IMAGE_HOSTS:-}
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on:
+      api:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '5' }
+
+  # mongo:
+  #   image: mongo:8
+  #   restart: unless-stopped
+  #   command: ['--auth', '--bind_ip_all']
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+  #     MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+  #   volumes: ['mongo-data:/data/db']
+  #   # no published ports: reachable only from the api container
+
+# volumes:
+#   mongo-data:

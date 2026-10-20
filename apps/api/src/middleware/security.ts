@@ -19,7 +19,8 @@ function strip(value: unknown, depth: number): unknown {
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
-      if (k.startsWith('$') || k.includes('.') || k === '__proto__' || k === 'constructor') continue;
+      if (k.startsWith('$') || k.includes('.') || k === '__proto__' || k === 'constructor')
+        continue;
       out[k] = strip(v, depth + 1);
     }
     return out;
@@ -52,6 +53,10 @@ const make = (windowMs: number, limit: number, message: string) =>
 export const limiters = {
   global: make(60_000, 300, 'Too many requests. Please slow down.'),
   login: make(15 * 60_000, 10, 'Too many sign-in attempts. Try again in 15 minutes.'),
-  publicForm: make(60 * 60_000, 10, 'Too many submissions from this network. Please call us instead.'),
+  publicForm: make(
+    60 * 60_000,
+    10,
+    'Too many submissions from this network. Please call us instead.',
+  ),
   upload: make(60_000, 40, 'Too many uploads. Please wait a minute.'),
 };

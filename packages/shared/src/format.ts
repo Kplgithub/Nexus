@@ -15,7 +15,10 @@ export function formatINR(amount: number): string {
 export function formatRent(amount: number): string {
   if (amount >= 100_000) {
     const lakhs = amount / 100_000;
-    const shown = lakhs >= 100 ? `${(lakhs / 100).toFixed(2).replace(/\.?0+$/, '')} Cr` : `${lakhs.toFixed(2).replace(/\.?0+$/, '')} L`;
+    const shown =
+      lakhs >= 100
+        ? `${(lakhs / 100).toFixed(2).replace(/\.?0+$/, '')} Cr`
+        : `${lakhs.toFixed(2).replace(/\.?0+$/, '')} L`;
     return `₹${shown}/month`;
   }
   return `${formatINR(amount)}/month`;
@@ -32,7 +35,11 @@ export function toSqft(value: number, unit: AreaUnit): number {
 export function floorLabel(floor: number | null | undefined, total?: number | null): string | null {
   if (floor === null || floor === undefined) return null;
   const name =
-    floor === 0 ? 'Ground floor' : floor < 0 ? `Basement ${Math.abs(floor)}` : `${ordinal(floor)} floor`;
+    floor === 0
+      ? 'Ground floor'
+      : floor < 0
+        ? `Basement ${Math.abs(floor)}`
+        : `${ordinal(floor)} floor`;
   return total ? `${name} of ${total}` : name;
 }
 

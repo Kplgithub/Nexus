@@ -15,9 +15,12 @@ import {
 
 const moneyField = {
   type: Number,
-  min: [0, 'Cannot be negative'],
+  min: [0, 'Cannot be negative'] as [number, string],
   max: MAX_MONEY_INR,
-  validate: { validator: Number.isInteger, message: 'Use whole rupees' },
+  validate: {
+    validator: (v: unknown) => v === null || v === undefined || Number.isInteger(v),
+    message: 'Use whole rupees',
+  },
 };
 
 const imageSchema = new Schema(
@@ -108,7 +111,14 @@ const propertySchema = new Schema(
 
 propertySchema.index({ slug: 1 }, { unique: true });
 // Primary search path: visible listings filtered by category/location, sorted by rent or recency.
-propertySchema.index({ status: 1, listingVisibility: 1, category: 1, citySlug: 1, localitySlug: 1, monthlyRent: 1 });
+propertySchema.index({
+  status: 1,
+  listingVisibility: 1,
+  category: 1,
+  citySlug: 1,
+  localitySlug: 1,
+  monthlyRent: 1,
+});
 propertySchema.index({ status: 1, listingVisibility: 1, category: 1, publishedAt: -1 });
 propertySchema.index({ status: 1, listingVisibility: 1, citySlug: 1, publishedAt: -1 });
 propertySchema.index({ status: 1, listingVisibility: 1, propertyType: 1, monthlyRent: 1 });

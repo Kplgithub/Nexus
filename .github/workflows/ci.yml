@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  checks:
+    name: Lint, typecheck, unit & API tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - name: Install
+        run: |
+          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
+      - name: Upload generated lockfile (first run only)
+        if: hashFiles('pnpm-lock.yaml') == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-lock
+          path: pnpm-lock.yaml
+      - name: Build shared package
+        run: pnpm --filter @nexus/shared build
+      - name: Format check
+        run: pnpm format:check
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm -r typecheck
+      - name: Unit and API tests (in-memory MongoDB)
+        run: pnpm -r test
+      - name: Production build
+        env:
+          NEXT_PUBLIC_SITE_URL: https://example.com
+        run: pnpm --filter @nexus/api build && pnpm --filter @nexus/web build
+
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-latest
+    needs: checks
+    timeout-minutes: 30
+    services:
+      mongo:
+        image: mongo:8
+        ports: ['27017:27017']
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/nexus_e2e
+      JWT_SECRET: ci-only-secret-ci-only-secret-ci-only-secret
+      CORS_ORIGINS: http://localhost:3000
+      PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      API_INTERNAL_URL: http://localhost:4000
+      UPLOAD_DRIVER: local
+      LOCAL_UPLOAD_PUBLIC_URL: http://localhost:4000/uploads
+      REVALIDATE_SECONDS: '5'
+      PUBLIC_CACHE_SECONDS: '0'
+      E2E_ADMIN_EMAIL: e2e-admin@example.com
+      E2E_ADMIN_PASSWORD: Ci-Only-Password-123
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
+      - run: pnpm --filter @nexus/shared build && pnpm --filter @nexus/api build && pnpm --filter @nexus/web build
+      - name: Seed database
+        run: |
+          pnpm --filter @nexus/api seed:base
+          ADMIN_EMAIL=$E2E_ADMIN_EMAIL ADMIN_PASSWORD=$E2E_ADMIN_PASSWORD ADMIN_NAME="CI Admin" pnpm --filter @nexus/api seed:admin
+      - name: Start API and web
+        run: |
+          (cd apps/api && NODE_ENV=development node dist/server.js > ../../api.log 2>&1 &)
+          (cd apps/web && pnpm start > ../../web.log 2>&1 &)
+          npx --yes wait-on -t 60000 http://localhost:4000/api/v1/health http://localhost:3000/robots.txt
+      - run: pnpm --filter @nexus/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @nexus/web test:e2e
+      - if: failure()
+        run: tail -n 200 api.log web.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7

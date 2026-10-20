@@ -168,7 +168,13 @@ export type SiteSettings = {
   address: { line1: string; line2: string; city: string; state: string; pincode: string };
   showAddress: boolean;
   businessHours: string;
-  social: { facebook?: string; instagram?: string; linkedin?: string; youtube?: string; x?: string };
+  social: {
+    facebook?: string;
+    instagram?: string;
+    linkedin?: string;
+    youtube?: string;
+    x?: string;
+  };
   home: {
     heroHeadline: string;
     heroSubheadline: string;
@@ -238,9 +244,18 @@ export type DashboardStats = {
     archived: number;
     demo: number;
   };
-  enquiries: { total: number; new: number; contacted: number; qualified: number; followUpsDue: number };
+  enquiries: {
+    total: number;
+    new: number;
+    contacted: number;
+    qualified: number;
+    followUpsDue: number;
+  };
   submissions: { new: number };
-  recentProperties: Pick<AdminProperty, 'id' | 'title' | 'slug' | 'status' | 'monthlyRent' | 'createdAt'>[];
+  recentProperties: Pick<
+    AdminProperty,
+    'id' | 'title' | 'slug' | 'status' | 'monthlyRent' | 'createdAt'
+  >[];
   recentEnquiries: Pick<Enquiry, 'id' | 'leadId' | 'name' | 'status' | 'createdAt' | 'property'>[];
 };
 
