@@ -5,7 +5,6 @@ import { getFaqs } from '@/lib/api';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { Breadcrumbs, EmptyState, FaqList, JsonLd, faqJsonLd } from '@/components/ui';
 
-
 export const metadata: Metadata = pageMetadata({
   title: 'Frequently Asked Questions',
   description:

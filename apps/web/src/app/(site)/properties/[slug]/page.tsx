@@ -45,7 +45,6 @@ import {
 
 type Props = { params: Promise<{ slug: string }> };
 
-
 async function load(slug: string) {
   const res = await getProperty(slug);
   if (!res) notFound();

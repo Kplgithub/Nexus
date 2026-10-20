@@ -5,7 +5,6 @@ import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { Breadcrumbs, EmptyState, JsonLd } from '@/components/ui';
 import { MapPinIcon } from '@/components/icons';
 
-
 export const metadata: Metadata = pageMetadata({
   title: 'Rental Properties by Location',
   description: 'Browse NEXUS Estate rental listings by city and locality.',
