@@ -11,5 +11,7 @@ export async function runScript(name: string, fn: () => Promise<void>) {
     process.exitCode = 1;
   } finally {
     await disconnectDb().catch(() => undefined);
+    // Exit explicitly so open handles (log transports, timers) can never keep a script alive.
+    process.exit(process.exitCode ?? 0);
   }
 }
