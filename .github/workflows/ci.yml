@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          # Re-enable `cache: pnpm` once pnpm-lock.yaml is committed.
       - name: Install
         run: |
           if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          # Re-enable `cache: pnpm` once pnpm-lock.yaml is committed.
       - run: if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
       - run: pnpm --filter @nexus/shared build && pnpm --filter @nexus/api build && pnpm --filter @nexus/web build
       - name: Seed database
