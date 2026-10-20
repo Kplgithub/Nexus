@@ -1,5 +1,5 @@
 import path from 'node:path';
-import express from 'express';
+import express, { type Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
@@ -15,7 +15,7 @@ import { publicRouter } from './routes/public.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
 import { openApiDocument } from './docs/openapi.js';
 
-export function createApp() {
+export function createApp(): Express {
   const app = express();
 
   app.disable('x-powered-by');

@@ -1,4 +1,4 @@
-import { Router, type Response } from 'express';
+import { Router, type Response, type Router as RouterType } from 'express';
 import {
   ACTIVE_CATEGORIES,
   CATEGORIES,
@@ -22,7 +22,7 @@ import * as faqs from '../services/faq.service.js';
 import * as leads from '../services/enquiry.service.js';
 import { getPublicSettings } from '../services/settings.service.js';
 
-export const publicRouter = Router();
+export const publicRouter: RouterType = Router();
 
 const cache = (res: Response, seconds = env.PUBLIC_CACHE_SECONDS) =>
   res.set(

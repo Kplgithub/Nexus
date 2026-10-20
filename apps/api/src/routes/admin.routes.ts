@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import {
@@ -34,7 +34,7 @@ import { getDashboard } from '../services/dashboard.service.js';
 import { storeImage } from '../services/upload.service.js';
 import { audit } from '../services/support.service.js';
 
-export const adminRouter = Router();
+export const adminRouter: RouterType = Router();
 
 // Admin responses contain private data — never cache.
 adminRouter.use((_req, res, next) => {
