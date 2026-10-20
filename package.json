@@ -22,7 +22,7 @@
     "demo:remove": "pnpm --filter @nexus/api demo:remove"
   },
   "devDependencies": {
-    "prettier": "^3.6.0",
+    "prettier": "3.8.1",
     "typescript": "^5.9.0"
   }
 }
