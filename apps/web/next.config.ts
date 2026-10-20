@@ -20,7 +20,8 @@ const securityHeaders = [
 ];
 
 const config: NextConfig = {
-  output: 'standalone',
+  // Docker builds set NEXT_OUTPUT=standalone; `next start` (PM2, CI) uses the default output.
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ['@nexus/shared'],

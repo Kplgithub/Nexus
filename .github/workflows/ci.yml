@@ -113,7 +113,9 @@ jobs:
           npx --yes wait-on -t 90000 http://localhost:4000/api/v1/health http://localhost:3000/robots.txt || { scripts/ci-run.sh "Server start" bash -c "tail -n 60 api.log web.log; exit 1"; }
       - run: pnpm --filter @nexus/web exec playwright install --with-deps chromium
       - name: Playwright
-        run: scripts/ci-run.sh "E2E" pnpm --filter @nexus/web test:e2e
+        run: pnpm --filter @nexus/web test:e2e
+      - if: failure()
+        run: node scripts/playwright-summary.mjs apps/web/e2e-results.json
       - if: failure()
         run: scripts/ci-run.sh "Server logs" bash -c "tail -n 60 api.log web.log; exit 1"
       - if: always()

@@ -10,7 +10,7 @@ WORKDIR /repo
 FROM base AS build
 ARG NEXT_PUBLIC_SITE_URL
 ARG NEXT_PUBLIC_NOINDEX=false
-ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_NOINDEX=$NEXT_PUBLIC_NOINDEX
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_NOINDEX=$NEXT_PUBLIC_NOINDEX NEXT_OUTPUT=standalone
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
