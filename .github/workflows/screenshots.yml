@@ -1,0 +1,84 @@
+name: Screenshots
+
+# Captures every screen with demo data and publishes the PNGs to the
+# `ci-screenshots` branch for design review. Never touches main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+      - '.github/workflows/screenshots.yml'
+
+concurrency:
+  group: screenshots
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  screens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/nexus_screens
+      JWT_SECRET: ci-only-secret-ci-only-secret-ci-only-secret
+      CORS_ORIGINS: http://localhost:3000
+      PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      API_INTERNAL_URL: http://localhost:4000
+      UPLOAD_DRIVER: local
+      LOCAL_UPLOAD_PUBLIC_URL: http://localhost:4000/uploads
+      REVALIDATE_SECONDS: '1'
+      PUBLIC_CACHE_SECONDS: '0'
+      E2E_ADMIN_EMAIL: demo-admin@example.com
+      E2E_ADMIN_PASSWORD: Ci-Only-Password-123
+      SCREENSHOTS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start MongoDB
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:7
+          for i in $(seq 1 45); do
+            docker exec mongo mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' 2>/dev/null | grep -q 1 && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Build
+        run: scripts/ci-run.sh "Build" bash -c "pnpm --filter @nexus/shared build && pnpm --filter @nexus/api build && pnpm --filter @nexus/web build"
+      - name: Seed base, demo listings and admin
+        timeout-minutes: 5
+        run: |
+          scripts/ci-run.sh "Seed base" pnpm --filter @nexus/api seed:base
+          scripts/ci-run.sh "Seed demo" pnpm --filter @nexus/api seed:demo
+          ADMIN_EMAIL=$E2E_ADMIN_EMAIL ADMIN_PASSWORD=$E2E_ADMIN_PASSWORD ADMIN_NAME="Kapil (Demo Admin)" scripts/ci-run.sh "Seed admin" pnpm --filter @nexus/api seed:admin
+      - name: Start API and web
+        timeout-minutes: 5
+        run: |
+          (cd apps/api && NODE_ENV=development LOG_LEVEL=warn node dist/server.js > ../../api.log 2>&1 &)
+          (cd apps/web && pnpm start > ../../web.log 2>&1 &)
+          npx --yes wait-on -t 90000 http://localhost:4000/api/v1/health http://localhost:3000/robots.txt
+      - run: pnpm --filter @nexus/web exec playwright install --with-deps chromium
+      - name: Capture screens
+        run: pnpm --filter @nexus/web exec playwright test e2e/screens.spec.ts --retries=0
+      - if: failure()
+        run: node scripts/playwright-summary.mjs apps/web/e2e-results.json
+      - name: Publish to ci-screenshots branch
+        if: ${{ always() }}
+        run: |
+          cd apps/web/screens || exit 0
+          ls -1 | head -100
+          git init -q -b ci-screenshots
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Screenshots for ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-screenshots

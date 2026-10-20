@@ -45,3 +45,4 @@ backups/
 deploy/.env.production
 deploy/.releases
 e2e-results.json
+apps/web/screens/
