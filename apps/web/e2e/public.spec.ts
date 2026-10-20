@@ -6,7 +6,10 @@ test.describe('public site', () => {
     await expect(page.getByRole('img', { name: /NEXUS Estate/ }).first()).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.getByRole('search', { name: 'Find a rental' })).toBeVisible();
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/$/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /^https?:\/\/[^/]+\/?$/,
+    );
     const ld = await page.locator('script[type="application/ld+json"]').allTextContents();
     expect(ld.join('')).toContain('RealEstateAgent');
     expect(ld.join('')).not.toContain('aggregateRating');

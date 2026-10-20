@@ -21,21 +21,21 @@ test.describe('full rental journey', () => {
 
       // 1. Admin logs in
       await page.goto('/admin/login');
-      await page.getByLabel('Email').fill(email!);
-      await page.getByLabel('Password').fill(password!);
+      await page.getByLabel('Email', { exact: true }).fill(email!);
+      await page.getByLabel('Password', { exact: true }).fill(password!);
       await page.getByRole('button', { name: 'Sign in' }).click();
       await expect(page).toHaveURL(/\/admin$/);
 
       // 2. Creates a property
       await page.goto('/admin/properties/new');
-      await page.getByLabel('Title').fill(title);
-      await page.getByLabel('Category').selectOption(kind);
+      await page.getByLabel('Title', { exact: true }).fill(title);
+      await page.getByLabel('Category', { exact: true }).selectOption(kind);
       await page
-        .getByLabel('Property type')
+        .getByLabel('Property type', { exact: true })
         .selectOption(kind === 'residential' ? 'apartment' : 'office');
-      await page.getByLabel('City').selectOption('jaipur');
-      await page.getByLabel('Locality').selectOption('vaishali-nagar');
-      await page.getByLabel('Monthly rent (₹)').fill('21000');
+      await page.getByLabel('City', { exact: true }).selectOption('jaipur');
+      await page.getByLabel('Locality', { exact: true }).selectOption('vaishali-nagar');
+      await page.getByLabel('Monthly rent (₹)', { exact: true }).fill('21000');
       await page.getByLabel('Area', { exact: true }).fill('900');
       if (kind === 'residential') {
         await page.getByLabel(/^Bedrooms/).fill('2');
@@ -49,7 +49,7 @@ test.describe('full rental journey', () => {
 
       // 3. Uploads an image and publishes
       await page
-        .getByLabel('Add photos')
+        .getByLabel('Add photos', { exact: true })
         .setInputFiles({ name: 'room.png', mimeType: 'image/png', buffer: png });
       await page.getByRole('button', { name: /Upload 1 photo/ }).click();
       await expect(page.getByText(/1 photo\(s\) uploaded/)).toBeVisible();
@@ -69,9 +69,9 @@ test.describe('full rental journey', () => {
 
       // 7. Submits an enquiry
       await page.waitForTimeout(3000); // let the anti-bot timer pass like a real visitor
-      await page.getByLabel('Name').fill('E2E Visitor');
-      await page.getByLabel('Mobile number').fill('9829055555');
-      await page.getByLabel('Message').fill(`Interested — ${stamp}`);
+      await page.getByLabel('Name', { exact: true }).fill('E2E Visitor');
+      await page.getByLabel('Mobile number', { exact: true }).fill('9829055555');
+      await page.getByLabel('Message', { exact: true }).fill(`Interested — ${stamp}`);
       await page.getByRole('checkbox', { name: /agree to be contacted/ }).check();
       await page.getByRole('button', { name: 'Send enquiry' }).click();
       await expect(page.getByText('Enquiry received')).toBeVisible();
@@ -82,7 +82,7 @@ test.describe('full rental journey', () => {
       await page.getByPlaceholder(/Name, phone/).fill(ref!.trim());
       await page.getByRole('button', { name: 'Search' }).click();
       await page.getByRole('button', { name: ref!.trim() }).click();
-      await page.getByLabel('Status').last().selectOption('contacted');
+      await page.getByLabel('Status', { exact: true }).last().selectOption('contacted');
       await expect(page.getByText('Marked contacted')).toBeVisible();
     });
   }
