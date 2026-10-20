@@ -14,10 +14,13 @@ type SessionClaims = { sub: string; tv: number; role: AdminRole; csrf: string };
 
 export type AuthedAdmin = { id: string; email: string; name: string; role: AdminRole };
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    admin?: AuthedAdmin;
-    csrfToken?: string;
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      admin?: AuthedAdmin;
+      csrfToken?: string;
+    }
   }
 }
 

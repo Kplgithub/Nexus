@@ -312,6 +312,7 @@ export async function createSubmission(
   const leadId = await nextLeadId('L');
   await PropertySubmission.create({
     ...input,
+    leadId,
     phone,
     email: input.email ?? null,
     status: spam ? 'spam' : 'new',
