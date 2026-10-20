@@ -29,10 +29,16 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           # Re-enable `cache: pnpm` once pnpm-lock.yaml is committed.
       - name: Install
+        id: install
         run: |
-          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          else
+            echo "generated=true" >> "$GITHUB_OUTPUT"
+            pnpm install --no-frozen-lockfile
+          fi
       - name: Upload generated lockfile (first run only)
-        if: hashFiles('pnpm-lock.yaml') == ''
+        if: steps.install.outputs.generated == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: pnpm-lock
@@ -81,7 +87,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           # Re-enable `cache: pnpm` once pnpm-lock.yaml is committed.
-      - run: if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
+      - run: if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install --no-frozen-lockfile; fi
       - run: pnpm --filter @nexus/shared build && pnpm --filter @nexus/api build && pnpm --filter @nexus/web build
       - name: Seed database
         run: |
