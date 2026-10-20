@@ -23,7 +23,6 @@ import {
   LayersIcon,
 } from '@/components/icons';
 
-export const revalidate = 60;
 
 export const metadata: Metadata = pageMetadata({
   title: 'NEXUS Estate | Residential & Commercial Rentals in Jaipur',

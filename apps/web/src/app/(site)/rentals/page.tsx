@@ -5,7 +5,6 @@ import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { Breadcrumbs, EmptyState, JsonLd } from '@/components/ui';
 import { MapPinIcon } from '@/components/icons';
 
-export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata({
   title: 'Rental Properties by Location',

@@ -45,7 +45,6 @@ import {
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const revalidate = 60;
 
 async function load(slug: string) {
   const res = await getProperty(slug);

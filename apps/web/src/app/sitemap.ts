@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { getLocations, getSitemapProperties } from '@/lib/api';
 import { SITE_URL } from '@/lib/site';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 /**
  * Only real, indexable URLs: static pages, published public listings, and
