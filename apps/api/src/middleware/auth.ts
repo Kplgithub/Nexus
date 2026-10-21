@@ -24,7 +24,7 @@ declare global {
   }
 }
 
-const cookieBase = () => ({
+export const cookieBase = () => ({
   secure: env.COOKIE_SECURE || isProd,
   sameSite: 'lax' as const,
   path: '/',

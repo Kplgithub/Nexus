@@ -11,17 +11,28 @@ export function formatINR(amount: number): string {
   return inr.format(amount);
 }
 
+const trim = (n: number) => n.toFixed(2).replace(/\.?0+$/, '');
+
+/** Indian short form: ₹85,000 · ₹45 L · ₹1.25 Cr. */
+export function formatINRShort(amount: number): string {
+  if (amount >= 10_000_000) return `₹${trim(amount / 10_000_000)} Cr`;
+  if (amount >= 100_000) return `₹${trim(amount / 100_000)} L`;
+  return formatINR(amount);
+}
+
 /** Compact rent label: ₹25,000/month, or ₹1.2 L/month for large values. */
 export function formatRent(amount: number): string {
-  if (amount >= 100_000) {
-    const lakhs = amount / 100_000;
-    const shown =
-      lakhs >= 100
-        ? `${(lakhs / 100).toFixed(2).replace(/\.?0+$/, '')} Cr`
-        : `${lakhs.toFixed(2).replace(/\.?0+$/, '')} L`;
-    return `₹${shown}/month`;
-  }
-  return `${formatINR(amount)}/month`;
+  return `${formatINRShort(amount)}/month`;
+}
+
+/** Price label for a listing: "₹25,000/month" for rent, "₹45 L" for sale. */
+export function formatPrice(amount: number, listingType: 'rent' | 'sale'): string {
+  return listingType === 'rent' ? formatRent(amount) : formatINRShort(amount);
+}
+
+/** Price per square foot for sale listings, rounded to the rupee. */
+export function pricePerSqft(price: number, areaSqft: number): number | null {
+  return areaSqft > 0 ? Math.round(price / areaSqft) : null;
 }
 
 export function formatArea(value: number, unit: AreaUnit): string {

@@ -54,3 +54,25 @@ export async function notifyNewLead(
     logger.error({ err }, 'Lead notification email failed');
   }
 }
+
+/** Sends a plain message to one recipient. Returns false when mail is not configured or fails. */
+export async function sendMail(
+  to: string,
+  subject: string,
+  lines: string[],
+  link?: { label: string; url: string },
+) {
+  const t = getTransport();
+  if (!t) return false;
+  const text = [...lines, ...(link ? ['', `${link.label}: ${link.url}`] : [])].join('\n');
+  const html =
+    lines.map((l) => `<p>${esc(l)}</p>`).join('') +
+    (link ? `<p><a href="${esc(link.url)}">${esc(link.label)}</a></p>` : '');
+  try {
+    await t.sendMail({ from: env.MAIL_FROM, to, subject, text, html });
+    return true;
+  } catch (err) {
+    logger.error({ err }, 'Email send failed');
+    return false;
+  }
+}

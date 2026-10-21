@@ -6,6 +6,16 @@ import {
   AREA_UNITS,
   CATEGORIES,
   ENQUIRY_STATUSES,
+  FAQ_CATEGORIES,
+  LISTING_TYPES,
+  OTP_LENGTH,
+  OTP_PURPOSES,
+  OWNERSHIP_TYPES,
+  POSSESSION_STATUSES,
+  TRANSACTION_TYPES,
+  USER_ROLES,
+  USER_SETTABLE_STATUSES,
+  USER_STATUSES,
   ENQUIRY_TYPES,
   FURNISHING_STATUSES,
   LISTING_VISIBILITY,
@@ -17,7 +27,6 @@ import {
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
   SORT_OPTIONS,
-  SUBMISSION_STATUSES,
   TYPES_REQUIRING_ROOMS,
   type Category,
   type PropertyType,
@@ -109,14 +118,15 @@ const querySlug = z
  */
 export const propertySearchSchema = z
   .object({
+    listingType: queryEnum(LISTING_TYPES),
     category: queryEnum(CATEGORIES as unknown as readonly [Category, ...Category[]]),
     propertyType: csvList(
       ALL_PROPERTY_TYPES as unknown as readonly [PropertyType, ...PropertyType[]],
     ),
     city: querySlug,
     locality: querySlug,
-    minRent: queryNumber(0, MAX_MONEY_INR),
-    maxRent: queryNumber(0, MAX_MONEY_INR),
+    minPrice: queryNumber(0, MAX_MONEY_INR),
+    maxPrice: queryNumber(0, MAX_MONEY_INR),
     furnishing: csvList(FURNISHING_STATUSES),
     bedrooms: queryNumber(0, 10),
     bathrooms: queryNumber(0, 10),
@@ -126,6 +136,9 @@ export const propertySearchSchema = z
     parking: queryBool,
     availableNow: queryBool,
     featured: queryBool,
+    possession: queryEnum(POSSESSION_STATUSES),
+    postedBy: queryEnum(['owner', 'agent', 'builder', 'nexus'] as const),
+    verified: queryBool,
     q: z
       .string()
       .optional()
@@ -136,9 +149,11 @@ export const propertySearchSchema = z
   })
   .transform((q) => {
     // Swap inverted ranges instead of returning nothing.
-    if (q.minRent !== undefined && q.maxRent !== undefined && q.minRent > q.maxRent) {
-      [q.minRent, q.maxRent] = [q.maxRent, q.minRent];
+    if (q.minPrice !== undefined && q.maxPrice !== undefined && q.minPrice > q.maxPrice) {
+      [q.minPrice, q.maxPrice] = [q.maxPrice, q.minPrice];
     }
+    // Possession only applies to sale listings.
+    if (q.listingType !== 'sale') q.possession = undefined;
     if (q.minArea !== undefined && q.maxArea !== undefined && q.minArea > q.maxArea) {
       [q.minArea, q.maxArea] = [q.maxArea, q.minArea];
     }
@@ -181,20 +196,20 @@ export const propertyImageSchema = z.object({
   isDemo: z.boolean().optional(),
 });
 
-const propertyBase = z.object({
+/**
+ * Fields a signed-in user (owner, agent or builder) may set on their own listing.
+ * Admin-only fields are layered on top in `propertyBase`.
+ */
+const userPropertyFields = {
+  listingType: z.enum(LISTING_TYPES),
   title: plainText(8, 140),
-  slug: slug.optional(),
   description: plainText(30, 6000),
   highlights: z.array(plainText(2, 140)).max(12).default([]),
   category: z.enum(CATEGORIES),
   propertyType: z.enum(ALL_PROPERTY_TYPES as unknown as readonly [PropertyType, ...PropertyType[]]),
-  status: z.enum(PROPERTY_STATUSES).default('draft'),
-  /** "unlisted" = reachable by direct link only; hidden from search, home and sitemap. */
-  listingVisibility: z.enum(LISTING_VISIBILITY).default('public'),
 
   citySlug: slug,
   localitySlug: slug,
-  state: plainText(2, 60).default('Rajasthan'),
   /** Public-safe address line (e.g. "Near Gandhi Path, Vaishali Nagar"). Never the exact unit. */
   approvedAddress: plainText(0, 200).default(''),
   pincode: z
@@ -203,15 +218,28 @@ const propertyBase = z.object({
     .regex(/^\d{6}$/, 'Pincode must be 6 digits')
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  projectName: plainText(0, 120).optional(),
 
-  monthlyRent: money.min(1, 'Rent is required'),
-  rentNegotiable: z.boolean().default(false),
-  securityDeposit: optionalMoney,
+  /** Monthly rent for rent listings; total asking price for sale listings. Whole rupees. */
+  price: money.min(1, 'Price is required'),
+  priceNegotiable: z.boolean().default(false),
   maintenanceCharges: optionalMoney,
   maintenanceIncluded: z.boolean().default(false),
   brokerage: plainText(0, 120).optional(),
+
+  // Rent only
+  securityDeposit: optionalMoney,
   lockInMonths: count(120).nullable().optional(),
   rentalTerms: plainText(0, 2000).optional(),
+  preferredTenants: z.array(z.enum(PREFERRED_TENANTS)).max(5).default([]),
+  availableFrom: z.coerce.date().nullable().optional(),
+
+  // Sale only
+  possessionStatus: z.enum(POSSESSION_STATUSES).nullable().optional(),
+  possessionDate: z.coerce.date().nullable().optional(),
+  transactionType: z.enum(TRANSACTION_TYPES).nullable().optional(),
+  ownershipType: z.enum(OWNERSHIP_TYPES).nullable().optional(),
+  reraId: plainText(0, 60).optional(),
 
   areaValue: z.number().positive('Area must be positive').max(10_000_000),
   areaUnit: z.enum(AREA_UNITS),
@@ -228,20 +256,26 @@ const propertyBase = z.object({
   furnishingStatus: z.enum(FURNISHING_STATUSES),
   amenities: z.array(z.enum(AMENITIES)).max(AMENITIES.length).default([]),
   parking: z.enum(PARKING_OPTIONS).default('none'),
-  preferredTenants: z.array(z.enum(PREFERRED_TENANTS)).max(5).default([]),
   suitableFor: z.array(plainText(2, 60)).max(12).default([]),
   washrooms: count(50).nullable().optional(),
 
   images: z.array(propertyImageSchema).max(30).default([]),
   coverImageIndex: z.number().int().min(0).default(0),
+};
 
-  availableFrom: z.coerce.date().nullable().optional(),
+const propertyBase = z.object({
+  ...userPropertyFields,
+  slug: slug.optional(),
+  status: z.enum(PROPERTY_STATUSES).default('draft'),
+  /** "unlisted" = reachable by direct link only; hidden from search, home and sitemap. */
+  listingVisibility: z.enum(LISTING_VISIBILITY).default('public'),
+  state: plainText(2, 60).optional(),
   featured: z.boolean().default(false),
+  verified: z.boolean().default(false),
   isDemo: z.boolean().default(false),
-
   ownerReference: plainText(0, 200).optional(),
   internalNotes: plainText(0, 4000).optional(),
-
+  moderationNote: plainText(0, 1000).optional(),
   seoTitle: plainText(0, 70).optional(),
   seoDescription: plainText(0, 170).optional(),
 });
@@ -300,12 +334,18 @@ function refineProperty(p: Partial<PropertyBaseInput>, ctx: z.RefinementCtx) {
       message: 'Cover image must be one of the uploaded images',
     });
   }
-  if (p.status === 'published' && p.images && p.images.length === 0) {
+  if ((p.status === 'published' || p.status === 'pending') && p.images && p.images.length === 0) {
     ctx.addIssue({
       code: 'custom',
       path: ['images'],
       message: 'Add at least one photo before publishing',
     });
+  }
+  if (p.listingType === 'rent' && p.status === 'sold') {
+    ctx.addIssue({ code: 'custom', path: ['status'], message: 'A rental listing cannot be sold' });
+  }
+  if (p.listingType === 'sale' && p.status === 'rented') {
+    ctx.addIssue({ code: 'custom', path: ['status'], message: 'A sale listing cannot be rented' });
   }
 }
 
@@ -322,10 +362,33 @@ export const propertyValidateMerged = (merged: Partial<PropertyBaseInput>) =>
 
 export const propertyStatusChangeSchema = z.object({
   status: z.enum(PROPERTY_STATUSES),
+  /** Shown to the poster when a listing is rejected. */
+  note: plainText(0, 1000).optional(),
 });
+
+/* ---- Listings posted by signed-in users ---- */
+
+const userPropertyBase = z.object({
+  ...userPropertyFields,
+  /** "draft" saves without review; "pending" submits for review. */
+  status: z.enum(['draft', 'pending']).default('draft'),
+});
+
+export const userPropertyCreateSchema = userPropertyBase.strict().superRefine(refineProperty);
+export type UserPropertyCreate = z.output<typeof userPropertyCreateSchema>;
+export type UserPropertyCreateInput = z.input<typeof userPropertyCreateSchema>;
+export const userPropertyUpdateSchema = userPropertyBase.partial().strict();
+export type UserPropertyUpdate = z.output<typeof userPropertyUpdateSchema>;
+export const userPropertyStatusSchema = z.object({ status: z.enum(USER_SETTABLE_STATUSES) });
 
 export const adminPropertyQuerySchema = z.object({
   status: queryEnum(PROPERTY_STATUSES),
+  listingType: queryEnum(LISTING_TYPES),
+  postedBy: queryEnum(['nexus', 'users'] as const),
+  userId: z
+    .string()
+    .optional()
+    .transform((v) => (v && /^[a-f0-9]{24}$/i.test(v) ? v : undefined)),
   category: queryEnum(CATEGORIES),
   city: querySlug,
   featured: queryBool,
@@ -396,43 +459,6 @@ export const adminEnquiryQuerySchema = z.object({
   limit: queryNumber(1, 100).transform((v) => v ?? 20),
 });
 
-export const propertySubmissionCreateSchema = z.object({
-  ownerName: plainText(2, 80),
-  phone: z.string().trim().min(8).max(25),
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .max(120)
-    .email('Enter a valid email')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  relationship: z.enum(['owner', 'family', 'authorised-agent']).default('owner'),
-  category: z.enum(CATEGORIES),
-  propertyType: z.enum(ALL_PROPERTY_TYPES as unknown as readonly [PropertyType, ...PropertyType[]]),
-  city: plainText(2, 60),
-  locality: plainText(2, 80),
-  expectedRent: money.optional(),
-  areaValue: z.number().positive().max(10_000_000).optional(),
-  areaUnit: z.enum(AREA_UNITS).default('sqft'),
-  bedrooms: count(20).optional(),
-  furnishingStatus: z.enum(FURNISHING_STATUSES).optional(),
-  availableFrom: z.coerce.date().optional(),
-  description: plainText(0, 3000).default(''),
-  consent: z.literal(true, { error: 'Please agree to be contacted' }),
-  website: honeypot,
-  elapsedMs: z.number().int().min(0).max(86_400_000).optional(),
-});
-export type PropertySubmissionInput = z.input<typeof propertySubmissionCreateSchema>;
-
-export const submissionUpdateSchema = z
-  .object({
-    status: z.enum(SUBMISSION_STATUSES).optional(),
-    note: plainText(1, 2000).optional(),
-  })
-  .strict()
-  .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
-
 /* ------------------------------------------------------------------ */
 /* Auth                                                                */
 /* ------------------------------------------------------------------ */
@@ -455,6 +481,119 @@ export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(200),
   newPassword: passwordPolicy,
 });
+
+/* ---- Website users ---- */
+
+/** Users: at least 8 characters with a letter and a number. */
+export const userPasswordPolicy = z
+  .string()
+  .min(8, 'Use at least 8 characters')
+  .max(200)
+  .refine((v) => /[A-Za-z]/.test(v) && /\d/.test(v), 'Use at least one letter and one number');
+
+const email = z.string().trim().toLowerCase().max(120).email('Enter a valid email address');
+const phoneInput = z.string().trim().min(8, 'Enter a valid mobile number').max(25);
+
+export const signupSchema = z
+  .object({
+    role: z.enum(USER_ROLES),
+    name: plainText(2, 80),
+    email,
+    phone: phoneInput,
+    password: userPasswordPolicy,
+    /** Agency name for agents, company name for builders. */
+    companyName: plainText(0, 120).optional(),
+    reraNumber: plainText(0, 60).optional(),
+    citySlug: slug.optional().or(z.literal('').transform(() => undefined)),
+    acceptTerms: z.literal(true, { error: 'Please accept the terms to continue' }),
+    website: honeypot,
+  })
+  .superRefine((v, ctx) => {
+    if ((v.role === 'agent' || v.role === 'builder') && !v.companyName?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['companyName'],
+        message: v.role === 'agent' ? 'Enter your agency name' : 'Enter your company name',
+      });
+    }
+  });
+export type SignupInput = z.input<typeof signupSchema>;
+
+/** Email or mobile number plus password. */
+export const userLoginSchema = z.object({
+  identifier: z.string().trim().min(3, 'Enter your email or mobile number').max(120),
+  password: z.string().min(1, 'Enter your password').max(200),
+});
+
+export const otpRequestSchema = z.object({
+  phone: phoneInput,
+  purpose: z.enum(OTP_PURPOSES),
+});
+
+const otpCode = z
+  .string()
+  .trim()
+  .regex(new RegExp(`^\\d{${OTP_LENGTH}}$`), `Enter the ${OTP_LENGTH}-digit code`);
+
+export const otpLoginSchema = z.object({ phone: phoneInput, code: otpCode });
+export const otpVerifySchema = z.object({ code: otpCode });
+
+export const forgotPasswordSchema = z.object({
+  identifier: z.string().trim().min(3).max(120),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    /** Either a phone + OTP code, or an emailed reset token. */
+    phone: phoneInput.optional(),
+    code: otpCode.optional(),
+    token: z.string().trim().min(20).max(200).optional(),
+    password: userPasswordPolicy,
+  })
+  .refine((v) => Boolean(v.token) || Boolean(v.phone && v.code), 'Missing reset code');
+
+export const userChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(200),
+  newPassword: userPasswordPolicy,
+});
+
+export const profileUpdateSchema = z
+  .object({
+    name: plainText(2, 80),
+    email,
+    phone: phoneInput,
+    companyName: plainText(0, 120),
+    reraNumber: plainText(0, 60),
+    about: plainText(0, 1000),
+    citySlug: slug.or(z.literal('')),
+    /** Let signed-in visitors see this number on the user's listings. */
+    showPhone: z.boolean(),
+    whatsappEnabled: z.boolean(),
+  })
+  .partial()
+  .strict();
+
+export const adminUserQuerySchema = z.object({
+  role: queryEnum(USER_ROLES),
+  status: queryEnum(USER_STATUSES),
+  verified: queryBool,
+  q: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.trim().slice(0, 80) || undefined : undefined)),
+  page: queryNumber(1, 10_000).transform((v) => v ?? 1),
+  limit: queryNumber(1, 100).transform((v) => v ?? 20),
+});
+
+export const adminUserUpdateSchema = z
+  .object({
+    status: z.enum(USER_STATUSES),
+    /** Agents and builders whose documents the team has checked get a "Verified" badge. */
+    verified: z.boolean(),
+    note: plainText(0, 1000),
+  })
+  .partial()
+  .strict();
 
 /* ------------------------------------------------------------------ */
 /* Locations, FAQs, settings                                           */
@@ -486,7 +625,7 @@ export const cityUpdateSchema = cityCreateSchema.partial().strict();
 export const faqCreateSchema = z.object({
   question: plainText(5, 200),
   answer: plainText(5, 3000),
-  category: z.enum(['general', 'tenants', 'owners', 'commercial']).default('general'),
+  category: z.enum(FAQ_CATEGORIES).default('general'),
   sortOrder: z.number().int().min(0).max(1000).default(0),
   published: z.boolean().default(true),
   showOnHome: z.boolean().default(false),

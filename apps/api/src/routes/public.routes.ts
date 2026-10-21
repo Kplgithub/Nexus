@@ -6,8 +6,9 @@ import {
   PROPERTY_TYPE_LABELS,
   SLUG_PATTERN,
   enquiryCreateSchema,
+  FAQ_CATEGORIES,
+  INDIAN_STATES,
   propertySearchSchema,
-  propertySubmissionCreateSchema,
   type CategoryInfo,
 } from '@nexus/shared';
 import { env } from '../config/env.js';
@@ -16,6 +17,7 @@ import { limiters } from '../middleware/security.js';
 import { created, ok } from '../lib/respond.js';
 import { notFound } from '../lib/errors.js';
 import { hashIp } from '../lib/crypto.js';
+import { optionalUser } from '../middleware/user-auth.js';
 import * as properties from '../services/property.service.js';
 import * as locations from '../services/location.service.js';
 import * as faqs from '../services/faq.service.js';
@@ -84,7 +86,7 @@ publicRouter.get('/categories', (_req, res) => {
 
 publicRouter.get('/faqs', async (req, res) => {
   const category = typeof req.query.category === 'string' ? req.query.category : undefined;
-  const allowed = ['general', 'tenants', 'owners', 'commercial'];
+  const allowed: readonly string[] = FAQ_CATEGORIES;
   cache(res);
   ok(
     res,
@@ -100,25 +102,18 @@ publicRouter.get('/settings', async (_req, res) => {
   ok(res, await getPublicSettings());
 });
 
-publicRouter.post('/enquiries', limiters.publicForm, async (req, res) => {
-  const input = parseBody(enquiryCreateSchema, req);
-  const result = await leads.createEnquiry(input, {
-    ipHash: hashIp(req.ip),
-    userAgent: req.get('user-agent'),
-  });
-  res.set('Cache-Control', 'no-store');
-  created(res, { leadId: result.leadId, message: 'Thank you. Our team will contact you shortly.' });
+publicRouter.get('/states', (_req, res) => {
+  cache(res, 3600);
+  ok(res, INDIAN_STATES);
 });
 
-publicRouter.post('/property-submissions', limiters.publicForm, async (req, res) => {
-  const input = parseBody(propertySubmissionCreateSchema, req);
-  const result = await leads.createSubmission(input, {
-    ipHash: hashIp(req.ip),
-    userAgent: req.get('user-agent'),
-  });
+publicRouter.post('/enquiries', limiters.publicForm, optionalUser, async (req, res) => {
+  const input = parseBody(enquiryCreateSchema, req);
+  const result = await leads.createEnquiry(
+    input,
+    { ipHash: hashIp(req.ip), userAgent: req.get('user-agent') },
+    req.user,
+  );
   res.set('Cache-Control', 'no-store');
-  created(res, {
-    leadId: result.leadId,
-    message: 'Thank you. Our team will review your property and call you.',
-  });
+  created(res, { leadId: result.leadId, message: 'Thank you. We will contact you shortly.' });
 });

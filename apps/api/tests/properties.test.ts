@@ -50,12 +50,10 @@ describe('property creation and validation', () => {
   });
 
   it('rejects negative or fractional rent', async () => {
-    expect(
-      (await s.post('/api/v1/admin/properties', residential({ monthlyRent: -5 }))).status,
-    ).toBe(422);
-    expect(
-      (await s.post('/api/v1/admin/properties', residential({ monthlyRent: 1000.5 }))).status,
-    ).toBe(422);
+    expect((await s.post('/api/v1/admin/properties', residential({ price: -5 }))).status).toBe(422);
+    expect((await s.post('/api/v1/admin/properties', residential({ price: 1000.5 }))).status).toBe(
+      422,
+    );
   });
 
   it('rejects unknown localities', async () => {
@@ -79,11 +77,11 @@ describe('property creation and validation', () => {
 
   it('PATCH does not reset fields that were not sent', async () => {
     const p = await create(residential({ status: 'published', featured: true }));
-    const res = await s.patch(`/api/v1/admin/properties/${p.id}`, { monthlyRent: 19000 });
+    const res = await s.patch(`/api/v1/admin/properties/${p.id}`, { price: 19000 });
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('published');
     expect(res.body.data.featured).toBe(true);
-    expect(res.body.data.monthlyRent).toBe(19000);
+    expect(res.body.data.price).toBe(19000);
   });
 
   it('normalises area to sq ft', async () => {
@@ -160,7 +158,7 @@ describe('public search and filtering', () => {
       residential({
         status: 'published',
         title: 'Budget 1 BHK flat',
-        monthlyRent: 9000,
+        price: 9000,
         bedrooms: 1,
         bathrooms: 1,
       }),
@@ -169,7 +167,7 @@ describe('public search and filtering', () => {
       residential({
         status: 'published',
         title: 'Family 3 BHK flat',
-        monthlyRent: 30000,
+        price: 30000,
         bedrooms: 3,
         bathrooms: 2,
         furnishingStatus: 'furnished',
@@ -180,7 +178,7 @@ describe('public search and filtering', () => {
         status: 'published',
         title: 'Two bedroom flat',
         localitySlug: 'malviya-nagar',
-        monthlyRent: 18000,
+        price: 18000,
         amenities: ['gym'],
       }),
     );
@@ -190,7 +188,7 @@ describe('public search and filtering', () => {
         status: 'published',
         title: 'Retail shop on main road',
         propertyType: 'shop',
-        monthlyRent: 40000,
+        price: 40000,
         parking: 'none',
       }),
     );
@@ -204,8 +202,8 @@ describe('public search and filtering', () => {
   });
 
   it('filters by rent range', async () => {
-    const r = await search('category=residential&minRent=10000&maxRent=25000');
-    expect(r.body.data.map((p: { monthlyRent: number }) => p.monthlyRent)).toEqual([18000]);
+    const r = await search('category=residential&minPrice=10000&maxPrice=25000');
+    expect(r.body.data.map((p: { price: number }) => p.price)).toEqual([18000]);
   });
 
   it('filters by city and locality', async () => {
@@ -226,26 +224,22 @@ describe('public search and filtering', () => {
   });
 
   it('sorts by rent', async () => {
-    const asc = (await search('sort=rent_asc')).body.data.map(
-      (p: { monthlyRent: number }) => p.monthlyRent,
-    );
+    const asc = (await search('sort=price_asc')).body.data.map((p: { price: number }) => p.price);
     expect(asc).toEqual([...asc].sort((a: number, b: number) => a - b));
-    const desc = (await search('sort=rent_desc')).body.data.map(
-      (p: { monthlyRent: number }) => p.monthlyRent,
-    );
+    const desc = (await search('sort=price_desc')).body.data.map((p: { price: number }) => p.price);
     expect(desc[0]).toBe(85000);
   });
 
   it('paginates on the server', async () => {
-    const p1 = await search('limit=2&page=1&sort=rent_asc');
-    const p2 = await search('limit=2&page=2&sort=rent_asc');
+    const p1 = await search('limit=2&page=1&sort=price_asc');
+    const p2 = await search('limit=2&page=2&sort=price_asc');
     expect(p1.body.data).toHaveLength(2);
     expect(p1.body.meta.totalPages).toBe(3);
     expect(p1.body.data[0].id).not.toBe(p2.body.data[0].id);
   });
 
   it('handles invalid filters gracefully', async () => {
-    const r = await search('category=castle&minRent=abc&page=-3&sort=random&limit=9999');
+    const r = await search('category=castle&minPrice=abc&page=-3&sort=random&limit=9999');
     expect(r.status).toBe(200);
     expect(r.body.meta.limit).toBe(48);
   });
@@ -257,7 +251,7 @@ describe('public search and filtering', () => {
   });
 
   it('returns similar properties on the detail page', async () => {
-    const list = await search('category=residential&sort=rent_asc');
+    const list = await search('category=residential&sort=price_asc');
     const detail = await request(app).get(`/api/v1/properties/${list.body.data[1].slug}`);
     expect(detail.body.data.similar.length).toBeGreaterThan(0);
     expect(

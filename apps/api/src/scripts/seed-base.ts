@@ -1,144 +1,85 @@
 /**
- * Idempotent base content: the launch city, its localities, starter FAQs and
- * default site settings. Safe to run repeatedly — existing records are kept.
+ * Idempotent base content: starter FAQs and default site settings. Safe to run
+ * repeatedly — existing records are kept. Locations are NOT created here: add
+ * them in Admin → Locations (or run `pnpm seed:locations` for sample data).
  *
- * Locality and FAQ copy is a starting draft. Review it before launch.
+ * FAQ copy is a starting draft. Review it before launch.
  */
-import { slugify } from '@nexus/shared';
-import { City, Faq, SiteSettings } from '../models/misc.models.js';
+import { Faq, SiteSettings } from '../models/misc.models.js';
 import { DEFAULT_SETTINGS } from '../services/settings.service.js';
 import { runScript } from './run.js';
-
-const JAIPUR_LOCALITIES: { name: string; intro?: string }[] = [
-  {
-    name: 'Vaishali Nagar',
-    intro:
-      'Vaishali Nagar is a large, well-established residential area in west Jaipur with a mix of apartments, builder floors and independent houses, along with busy shopping streets suited to retail and small offices.',
-  },
-  {
-    name: 'Malviya Nagar',
-    intro:
-      'Malviya Nagar in south Jaipur combines residential sectors with commercial stretches along its main roads, making it a common choice for both family homes and storefronts.',
-  },
-  {
-    name: 'Jagatpura',
-    intro:
-      'Jagatpura in south-east Jaipur has seen steady growth in apartment projects and is popular with working professionals and students looking for newer housing.',
-  },
-  {
-    name: 'C-Scheme',
-    intro:
-      'C-Scheme is one of central Jaipur’s best-known addresses, with offices, showrooms and premium residences close to key roads such as Ashok Marg and Prithviraj Road.',
-  },
-  { name: 'Mansarovar' },
-  { name: 'Raja Park' },
-  { name: 'Bani Park' },
-  { name: 'Tonk Road' },
-  { name: 'Civil Lines' },
-  { name: 'Durgapura' },
-  { name: 'Ajmer Road' },
-  { name: 'Jawahar Nagar' },
-  { name: 'Sodala' },
-  { name: 'Nirman Nagar' },
-  { name: 'Sitapura' },
-];
 
 const FAQS = [
   {
     category: 'general',
     showOnHome: true,
-    question: 'What kind of properties does NEXUS Estate help with?',
+    question: 'What can I do on NEXUS Estate?',
     answer:
-      'We help with residential rentals such as flats, independent houses, builder floors and villas, and commercial rentals such as offices, shops and showrooms. Tell us what you need and our team will share suitable options.',
+      'Search homes and commercial spaces to buy or rent, save the ones you like, and contact the owner, agent or builder. Owners, agents and builders can create a free account to post their properties.',
   },
   {
-    category: 'tenants',
+    category: 'general',
     showOnHome: true,
-    question: 'How do I arrange a property visit?',
+    question: 'Which type of account should I choose?',
     answer:
-      'Use the enquiry form on any listing, call us, or message us on WhatsApp. We will confirm availability with the owner and suggest a visit time that works for you.',
+      'Choose “Buyer / Owner / Tenant” if you are looking for a property or want to sell or rent out your own. Choose “Agent” if you list properties for clients, and “Builder” if you are a developer listing projects.',
   },
   {
-    category: 'tenants',
+    category: 'owners',
     showOnHome: true,
-    question: 'Are the listed rents final?',
+    question: 'How do I post my property?',
     answer:
-      'The listed rent is what the owner has asked for. Some listings are marked negotiable. Deposit, maintenance and other terms are shown where the owner has shared them, and our team will confirm everything before you commit.',
+      'Sign up or log in, click “Post Property”, fill in the details and add photos. Our team reviews every listing before it goes live, usually within one working day.',
+  },
+  {
+    category: 'owners',
+    showOnHome: false,
+    question: 'Will my phone number be shown publicly?',
+    answer:
+      'No. Your number is never printed on the page. Only signed-in visitors can choose to view it, and you can turn this off in your profile so people contact you through the enquiry form instead.',
+  },
+  {
+    category: 'buyers',
+    showOnHome: true,
+    question: 'Are the listed prices final?',
+    answer:
+      'Prices are set by the owner, agent or builder. Listings marked “negotiable” are open to offers. Always confirm the price, charges and documents directly before you commit.',
+  },
+  {
+    category: 'buyers',
+    showOnHome: false,
+    question: 'What does “Verified” mean?',
+    answer:
+      'A verified badge on a listing means our team has checked the property details. A verified badge on an agent or builder means we have checked their business details.',
   },
   {
     category: 'tenants',
     showOnHome: false,
     question: 'What documents will I need to rent a home?',
     answer:
-      'Owners usually ask for identity and address proof, and sometimes proof of employment or income. Requirements vary by owner, so we will tell you exactly what is needed for the property you choose.',
+      'Owners usually ask for identity and address proof, and sometimes proof of employment or income. Requirements vary, so confirm with the owner or agent for the property you choose.',
   },
   {
-    category: 'owners',
-    showOnHome: true,
-    question: 'I own a property. How do I list it with NEXUS?',
-    answer:
-      'Fill in the “List Your Property” form or call us. Our team will contact you to understand the property, arrange photographs if needed, and agree the details before anything is published.',
-  },
-  {
-    category: 'owners',
+    category: 'agents',
     showOnHome: false,
-    question: 'Will my personal contact details be shown on the website?',
+    question: 'Can agents and builders post many properties?',
     answer:
-      'No. Enquiries come to the NEXUS team first. We do not publish owners’ phone numbers or exact unit addresses on the website.',
+      'Yes. Agent and builder accounts can keep many listings live at once and receive every enquiry in their dashboard. Add your RERA registration in your profile to apply for a verified badge.',
   },
   {
     category: 'commercial',
     showOnHome: false,
-    question: 'Can you help find office or retail space for a business?',
+    question: 'Can I find offices and shops here?',
     answer:
-      'Yes. Share your preferred area, size, budget and the type of business, and we will shortlist offices, shops or showrooms that suit how you plan to use the space.',
-  },
-  {
-    category: 'general',
-    showOnHome: false,
-    question: 'Which areas do you cover?',
-    answer:
-      'We are starting in Jaipur, Rajasthan. The areas we currently list are shown on our locations pages, and we are happy to discuss requirements in other parts of the city.',
+      'Yes. Use the Commercial filter to find offices, shops, showrooms and co-working spaces for rent or sale, and compare area, parking and power backup.',
   },
 ] as const;
 
 await runScript('seed:base', async () => {
-  const exists = await City.findOne({ slug: 'jaipur' });
-  if (!exists) {
-    await City.create({
-      name: 'Jaipur',
-      slug: 'jaipur',
-      state: 'Rajasthan',
-      active: true,
-      sortOrder: 0,
-      intro:
-        'Jaipur offers a wide range of rental options, from apartments and independent houses in established residential colonies to offices, shops and showrooms along the city’s main commercial roads. Browse current NEXUS listings below or tell us what you are looking for.',
-      localities: JAIPUR_LOCALITIES.map((l) => ({
-        name: l.name,
-        slug: slugify(l.name),
-        active: true,
-        intro: l.intro ?? '',
-      })),
-    });
-    console.warn('Created Jaipur with', JAIPUR_LOCALITIES.length, 'localities');
-  } else {
-    let added = 0;
-    for (const l of JAIPUR_LOCALITIES) {
-      const slug = slugify(l.name);
-      if (!exists.localities.some((x) => x.slug === slug)) {
-        exists.localities.push({ name: l.name, slug, active: true, intro: l.intro ?? '' });
-        added++;
-      }
-    }
-    if (added) await exists.save();
-    console.warn(`Jaipur exists; added ${added} missing localities`);
-  }
-
   if ((await Faq.countDocuments()) === 0) {
     await Faq.insertMany(FAQS.map((f, i) => ({ ...f, sortOrder: i, published: true })));
     console.warn('Created', FAQS.length, 'FAQs');
   }
-
   await SiteSettings.updateOne(
     { key: 'site' },
     { $setOnInsert: { key: 'site', data: DEFAULT_SETTINGS } },

@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "seed:admin": "tsx --env-file-if-exists=.env src/scripts/seed-admin.ts",
     "seed:base": "tsx --env-file-if-exists=.env src/scripts/seed-base.ts",
+    "seed:locations": "tsx --env-file-if-exists=.env src/scripts/seed-locations.ts",
     "seed:demo": "tsx --env-file-if-exists=.env src/scripts/seed-demo.ts",
     "demo:remove": "tsx --env-file-if-exists=.env src/scripts/remove-demo.ts",
     "db:indexes": "tsx --env-file-if-exists=.env src/scripts/sync-indexes.ts"

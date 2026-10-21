@@ -95,15 +95,33 @@ export async function getPublicCity(slug: string): Promise<CityDto> {
 }
 
 /** Resolve slugs to display names for a property. Throws 400 if the location isn't configured. */
-export async function resolveLocation(citySlug: string, localitySlug: string) {
+/**
+ * Resolve slugs to display names. Staff may use inactive locations (to prepare
+ * listings before an area launches); users may only post in active ones.
+ */
+export async function resolveLocation(
+  citySlug: string,
+  localitySlug: string,
+  opts: { activeOnly?: boolean } = {},
+) {
   const city = await City.findOne({ slug: citySlug }).lean<CityLean>();
-  if (!city)
-    throw badRequest('Unknown city', { citySlug: ['Add this city under Locations first'] });
-  const locality = city.localities.find((l) => l.slug === localitySlug);
-  if (!locality)
-    throw badRequest('Unknown locality', {
-      localitySlug: ['Add this locality under Locations first'],
+  if (!city || (opts.activeOnly && !city.active)) {
+    throw badRequest('Unknown city', {
+      citySlug: [
+        opts.activeOnly ? 'Choose a city from the list' : 'Add this city under Locations first',
+      ],
     });
+  }
+  const locality = city.localities.find((l) => l.slug === localitySlug);
+  if (!locality || (opts.activeOnly && !locality.active)) {
+    throw badRequest('Unknown locality', {
+      localitySlug: [
+        opts.activeOnly
+          ? 'Choose a locality from the list'
+          : 'Add this locality under Locations first',
+      ],
+    });
+  }
   return { cityName: city.name, localityName: locality.name, state: city.state };
 }
 

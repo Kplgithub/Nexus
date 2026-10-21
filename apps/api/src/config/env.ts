@@ -25,6 +25,18 @@ const envSchema = z
 
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
     SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(12),
+    /** Website user sessions (buyers, owners, agents, builders). */
+    USER_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+
+    /**
+     * SMS for one-time passwords.
+     *   disabled — OTP sign-in hidden; phone numbers are not verified.
+     *   console  — development only: codes are logged and returned in API responses.
+     *   msg91    — production SMS via MSG91 (DLT-approved OTP template required).
+     */
+    SMS_DRIVER: z.enum(['disabled', 'console', 'msg91']).default('disabled'),
+    MSG91_AUTH_KEY: z.string().optional(),
+    MSG91_TEMPLATE_ID: z.string().optional(),
     COOKIE_SECURE: bool,
     COOKIE_DOMAIN: z.string().optional(),
 
@@ -67,12 +79,25 @@ const envSchema = z
           message: 'COOKIE_SECURE must be true in production',
         });
       }
+      if (env.SMS_DRIVER === 'console') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['SMS_DRIVER'],
+          message: 'The console SMS driver exposes codes and is not allowed in production',
+        });
+      }
       if (env.CORS_ORIGINS.includes('*')) {
         ctx.addIssue({
           code: 'custom',
           path: ['CORS_ORIGINS'],
           message: 'Wildcard CORS is not allowed in production',
         });
+      }
+    }
+    if (env.SMS_DRIVER === 'msg91') {
+      for (const key of ['MSG91_AUTH_KEY', 'MSG91_TEMPLATE_ID'] as const) {
+        if (!env[key])
+          ctx.addIssue({ code: 'custom', path: [key], message: `${key} is required for msg91` });
       }
     }
     if (env.UPLOAD_DRIVER === 'cloudinary') {
@@ -112,3 +137,4 @@ export const corsOrigins = env.CORS_ORIGINS.split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 export const mailEnabled = Boolean(env.SMTP_HOST && env.MAIL_FROM);
+export const otpEnabled = env.SMS_DRIVER !== 'disabled';

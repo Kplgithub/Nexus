@@ -59,4 +59,8 @@ export const limiters = {
     'Too many submissions from this network. Please call us instead.',
   ),
   upload: make(60_000, 40, 'Too many uploads. Please wait a minute.'),
+  userLogin: make(15 * 60_000, 20, 'Too many sign-in attempts. Try again in 15 minutes.'),
+  signup: make(60 * 60_000, 10, 'Too many sign-ups from this network. Try again later.'),
+  otp: make(15 * 60_000, 10, 'Too many code requests. Try again in 15 minutes.'),
+  userWrite: make(60_000, 60, 'Too many requests. Please slow down.'),
 };

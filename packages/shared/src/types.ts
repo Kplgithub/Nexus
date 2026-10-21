@@ -6,13 +6,20 @@ import type {
   Category,
   EnquiryStatus,
   EnquiryType,
+  FaqCategory,
   FurnishingStatus,
+  ListingType,
+  OwnershipType,
   ParkingOption,
+  PossessionStatus,
+  PosterType,
   PreferredTenant,
   PropertyStatus,
   PropertyType,
   SortOption,
-  SubmissionStatus,
+  TransactionType,
+  UserRole,
+  UserStatus,
 } from './constants.js';
 
 /** Envelope used by every API response. */
@@ -39,28 +46,49 @@ export type PropertyImage = {
   isDemo?: boolean;
 };
 
+/** Public information about whoever posted a listing. Phone numbers are never included. */
+export type ListingPoster = {
+  type: PosterType;
+  /** Person or company name; null for listings posted by NEXUS. */
+  name: string | null;
+  companyName: string | null;
+  verified: boolean;
+  /** True when a signed-in visitor may reveal this poster's phone number. */
+  canRevealPhone: boolean;
+  memberSince: string | null;
+};
+
 /** Public-safe projection of a property. Never contains owner details or internal notes. */
 export type PublicProperty = {
   id: string;
   slug: string;
+  listingType: ListingType;
   title: string;
   description: string;
   highlights: string[];
   category: Category;
   propertyType: PropertyType;
-  status: Extract<PropertyStatus, 'published' | 'rented'>;
+  status: Extract<PropertyStatus, 'published' | 'rented' | 'sold'>;
   city: { slug: string; name: string };
   locality: { slug: string; name: string };
   state: string;
   approvedAddress: string;
-  monthlyRent: number;
-  rentNegotiable: boolean;
+  projectName: string | null;
+  /** Monthly rent for rent listings, total asking price for sale listings. */
+  price: number;
+  priceNegotiable: boolean;
+  pricePerSqft: number | null;
   securityDeposit: number | null;
   maintenanceCharges: number | null;
   maintenanceIncluded: boolean;
   brokerage: string | null;
   lockInMonths: number | null;
   rentalTerms: string | null;
+  possessionStatus: PossessionStatus | null;
+  possessionDate: string | null;
+  transactionType: TransactionType | null;
+  ownershipType: OwnershipType | null;
+  reraId: string | null;
   areaValue: number;
   areaUnit: AreaUnit;
   areaType: AreaType;
@@ -82,7 +110,9 @@ export type PublicProperty = {
   coverImage: PropertyImage | null;
   availableFrom: string | null;
   featured: boolean;
+  verified: boolean;
   isDemo: boolean;
+  poster: ListingPoster;
   seoTitle: string | null;
   seoDescription: string | null;
   publishedAt: string | null;
@@ -93,36 +123,48 @@ export type PropertyCard = Pick<
   PublicProperty,
   | 'id'
   | 'slug'
+  | 'listingType'
   | 'title'
   | 'category'
   | 'propertyType'
   | 'status'
   | 'city'
   | 'locality'
-  | 'monthlyRent'
+  | 'projectName'
+  | 'price'
+  | 'pricePerSqft'
   | 'areaValue'
   | 'areaUnit'
   | 'bedrooms'
   | 'bathrooms'
   | 'furnishingStatus'
+  | 'possessionStatus'
   | 'coverImage'
   | 'featured'
+  | 'verified'
   | 'isDemo'
   | 'availableFrom'
   | 'publishedAt'
->;
+> & { posterType: PosterType; imageCount: number };
 
-export type AdminProperty = Omit<PublicProperty, 'status'> & {
+/** A user's view of their own listing. */
+export type OwnListing = Omit<PublicProperty, 'status' | 'poster'> & {
   status: PropertyStatus;
-  listingVisibility: 'public' | 'unlisted';
   citySlug: string;
   localitySlug: string;
   pincode: string | null;
   coverImageIndex: number;
+  moderationNote: string | null;
+  createdAt: string;
+  enquiryCount: number;
+};
+
+export type AdminProperty = OwnListing & {
+  listingVisibility: 'public' | 'unlisted';
   ownerReference: string | null;
   internalNotes: string | null;
-  createdAt: string;
-  enquiryCount?: number;
+  postedBy: { id: string; name: string; role: UserRole; email: string; phone: string } | null;
+  poster: ListingPoster;
 };
 
 export type Locality = {
@@ -153,7 +195,7 @@ export type Faq = {
   id: string;
   question: string;
   answer: string;
-  category: 'general' | 'tenants' | 'owners' | 'commercial';
+  category: FaqCategory;
   sortOrder: number;
   published: boolean;
   showOnHome: boolean;
@@ -187,6 +229,9 @@ export type SiteSettings = {
   enquiryNotificationEmail?: string;
 };
 
+/** What the sign-in screens can offer, based on server configuration. */
+export type AuthConfig = { otpEnabled: boolean; emailResetEnabled: boolean };
+
 export type EnquiryNote = { text: string; by: string; at: string };
 
 export type Enquiry = {
@@ -207,39 +252,68 @@ export type Enquiry = {
   consentAt: string;
   createdAt: string;
   updatedAt: string;
+  /** Set when the visitor was signed in. */
+  userId: string | null;
+  /** Set when the listing belongs to a user (owner/agent/builder). */
+  listingOwner: { id: string; name: string } | null;
 };
 
-export type PropertySubmission = {
+/** An enquiry as seen by the user who posted the listing. */
+export type ReceivedLead = Pick<
+  Enquiry,
+  'id' | 'leadId' | 'type' | 'name' | 'phone' | 'email' | 'message' | 'property' | 'createdAt'
+> & { seen: boolean };
+
+/** An enquiry as seen by the visitor who sent it. */
+export type SentEnquiry = Pick<
+  Enquiry,
+  'id' | 'leadId' | 'type' | 'message' | 'property' | 'createdAt'
+>;
+
+export type AdminUser = { id: string; email: string; name: string; role: AdminRole };
+
+/** The signed-in website user. */
+export type SessionUser = {
   id: string;
-  leadId: string;
-  ownerName: string;
+  role: UserRole;
+  name: string;
+  email: string;
   phone: string;
-  email: string | null;
-  relationship: string;
-  category: Category;
-  propertyType: PropertyType;
-  city: string;
-  locality: string;
-  expectedRent: number | null;
-  areaValue: number | null;
-  areaUnit: AreaUnit;
-  bedrooms: number | null;
-  furnishingStatus: FurnishingStatus | null;
-  availableFrom: string | null;
-  description: string;
-  status: SubmissionStatus;
-  notes: EnquiryNote[];
+  phoneVerified: boolean;
+  companyName: string | null;
+  reraNumber: string | null;
+  about: string | null;
+  citySlug: string | null;
+  showPhone: boolean;
+  whatsappEnabled: boolean;
+  verified: boolean;
   createdAt: string;
 };
 
-export type AdminUser = { id: string; email: string; name: string; role: AdminRole };
+export type AdminWebsiteUser = SessionUser & {
+  status: UserStatus;
+  lastLoginAt: string | null;
+  listingCount: number;
+  notes: EnquiryNote[];
+};
+
+export type UserDashboard = {
+  listings: Record<PropertyStatus, number> & { total: number };
+  leads: { total: number; unseen: number };
+  saved: number;
+  enquiriesSent: number;
+  listingLimit: number;
+  recentLeads: ReceivedLead[];
+};
 
 export type DashboardStats = {
   properties: {
     total: number;
     published: number;
+    pending: number;
     draft: number;
     rented: number;
+    sold: number;
     inactive: number;
     archived: number;
     demo: number;
@@ -251,10 +325,10 @@ export type DashboardStats = {
     qualified: number;
     followUpsDue: number;
   };
-  submissions: { new: number };
+  users: { total: number; individual: number; agent: number; builder: number; newThisWeek: number };
   recentProperties: Pick<
     AdminProperty,
-    'id' | 'title' | 'slug' | 'status' | 'monthlyRent' | 'createdAt'
+    'id' | 'title' | 'slug' | 'status' | 'price' | 'listingType' | 'createdAt'
   >[];
   recentEnquiries: Pick<Enquiry, 'id' | 'leadId' | 'name' | 'status' | 'createdAt' | 'property'>[];
 };

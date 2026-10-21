@@ -76,12 +76,12 @@ describe('end-to-end journey (API level)', () => {
         bathrooms: 2,
         localitySlug: 'vaishali-nagar',
       },
-      'category=residential&city=jaipur&minRent=10000&maxRent=25000&bedrooms=2',
+      'category=residential&city=jaipur&minPrice=10000&maxPrice=25000&bedrooms=2',
     ],
     [
       'commercial',
       { category: 'commercial', propertyType: 'office', localitySlug: 'c-scheme' },
-      'category=commercial&city=jaipur&locality=c-scheme&propertyType=office&maxRent=25000',
+      'category=commercial&city=jaipur&locality=c-scheme&propertyType=office&maxPrice=25000',
     ],
   ])(
     '%s: create → upload → publish → search → view → enquire → manage',
@@ -91,8 +91,9 @@ describe('end-to-end journey (API level)', () => {
         title: 'Journey test listing for verification',
         description:
           'A listing created during the automated journey test to verify the full workflow end to end.',
+        listingType: 'rent',
         citySlug: 'jaipur',
-        monthlyRent: 20000,
+        price: 20000,
         areaValue: 900,
         areaUnit: 'sqft',
         furnishingStatus: 'semi-furnished',

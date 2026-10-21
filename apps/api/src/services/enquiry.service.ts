@@ -1,23 +1,27 @@
 import type { FilterQuery, Types } from 'mongoose';
 import type { z } from 'zod';
+import { Types as MTypes } from 'mongoose';
 import {
+  PUBLIC_DETAIL_STATUSES,
   normalizePhone,
   type Enquiry as EnquiryDto,
-  type PropertySubmission as SubmissionDto,
+  type ReceivedLead,
+  type SentEnquiry,
   type adminEnquiryQuerySchema,
   type enquiryCreateSchema,
   type enquiryUpdateSchema,
-  type propertySubmissionCreateSchema,
-  type submissionUpdateSchema,
 } from '@nexus/shared';
-import { Enquiry, PropertySubmission } from '../models/misc.models.js';
+import { Enquiry } from '../models/misc.models.js';
 import { Property } from '../models/property.model.js';
-import { badRequest, notFound } from '../lib/errors.js';
+import { User } from '../models/user.model.js';
+import { otpEnabled, env } from '../config/env.js';
+import { AppError, badRequest, forbidden, notFound } from '../lib/errors.js';
+import type { AuthedUser } from '../middleware/user-auth.js';
 import { escapeRegex, paginate } from '../lib/respond.js';
 import { toCsv } from '../lib/csv.js';
 import { nextLeadId } from './support.service.js';
 import { getSettings } from './settings.service.js';
-import { notifyNewLead } from './mail.service.js';
+import { notifyNewLead, sendMail } from './mail.service.js';
 
 const CONSENT_TEXT =
   'I agree to be contacted by NEXUS Estate by phone, WhatsApp or email about this enquiry.';
@@ -47,7 +51,25 @@ type EnquiryLean = {
   consentAt: Date;
   createdAt: Date;
   updatedAt: Date;
+  user?: Types.ObjectId | null;
+  listingOwner?: Types.ObjectId | { _id: Types.ObjectId; name: string } | null;
+  seenByOwner?: boolean;
 };
+
+function ownerRef(o: EnquiryLean['listingOwner']): EnquiryDto['listingOwner'] {
+  if (!o) return null;
+  if (o instanceof MTypes.ObjectId) return { id: String(o), name: '' };
+  return { id: String(o._id), name: o.name };
+}
+
+const propertyRef = (e: EnquiryLean) =>
+  e.property && e.propertySnapshot?.slug
+    ? {
+        id: String(e.property),
+        title: e.propertySnapshot.title ?? '',
+        slug: e.propertySnapshot.slug,
+      }
+    : null;
 
 function toDto(e: EnquiryLean): EnquiryDto {
   return {
@@ -79,6 +101,8 @@ function toDto(e: EnquiryLean): EnquiryDto {
     consentAt: e.consentAt.toISOString(),
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
+    userId: e.user ? String(e.user) : null,
+    listingOwner: ownerRef(e.listingOwner),
   };
 }
 
@@ -103,20 +127,31 @@ function looksAutomated(input: { website?: string; elapsedMs?: number }) {
   );
 }
 
+type EnquiryProperty = {
+  _id: Types.ObjectId;
+  title: string;
+  slug: string;
+  postedBy?: Types.ObjectId | null;
+};
+
 export async function createEnquiry(
   input: z.output<typeof enquiryCreateSchema>,
   meta: RequestMeta,
+  user?: AuthedUser,
 ): Promise<{ leadId: string; duplicate: boolean }> {
   const phone = await requirePhone(input.phone);
 
-  let property: { _id: Types.ObjectId; title: string; slug: string } | null = null;
+  let property: EnquiryProperty | null = null;
   if (input.propertyId) {
     property = await Property.findOne({
       _id: input.propertyId,
-      status: { $in: ['published', 'rented'] },
+      status: { $in: PUBLIC_DETAIL_STATUSES },
     })
-      .select('title slug')
-      .lean();
+      .select('title slug postedBy')
+      .lean<EnquiryProperty>();
+  }
+  if (user && property?.postedBy && String(property.postedBy) === user.id) {
+    throw badRequest('This is your own listing');
   }
 
   // The same person enquiring twice about the same thing within minutes: keep one lead.
@@ -148,8 +183,13 @@ export async function createEnquiry(
     consentText: CONSENT_TEXT,
     ipHash: meta.ipHash,
     userAgent: meta.userAgent?.slice(0, 300),
+    user: user?.id ?? null,
+    listingOwner: property?.postedBy ?? null,
   });
 
+  if (!spam && property?.postedBy) {
+    void notifyListingOwner(property, input.name, phone, input.message);
+  }
   if (!spam) {
     void notifyNewLead(`New enquiry ${leadId}${property ? ` — ${property.title}` : ''}`, {
       'Lead ID': leadId,
@@ -164,6 +204,26 @@ export async function createEnquiry(
   return { leadId, duplicate: false };
 }
 
+async function notifyListingOwner(
+  property: EnquiryProperty,
+  name: string,
+  phone: string,
+  message: string,
+) {
+  const owner = await User.findById(property.postedBy).select('email name').lean();
+  if (!owner) return;
+  await sendMail(
+    owner.email,
+    `New enquiry for ${property.title}`,
+    [
+      `Hi ${owner.name},`,
+      `${name} (${phone}) is interested in “${property.title}”.`,
+      ...(message ? [`Message: ${message}`] : []),
+    ],
+    { label: 'See all your leads', url: `${env.PUBLIC_SITE_URL}/dashboard/leads` },
+  );
+}
+
 export async function listEnquiries(q: z.output<typeof adminEnquiryQuerySchema>) {
   const f = enquiryFilter(q);
   const [rows, total] = await Promise.all([
@@ -171,6 +231,7 @@ export async function listEnquiries(q: z.output<typeof adminEnquiryQuerySchema>)
       .sort({ createdAt: -1 })
       .skip((q.page - 1) * q.limit)
       .limit(q.limit)
+      .populate('listingOwner', 'name')
       .lean<EnquiryLean[]>(),
     Enquiry.countDocuments(f),
   ]);
@@ -204,7 +265,7 @@ function enquiryFilter(q: z.output<typeof adminEnquiryQuerySchema>): FilterQuery
 }
 
 export async function getEnquiry(id: string) {
-  const e = await Enquiry.findById(id).lean<EnquiryLean>();
+  const e = await Enquiry.findById(id).populate('listingOwner', 'name').lean<EnquiryLean>();
   if (!e) throw notFound('Enquiry not found');
   return toDto(e);
 }
@@ -264,110 +325,145 @@ export async function exportEnquiriesCsv(
 }
 
 /* ------------------------------------------------------------------ */
-/* Landlord property submissions                                       */
+/* Website users                                                       */
 /* ------------------------------------------------------------------ */
 
-type SubmissionLean = Omit<SubmissionDto, 'id' | 'createdAt' | 'availableFrom' | 'notes'> & {
-  _id: Types.ObjectId;
-  createdAt: Date;
-  availableFrom?: Date | null;
-  notes: { text: string; by: string; at: Date }[];
-};
-
-function submissionDto(s: SubmissionLean): SubmissionDto {
-  return {
-    id: String(s._id),
-    leadId: s.leadId,
-    ownerName: s.ownerName,
-    phone: s.phone,
-    email: s.email ?? null,
-    relationship: s.relationship,
-    category: s.category,
-    propertyType: s.propertyType,
-    city: s.city,
-    locality: s.locality,
-    expectedRent: s.expectedRent ?? null,
-    areaValue: s.areaValue ?? null,
-    areaUnit: s.areaUnit,
-    bedrooms: s.bedrooms ?? null,
-    furnishingStatus: s.furnishingStatus ?? null,
-    availableFrom: s.availableFrom ? s.availableFrom.toISOString() : null,
-    description: s.description,
-    status: s.status,
-    notes: (s.notes ?? []).map((n) => ({
-      text: n.text,
-      by: n.by,
-      at: new Date(n.at).toISOString(),
-    })),
-    createdAt: s.createdAt.toISOString(),
+/** Leads received on listings the user posted. */
+export async function listLeadsForOwner(userId: string, page = 1, limit = 20, unseenOnly = false) {
+  const f: FilterQuery<EnquiryLean> = {
+    listingOwner: new MTypes.ObjectId(userId),
+    status: { $ne: 'spam' },
+    ...(unseenOnly ? { seenByOwner: false } : {}),
   };
+  const [rows, total] = await Promise.all([
+    Enquiry.find(f)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean<EnquiryLean[]>(),
+    Enquiry.countDocuments(f),
+  ]);
+  const items: ReceivedLead[] = rows.map((e) => ({
+    id: String(e._id),
+    leadId: e.leadId,
+    type: e.type,
+    name: e.name,
+    phone: e.phone,
+    email: e.email ?? null,
+    message: e.message,
+    property: propertyRef(e),
+    createdAt: e.createdAt.toISOString(),
+    seen: Boolean(e.seenByOwner),
+  }));
+  return { items, meta: paginate(page, limit, total) };
 }
 
-export async function createSubmission(
-  input: z.output<typeof propertySubmissionCreateSchema>,
-  meta: RequestMeta,
-) {
-  const phone = await requirePhone(input.phone);
-  const spam = looksAutomated(input);
-  const leadId = await nextLeadId('L');
-  await PropertySubmission.create({
-    ...input,
-    leadId,
-    phone,
-    email: input.email ?? null,
-    status: spam ? 'spam' : 'new',
-    consentAt: new Date(),
-    ipHash: meta.ipHash,
-    userAgent: meta.userAgent?.slice(0, 300),
-  });
-  if (!spam) {
-    void notifyNewLead(`New property listing request ${leadId}`, {
-      'Lead ID': leadId,
-      Owner: input.ownerName,
-      Phone: phone,
-      Email: input.email,
-      Property: `${input.propertyType} (${input.category})`,
-      Location: `${input.locality}, ${input.city}`,
-      'Expected rent': input.expectedRent ? `₹${input.expectedRent}` : undefined,
-      Details: input.description,
+export async function markLeadsSeen(userId: string, ids?: string[]) {
+  await Enquiry.updateMany(
+    {
+      listingOwner: new MTypes.ObjectId(userId),
+      ...(ids?.length ? { _id: { $in: ids.filter((i) => /^[a-f0-9]{24}$/i.test(i)) } } : {}),
+    },
+    { $set: { seenByOwner: true } },
+  );
+}
+
+/** Enquiries the signed-in user sent. Only their own message is shown back. */
+export async function listSentEnquiries(userId: string, page = 1, limit = 20) {
+  const f = { user: new MTypes.ObjectId(userId) };
+  const [rows, total] = await Promise.all([
+    Enquiry.find(f)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean<EnquiryLean[]>(),
+    Enquiry.countDocuments(f),
+  ]);
+  const items: SentEnquiry[] = rows.map((e) => ({
+    id: String(e._id),
+    leadId: e.leadId,
+    type: e.type,
+    message: e.message,
+    property: propertyRef(e),
+    createdAt: e.createdAt.toISOString(),
+  }));
+  return { items, meta: paginate(page, limit, total) };
+}
+
+const REVEALS_PER_DAY = 40;
+
+/**
+ * Shows a listing poster's phone number to a signed-in visitor and records it as
+ * a lead for the poster. Limited per day to stop number scraping.
+ */
+export async function revealContact(propertyId: string, viewer: AuthedUser, meta: RequestMeta) {
+  const property = await Property.findOne({ _id: propertyId, status: 'published' })
+    .select('title slug postedBy')
+    .lean<EnquiryProperty>();
+  if (!property) throw notFound('Property not found');
+  if (!property.postedBy) {
+    throw badRequest('Contact NEXUS Estate directly for this property');
+  }
+  if (String(property.postedBy) === viewer.id) throw badRequest('This is your own listing');
+  if (otpEnabled && !viewer.phoneVerified) {
+    throw new AppError(
+      403,
+      'PHONE_NOT_VERIFIED',
+      'Verify your mobile number to see contact details.',
+    );
+  }
+  const poster = await User.findById(property.postedBy)
+    .select('name companyName phone showPhone whatsappEnabled status role')
+    .lean();
+  if (!poster || poster.status !== 'active') throw notFound('This poster is no longer available');
+  if (!poster.showPhone) {
+    throw forbidden('This poster prefers to be contacted through the enquiry form.');
+  }
+
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const already = await Enquiry.findOne({
+    user: viewer.id,
+    property: property._id,
+    type: 'contact',
+  })
+    .select('_id')
+    .lean();
+  if (!already) {
+    const today = await Enquiry.countDocuments({
+      user: viewer.id,
+      type: 'contact',
+      createdAt: { $gte: dayAgo },
+    });
+    if (today >= REVEALS_PER_DAY) {
+      throw new AppError(
+        429,
+        'RATE_LIMITED',
+        'You have viewed many contacts today. Try again tomorrow.',
+      );
+    }
+    await Enquiry.create({
+      leadId: await nextLeadId('E'),
+      type: 'contact',
+      name: viewer.name,
+      phone: viewer.phone,
+      email: viewer.email,
+      message: 'Viewed your contact details.',
+      property: property._id,
+      propertySnapshot: { title: property.title, slug: property.slug },
+      sourcePage: `/properties/${property.slug}`,
+      status: 'new',
+      consentAt: new Date(),
+      consentText: 'Signed-in user viewed contact details',
+      ipHash: meta.ipHash,
+      userAgent: meta.userAgent?.slice(0, 300),
+      user: viewer.id,
+      listingOwner: property.postedBy,
     });
   }
-  return { leadId };
-}
-
-export async function listSubmissions(q: {
-  status?: string;
-  page: number;
-  limit: number;
-  q?: string;
-}) {
-  const f: FilterQuery<SubmissionLean> = q.status
-    ? { status: q.status }
-    : { status: { $ne: 'spam' } };
-  if (q.q) {
-    const rx = new RegExp(escapeRegex(q.q), 'i');
-    f.$or = [{ ownerName: rx }, { phone: rx }, { locality: rx }, { leadId: rx }];
-  }
-  const [rows, total] = await Promise.all([
-    PropertySubmission.find(f)
-      .sort({ createdAt: -1 })
-      .skip((q.page - 1) * q.limit)
-      .limit(q.limit)
-      .lean<SubmissionLean[]>(),
-    PropertySubmission.countDocuments(f),
-  ]);
-  return { items: rows.map(submissionDto), meta: paginate(q.page, q.limit, total) };
-}
-
-export async function updateSubmission(
-  id: string,
-  patch: z.output<typeof submissionUpdateSchema>,
-  by: string,
-) {
-  const s = await PropertySubmission.findById(id);
-  if (!s) throw notFound('Submission not found');
-  if (patch.status) s.status = patch.status;
-  if (patch.note) s.notes.push({ text: patch.note, by, at: new Date() });
-  await s.save();
-  return submissionDto(s.toObject() as unknown as SubmissionLean);
+  return {
+    name: poster.role === 'individual' ? poster.name : poster.companyName || poster.name,
+    contactPerson: poster.name,
+    phone: poster.phone,
+    whatsapp: poster.whatsappEnabled ? poster.phone : null,
+  };
 }
