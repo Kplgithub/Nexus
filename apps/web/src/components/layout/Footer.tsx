@@ -66,7 +66,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
         </div>
 
         <nav aria-label="Explore">
-          <h2 className="text-sm font-semibold text-ink">Explore</h2>
+          <h2 className="font-sans text-sm font-semibold text-ink">Explore</h2>
           <ul className="mt-4 space-y-2.5 text-sm">
             {[
               ['/buy', 'Property for sale'],
@@ -82,7 +82,9 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
               </li>
             ))}
           </ul>
-          <h2 className="mt-8 text-sm font-semibold text-ink">Owners, agents &amp; builders</h2>
+          <h2 className="mt-8 font-sans text-sm font-semibold text-ink">
+            Owners, agents &amp; builders
+          </h2>
           <ul className="mt-4 space-y-2.5 text-sm">
             <li>
               <Link className="text-ink-soft hover:text-brand" href="/post-property">
@@ -98,7 +100,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
         </nav>
 
         <nav aria-label="Company">
-          <h2 className="text-sm font-semibold text-ink">Company</h2>
+          <h2 className="font-sans text-sm font-semibold text-ink">Company</h2>
           <ul className="mt-4 space-y-2.5 text-sm">
             <li>
               <Link className="text-ink-soft hover:text-brand" href="/about">
@@ -134,7 +136,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
         </nav>
 
         <div>
-          <h2 className="text-sm font-semibold text-ink">Talk to us</h2>
+          <h2 className="font-sans text-sm font-semibold text-ink">Talk to us</h2>
           <ul className="mt-4 space-y-3 text-sm">
             <li>
               <a

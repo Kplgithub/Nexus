@@ -47,7 +47,8 @@ const envSchema = z
     CLOUDINARY_API_SECRET: z.string().optional(),
     CLOUDINARY_FOLDER: z.string().default('nexus-estate/properties'),
     LOCAL_UPLOAD_DIR: z.string().default('uploads'),
-    LOCAL_UPLOAD_PUBLIC_URL: z.string().default('http://localhost:4000/uploads'),
+    // Relative by default: the web app proxies /uploads to the API, so images are same-origin.
+    LOCAL_UPLOAD_PUBLIC_URL: z.string().default('/uploads'),
 
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().int().positive().default(587),

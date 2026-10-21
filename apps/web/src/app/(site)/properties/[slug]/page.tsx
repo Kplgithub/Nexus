@@ -192,7 +192,12 @@ export default async function PropertyPage({ params }: Props) {
           : `${p.ageOfPropertyYears} years`
         : null,
     ),
-    ['Area', `${AREA_UNIT_LABELS[p.areaUnit]} (≈ ${p.areaSqft.toLocaleString('en-IN')} sq ft)`],
+    ...row(
+      'Area in sq ft',
+      p.areaUnit !== 'sqft'
+        ? `≈ ${p.areaSqft.toLocaleString('en-IN')} sq ft (${AREA_UNIT_LABELS[p.areaUnit]})`
+        : null,
+    ),
   ];
 
   return (

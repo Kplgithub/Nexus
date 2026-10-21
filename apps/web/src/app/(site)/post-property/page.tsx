@@ -21,7 +21,7 @@ const ROLES = [
     points: [
       `Up to ${LISTING_LIMITS.individual} active listings`,
       'Your number stays hidden unless you choose to show it',
-      'Enquiries arrive in your dashboard and by email',
+      'Enquiries arrive in your dashboard as leads',
     ],
   },
   {

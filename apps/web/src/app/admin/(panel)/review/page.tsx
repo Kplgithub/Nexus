@@ -52,7 +52,7 @@ export default function ReviewQueuePage() {
                   />
                 )}
                 <span className="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 text-xs text-white">
-                  {p.images.length} photos
+                  {p.images.length} {p.images.length === 1 ? 'photo' : 'photos'}
                 </span>
               </div>
               <div className="min-w-0">

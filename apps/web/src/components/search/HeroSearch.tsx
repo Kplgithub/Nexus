@@ -149,7 +149,7 @@ export function HeroSearch({ cities }: { cities: City[] }) {
               name="locality"
               defaultValue=""
               key={city}
-              className="h-12 w-full min-w-0 rounded-r-xl bg-white px-3 outline-none"
+              className="h-12 w-full min-w-0 rounded-r-xl bg-white px-3 text-ink outline-none"
             >
               <option value="">{localities.length ? 'All localities' : 'No localities yet'}</option>
               {localities.map((l) => (

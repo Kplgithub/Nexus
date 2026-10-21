@@ -198,7 +198,7 @@ export function EnquiryForm({
           defaultValue={defaultMessage}
           placeholder={
             propertyId
-              ? 'When can I visit? Is the rent negotiable?'
+              ? 'When can I visit? Is the price negotiable?'
               : 'Budget, preferred area, move-in date…'
           }
         />
