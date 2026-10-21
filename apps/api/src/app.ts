@@ -13,6 +13,8 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { limiters, originCheck, sanitizeBody } from './middleware/security.js';
 import { publicRouter } from './routes/public.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
+import { authRouter } from './routes/auth.routes.js';
+import { meRouter } from './routes/me.routes.js';
 import { openApiDocument } from './docs/openapi.js';
 
 export function createApp(): Express {
@@ -87,6 +89,8 @@ export function createApp(): Express {
   app.use('/api/v1', limiters.global);
   app.use('/api/v1', publicRouter);
   app.use('/api/v1/admin', adminRouter);
+  app.use('/api/v1/auth', authRouter);
+  app.use('/api/v1/me', meRouter);
 
   if (env.ENABLE_API_DOCS) {
     app.get('/api/openapi.json', (_req, res) => res.json(openApiDocument));

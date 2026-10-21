@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import type { Faq } from '@nexus/shared';
+import { FAQ_CATEGORIES } from '@nexus/shared';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
 
-const CATS: Faq['category'][] = ['general', 'tenants', 'commercial', 'owners'];
+const CATS: Faq['category'][] = [...FAQ_CATEGORIES];
 const blank = {
   question: '',
   answer: '',

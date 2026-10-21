@@ -1,14 +1,5 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument } from 'mongoose';
-import {
-  ADMIN_ROLES,
-  AREA_UNITS,
-  CATEGORIES,
-  ALL_PROPERTY_TYPES,
-  ENQUIRY_STATUSES,
-  ENQUIRY_TYPES,
-  FURNISHING_STATUSES,
-  SUBMISSION_STATUSES,
-} from '@nexus/shared';
+import { ADMIN_ROLES, ENQUIRY_STATUSES, ENQUIRY_TYPES, FAQ_CATEGORIES } from '@nexus/shared';
 
 /* ---------------- Admin ---------------- */
 const adminSchema = new Schema(
@@ -67,6 +58,11 @@ const enquirySchema = new Schema(
     ipHash: { type: String, maxlength: 64 },
     userAgent: { type: String, maxlength: 300 },
     spamScore: { type: Number, default: 0 },
+    /** The signed-in visitor who sent it, if any. */
+    user: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    /** The user who posted the listing, if any — they see this lead in their dashboard. */
+    listingOwner: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    seenByOwner: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
@@ -75,39 +71,9 @@ enquirySchema.index({ status: 1, createdAt: -1 });
 enquirySchema.index({ property: 1, createdAt: -1 });
 enquirySchema.index({ followUpAt: 1, status: 1 });
 enquirySchema.index({ phone: 1, createdAt: -1 });
+enquirySchema.index({ listingOwner: 1, createdAt: -1 });
+enquirySchema.index({ user: 1, createdAt: -1 });
 export const Enquiry = model('Enquiry', enquirySchema);
-
-/* ---------------- Property submission (landlord leads) ---------------- */
-const submissionSchema = new Schema(
-  {
-    leadId: { type: String, required: true },
-    ownerName: { type: String, required: true, maxlength: 80 },
-    phone: { type: String, required: true, maxlength: 20 },
-    email: { type: String, maxlength: 120, default: null },
-    relationship: { type: String, enum: ['owner', 'family', 'authorised-agent'], default: 'owner' },
-    category: { type: String, enum: CATEGORIES, required: true },
-    propertyType: { type: String, enum: ALL_PROPERTY_TYPES, required: true },
-    city: { type: String, required: true, maxlength: 60 },
-    locality: { type: String, required: true, maxlength: 80 },
-    expectedRent: { type: Number, min: 0, default: null },
-    areaValue: { type: Number, min: 0, default: null },
-    areaUnit: { type: String, enum: AREA_UNITS, default: 'sqft' },
-    bedrooms: { type: Number, min: 0, default: null },
-    furnishingStatus: { type: String, enum: FURNISHING_STATUSES, default: null },
-    availableFrom: { type: Date, default: null },
-    description: { type: String, default: '', maxlength: 3000 },
-    status: { type: String, enum: SUBMISSION_STATUSES, default: 'new' },
-    notes: { type: [noteSchema], default: [] },
-    convertedProperty: { type: Schema.Types.ObjectId, ref: 'Property', default: null },
-    consentAt: { type: Date, required: true },
-    ipHash: { type: String, maxlength: 64 },
-    userAgent: { type: String, maxlength: 300 },
-  },
-  { timestamps: true },
-);
-submissionSchema.index({ leadId: 1 }, { unique: true });
-submissionSchema.index({ status: 1, createdAt: -1 });
-export const PropertySubmission = model('PropertySubmission', submissionSchema);
 
 /* ---------------- Locations ---------------- */
 const localitySchema = new Schema(
@@ -145,11 +111,7 @@ const faqSchema = new Schema(
   {
     question: { type: String, required: true, maxlength: 200 },
     answer: { type: String, required: true, maxlength: 3000 },
-    category: {
-      type: String,
-      enum: ['general', 'tenants', 'owners', 'commercial'],
-      default: 'general',
-    },
+    category: { type: String, enum: FAQ_CATEGORIES, default: 'general' },
     sortOrder: { type: Number, default: 0 },
     published: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },

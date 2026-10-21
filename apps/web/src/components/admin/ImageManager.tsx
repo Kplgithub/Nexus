@@ -25,11 +25,14 @@ export function ImageManager({
   cover,
   onChange,
   title,
+  uploadPath = '/admin/uploads',
 }: {
   images: PropertyImage[];
   cover: number;
   onChange: (images: PropertyImage[], cover: number) => void;
   title: string;
+  /** Staff upload to /admin/uploads; signed-in users to /me/uploads. */
+  uploadPath?: string;
 }) {
   const [pending, setPending] = useState<Pending[]>([]);
   const [busy, setBusy] = useState(false);
@@ -80,7 +83,7 @@ export function ImageManager({
       const form = new FormData();
       batch.forEach((p) => form.append('files', p.file));
       try {
-        const { data } = await apiFetch<UploadResult[]>('/admin/uploads', { method: 'POST', form });
+        const { data } = await apiFetch<UploadResult[]>(uploadPath, { method: 'POST', form });
         data.forEach((r, j) => {
           if (r.ok) added.push({ ...r.image, alt: '' });
           else failed.push({ ...batch[j]!, error: r.error });

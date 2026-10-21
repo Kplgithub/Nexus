@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 import { CheckIcon } from '../icons';
+import { useOptionalSession } from '../session/SessionProvider';
 
 type Props = {
   type?: 'property' | 'general' | 'callback';
@@ -13,6 +14,8 @@ type Props = {
   submitLabel?: string;
   compact?: boolean;
   defaultMessage?: string;
+  /** Who will reply, shown in the confirmation (defaults to "Our team"). */
+  recipient?: string;
 };
 
 type Errors = Record<string, string[] | undefined>;
@@ -25,7 +28,9 @@ export function EnquiryForm({
   submitLabel = 'Send enquiry',
   compact,
   defaultMessage,
+  recipient,
 }: Props) {
+  const me = useOptionalSession()?.user ?? null;
   const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -95,7 +100,7 @@ export function EnquiryForm({
           <CheckIcon /> Enquiry received
         </div>
         <p className="mt-2 text-ink-soft">
-          Thank you. Our team will contact you shortly
+          Thank you. {recipient ?? 'Our team'} will contact you shortly
           {propertyTitle ? ` about “${propertyTitle}”` : ''}.
         </p>
         {leadId && (
@@ -111,6 +116,7 @@ export function EnquiryForm({
 
   return (
     <form
+      key={me?.id ?? 'guest'}
       onSubmit={onSubmit}
       noValidate
       className="space-y-4"
@@ -124,6 +130,7 @@ export function EnquiryForm({
           <input
             id={`${uid}-name`}
             name="name"
+            defaultValue={me?.name ?? ''}
             autoComplete="name"
             required
             maxLength={80}
@@ -144,6 +151,7 @@ export function EnquiryForm({
           <input
             id={`${uid}-phone`}
             name="phone"
+            defaultValue={me?.phone ?? ''}
             type="tel"
             inputMode="tel"
             autoComplete="tel"
@@ -168,6 +176,7 @@ export function EnquiryForm({
         <input
           id={`${uid}-email`}
           name="email"
+          defaultValue={me?.email ?? ''}
           type="email"
           autoComplete="email"
           maxLength={120}
@@ -189,7 +198,7 @@ export function EnquiryForm({
           defaultValue={defaultMessage}
           placeholder={
             propertyId
-              ? 'When can I visit? Is the rent negotiable?'
+              ? 'When can I visit? Is the price negotiable?'
               : 'Budget, preferred area, move-in date…'
           }
         />

@@ -10,7 +10,7 @@ import {
   startDb,
   stopDb,
 } from './helpers.js';
-import { Enquiry, PropertySubmission } from '../src/models/misc.models.js';
+import { Enquiry } from '../src/models/misc.models.js';
 
 let app: Express;
 let s: Awaited<ReturnType<typeof signIn>>;
@@ -163,26 +163,5 @@ describe('admin enquiry management', () => {
       .send(enquiry({ name: '=HYPERLINK("x")' }));
     const csv = await s.get('/api/v1/admin/enquiries/export.csv');
     expect(csv.text).toContain(`"'=HYPERLINK(""x"")"`);
-  });
-});
-
-describe('landlord submissions', () => {
-  it('saves a listing request', async () => {
-    const res = await request(app).post('/api/v1/property-submissions').send({
-      ownerName: 'Rakesh Gupta',
-      phone: '9829033333',
-      category: 'commercial',
-      propertyType: 'shop',
-      city: 'Jaipur',
-      locality: 'Raja Park',
-      expectedRent: 35000,
-      consent: true,
-      elapsedMs: 20_000,
-    });
-    expect(res.status).toBe(201);
-    expect(res.body.data.leadId).toMatch(/^NX-L-/);
-    expect(await PropertySubmission.countDocuments({ status: 'new' })).toBe(1);
-    const list = await s.get('/api/v1/admin/submissions');
-    expect(list.body.data[0].ownerName).toBe('Rakesh Gupta');
   });
 });

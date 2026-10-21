@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   enquiryCreateSchema,
+  formatPrice,
   formatRent,
+  pricePerSqft,
+  signupSchema,
+  userPropertyCreateSchema,
   normalizePhone,
   propertyCreateSchema,
   propertySearchSchema,
@@ -51,6 +55,13 @@ describe('formatting', () => {
     expect(formatRent(25000)).toBe('₹25,000/month');
     expect(formatRent(150000)).toBe('₹1.5 L/month');
   });
+  it('formats sale prices in lakh and crore', () => {
+    expect(formatPrice(4500000, 'sale')).toBe('₹45 L');
+    expect(formatPrice(12500000, 'sale')).toBe('₹1.25 Cr');
+    expect(formatPrice(850000, 'sale')).toBe('₹8.5 L');
+    expect(formatPrice(18000, 'rent')).toBe('₹18,000/month');
+    expect(pricePerSqft(4500000, 1500)).toBe(3000);
+  });
   it('converts area', () => {
     expect(toSqft(100, 'sqyd')).toBe(900);
   });
@@ -60,19 +71,25 @@ describe('propertySearchSchema', () => {
   it('drops invalid values instead of failing', () => {
     const q = propertySearchSchema.parse({
       category: 'castle',
-      minRent: 'abc',
+      minPrice: 'abc',
       page: '-4',
       sort: 'x',
     });
     expect(q.category).toBeUndefined();
-    expect(q.minRent).toBeUndefined();
+    expect(q.minPrice).toBeUndefined();
     expect(q.page).toBe(1);
     expect(q.sort).toBe('newest');
   });
-  it('swaps inverted rent range', () => {
-    const q = propertySearchSchema.parse({ minRent: '30000', maxRent: '10000' });
-    expect(q.minRent).toBe(10000);
-    expect(q.maxRent).toBe(30000);
+  it('swaps inverted price range', () => {
+    const q = propertySearchSchema.parse({ minPrice: '30000', maxPrice: '10000' });
+    expect(q.minPrice).toBe(10000);
+    expect(q.maxPrice).toBe(30000);
+  });
+  it('keeps possession only for sale searches', () => {
+    expect(propertySearchSchema.parse({ possession: 'ready' }).possession).toBeUndefined();
+    expect(
+      propertySearchSchema.parse({ listingType: 'sale', possession: 'ready' }).possession,
+    ).toBe('ready');
   });
   it('drops property types outside the category', () => {
     const q = propertySearchSchema.parse({
@@ -87,13 +104,14 @@ describe('propertySearchSchema', () => {
 });
 
 const baseProperty = {
+  listingType: 'rent',
   title: 'Spacious office near Ashok Marg',
   description: 'A bright, ready-to-move office suitable for a team of fifteen people.',
   category: 'commercial',
   propertyType: 'office',
   citySlug: 'jaipur',
   localitySlug: 'c-scheme',
-  monthlyRent: 60000,
+  price: 60000,
   areaValue: 1200,
   areaUnit: 'sqft',
   furnishingStatus: 'furnished',
@@ -115,9 +133,7 @@ describe('propertyCreateSchema', () => {
     expect(paths).toContain('bathrooms');
   });
   it('rejects negative rent', () => {
-    expect(propertyCreateSchema.safeParse({ ...baseProperty, monthlyRent: -1 }).success).toBe(
-      false,
-    );
+    expect(propertyCreateSchema.safeParse({ ...baseProperty, price: -1 }).success).toBe(false);
   });
   it('rejects a type from another category', () => {
     expect(propertyCreateSchema.safeParse({ ...baseProperty, propertyType: 'villa' }).success).toBe(
@@ -128,6 +144,15 @@ describe('propertyCreateSchema', () => {
     expect(propertyCreateSchema.safeParse({ ...baseProperty, status: 'published' }).success).toBe(
       false,
     );
+  });
+  it('rejects marking a rental as sold', () => {
+    expect(
+      propertyCreateSchema.safeParse({
+        ...baseProperty,
+        status: 'sold',
+        images: [{ url: 'https://example.com/a.jpg' }],
+      }).success,
+    ).toBe(false);
   });
   it('strips markup characters', () => {
     const r = propertyCreateSchema.parse({
@@ -155,5 +180,44 @@ describe('enquiryCreateSchema', () => {
       consent: true,
     });
     expect(r.email).toBeUndefined();
+  });
+});
+
+describe('userPropertyCreateSchema', () => {
+  it('does not let users set admin-only fields', () => {
+    expect(userPropertyCreateSchema.safeParse({ ...baseProperty, featured: true }).success).toBe(
+      false,
+    );
+    expect(
+      userPropertyCreateSchema.safeParse({ ...baseProperty, status: 'published' }).success,
+    ).toBe(false);
+    expect(userPropertyCreateSchema.safeParse(baseProperty).success).toBe(true);
+  });
+});
+
+describe('signupSchema', () => {
+  const base = {
+    role: 'individual',
+    name: 'Asha Verma',
+    email: 'asha@example.com',
+    phone: '9829012345',
+    password: 'secret123',
+    acceptTerms: true,
+  } as const;
+  it('accepts an individual without a company', () => {
+    expect(signupSchema.safeParse(base).success).toBe(true);
+  });
+  it('requires a company name for agents and builders', () => {
+    const r = signupSchema.safeParse({ ...base, role: 'agent' });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0]?.path).toEqual(['companyName']);
+    expect(
+      signupSchema.safeParse({ ...base, role: 'builder', companyName: 'Acme Homes' }).success,
+    ).toBe(true);
+  });
+  it('enforces the password policy and terms', () => {
+    expect(signupSchema.safeParse({ ...base, password: 'short' }).success).toBe(false);
+    expect(signupSchema.safeParse({ ...base, password: 'lettersonly' }).success).toBe(false);
+    expect(signupSchema.safeParse({ ...base, acceptTerms: false }).success).toBe(false);
   });
 });

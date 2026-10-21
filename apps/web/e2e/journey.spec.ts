@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const email = process.env.E2E_ADMIN_EMAIL;
 const password = process.env.E2E_ADMIN_PASSWORD;
@@ -8,67 +8,94 @@ const png = Buffer.from(
   'base64',
 );
 
-test.describe('full rental journey', () => {
+async function adminLogin(page: Page) {
+  await page.goto('/admin/login');
+  await page.getByLabel('Email', { exact: true }).fill(email!);
+  await page.getByLabel('Password', { exact: true }).fill(password!);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+}
+
+async function uploadPhoto(page: Page) {
+  await page
+    .getByLabel('Add photos', { exact: true })
+    .setInputFiles({ name: 'room.png', mimeType: 'image/png', buffer: png });
+  await page.getByRole('button', { name: /Upload 1 photo/ }).click();
+  await expect(page.getByText(/1 photo\(s\) uploaded/)).toBeVisible();
+}
+
+async function typeOtp(page: Page) {
+  const code = (await page
+    .locator('p:has-text("Development mode") strong')
+    .first()
+    .textContent())!.trim();
+  await page.getByLabel('Digit 1').click();
+  await page.keyboard.type(code);
+}
+
+test.describe('journeys', () => {
   test.skip(!email || !password, 'Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD');
   test.describe.configure({ mode: 'serial' });
+  // Each journey waits for public caches to refresh, so allow more than the default.
+  test.setTimeout(180_000);
 
-  for (const kind of ['residential', 'commercial'] as const) {
-    test(`${kind}: admin publishes, visitor finds and enquires, admin updates lead`, async ({
+  const cases = [
+    {
+      deal: 'rent',
+      kind: 'residential',
+      price: '21000',
+      url: '/rent/jaipur/vaishali-nagar?maxPrice=25000',
+    },
+    {
+      deal: 'sale',
+      kind: 'commercial',
+      price: '8500000',
+      url: '/commercial?listingType=sale&city=jaipur&locality=vaishali-nagar',
+    },
+  ] as const;
+
+  for (const c of cases) {
+    test(`staff ${c.kind} ${c.deal}: publish, visitor finds and enquires, lead updated`, async ({
       page,
     }) => {
       const stamp = Date.now();
-      const title = `E2E ${kind} listing ${stamp}`;
+      const title = `E2E ${c.kind} ${c.deal} listing ${stamp}`;
+      await adminLogin(page);
 
-      // 1. Admin logs in
-      await page.goto('/admin/login');
-      await page.getByLabel('Email', { exact: true }).fill(email!);
-      await page.getByLabel('Password', { exact: true }).fill(password!);
-      await page.getByRole('button', { name: 'Sign in' }).click();
-      await expect(page).toHaveURL(/\/admin$/);
-
-      // 2. Creates a property
       await page.goto('/admin/properties/new');
-      await page.getByLabel('Title', { exact: true }).fill(title);
-      await page.getByLabel('Category', { exact: true }).selectOption(kind);
-      await page
-        .getByLabel('Property type', { exact: true })
-        .selectOption(kind === 'residential' ? 'apartment' : 'office');
+      if (c.deal === 'rent') await page.getByText('Rent out', { exact: true }).click();
+      if (c.kind === 'commercial')
+        await page.getByText('Commercial', { exact: true }).first().click();
       await page.getByLabel('City', { exact: true }).selectOption('jaipur');
       await page.getByLabel('Locality', { exact: true }).selectOption('vaishali-nagar');
-      await page.getByLabel('Monthly rent (₹)', { exact: true }).fill('21000');
+      await page
+        .getByLabel(c.deal === 'rent' ? 'Monthly rent (₹)' : 'Asking price (₹)', { exact: true })
+        .fill(c.price);
       await page.getByLabel('Area', { exact: true }).fill('900');
-      if (kind === 'residential') {
+      if (c.kind === 'residential') {
         await page.getByLabel(/^Bedrooms/).fill('2');
         await page.getByLabel(/^Bathrooms/).fill('2');
       }
+      await uploadPhoto(page);
+      await page.getByLabel('Listing title', { exact: true }).fill(title);
       await page
         .getByLabel('Description', { exact: true })
         .fill(
           'Automated end-to-end test listing. Bright, well-ventilated and close to the main road.',
         );
-
-      // 3. Uploads an image and publishes
-      await page
-        .getByLabel('Add photos', { exact: true })
-        .setInputFiles({ name: 'room.png', mimeType: 'image/png', buffer: png });
-      await page.getByRole('button', { name: /Upload 1 photo/ }).click();
-      await expect(page.getByText(/1 photo\(s\) uploaded/)).toBeVisible();
       await page.getByRole('button', { name: 'Save & publish' }).click();
       await expect(page.getByText('Saved and published')).toBeVisible();
       await expect(page).toHaveURL(/\/admin\/properties\/[a-f0-9]{24}/);
 
-      // 4–5. Visitor searches (public cache may lag up to REVALIDATE_SECONDS)
       await expect(async () => {
-        await page.goto(`/${kind}?city=jaipur&locality=vaishali-nagar&maxRent=25000`);
+        await page.goto(c.url);
         await expect(page.getByRole('link', { name: title })).toBeVisible({ timeout: 2000 });
       }).toPass({ timeout: 90_000 });
 
-      // 6. Opens details
       await page.getByRole('link', { name: title }).click();
       await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
 
-      // 7. Submits an enquiry
-      await page.waitForTimeout(3000); // let the anti-bot timer pass like a real visitor
+      await page.waitForTimeout(3000); // anti-bot timer, like a real visitor
       await page.getByLabel('Name', { exact: true }).fill('E2E Visitor');
       await page.getByLabel('Mobile number', { exact: true }).fill('9829055555');
       await page.getByLabel('Message', { exact: true }).fill(`Interested — ${stamp}`);
@@ -77,7 +104,6 @@ test.describe('full rental journey', () => {
       await expect(page.getByText('Enquiry received')).toBeVisible();
       const ref = await page.getByText(/NX-E-\d{4}-\d{5}/).textContent();
 
-      // 8–9. Admin sees and updates it
       await page.goto('/admin/enquiries');
       await page.getByPlaceholder(/Name, phone/).fill(ref!.trim());
       await page.getByRole('button', { name: 'Search' }).click();
@@ -86,4 +112,72 @@ test.describe('full rental journey', () => {
       await expect(page.getByText('Marked contacted')).toBeVisible();
     });
   }
+
+  test('owner signs up, posts a rental, staff approves, it goes live', async ({ page }) => {
+    const stamp = Date.now();
+    const title = `E2E owner rental ${stamp}`;
+    const phone = `98${String(stamp).slice(-8)}`;
+
+    // Sign up as Buyer / Owner / Tenant, straight into the posting form.
+    await page.goto(
+      `/signup?role=individual&next=${encodeURIComponent('/dashboard/listings/new')}`,
+    );
+    await page.getByLabel('Full name', { exact: true }).fill('E2E Owner');
+    await page.getByLabel('Email', { exact: true }).fill(`owner${stamp}@example.com`);
+    await page.getByLabel('Mobile number', { exact: true }).fill(phone);
+    await page.getByLabel('Create password', { exact: true }).fill(`Owner${stamp}pass`);
+    await page.getByRole('checkbox', { name: /I agree/ }).check();
+    await page.getByRole('button', { name: 'Create account' }).click();
+    await expect(page.getByRole('heading', { name: 'Verify your mobile' })).toBeVisible();
+    await typeOtp(page);
+    await page.getByRole('button', { name: 'Verify and continue' }).click();
+    await expect(page).toHaveURL(/\/dashboard\/listings\/new/);
+
+    // Posting wizard
+    await page.getByText('Rent out', { exact: true }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByLabel('Locality', { exact: true }).selectOption('malviya-nagar');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByLabel('Monthly rent (₹)', { exact: true }).fill('18000');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByLabel('Area', { exact: true }).fill('1100');
+    await page.getByLabel(/^Bedrooms/).fill('2');
+    await page.getByLabel(/^Bathrooms/).fill('2');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await uploadPhoto(page);
+    await page.getByLabel('Listing title', { exact: true }).fill(title);
+    await page
+      .getByLabel('Description', { exact: true })
+      .fill(
+        'Two-bedroom flat on the second floor with good light, covered parking and a park nearby.',
+      );
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByRole('heading', { name: 'Review and submit' })).toBeVisible();
+    await page.getByRole('button', { name: 'Submit for review' }).click();
+    await expect(page).toHaveURL(/\/dashboard\/listings\?status=pending/);
+    await expect(page.getByText(title)).toBeVisible();
+
+    // Not public until approved
+    const before = await page.request.get(`/api/v1/properties?q=${stamp}`);
+    expect((await before.json()).data).toHaveLength(0);
+
+    // Staff approves from the review queue
+    await adminLogin(page);
+    await page.goto('/admin/review');
+    const item = page.locator('li', { hasText: title });
+    await item.getByRole('button', { name: 'Approve & publish' }).click();
+    await expect(page.getByText('Approved and published')).toBeVisible();
+
+    // Live on the locality page, marked as posted by an owner
+    await expect(async () => {
+      await page.goto('/rent/jaipur/malviya-nagar');
+      await expect(page.getByRole('link', { name: title })).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 90_000 });
+    await page.getByRole('link', { name: title }).click();
+    await expect(
+      page
+        .getByRole('complementary', { name: 'Contact about this property' })
+        .getByText('Posted by owner'),
+    ).toBeVisible();
+  });
 });

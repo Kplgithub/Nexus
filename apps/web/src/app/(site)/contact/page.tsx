@@ -9,7 +9,7 @@ import { ClockIcon, MailIcon, MapPinIcon, PhoneIcon, WhatsAppIcon } from '@/comp
 export const metadata: Metadata = pageMetadata({
   title: 'Contact NEXUS Estate',
   description:
-    'Call, WhatsApp or send a message to the NEXUS Estate team about renting or listing a property in Jaipur.',
+    'Call, WhatsApp or send a message to the NEXUS Estate team about buying, renting or listing a property.',
   path: '/contact',
 });
 

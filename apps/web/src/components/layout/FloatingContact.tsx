@@ -17,10 +17,7 @@ export function FloatingContact({
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-30 flex flex-col gap-3 print:hidden">
       <a
-        href={whatsappLink(
-          whatsapp,
-          message ?? 'Hello NEXUS Estate, I am looking for a rental property.',
-        )}
+        href={whatsappLink(whatsapp, message ?? 'Hello NEXUS Estate, I am looking for a property.')}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"

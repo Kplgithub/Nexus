@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   phone: '+919521750202',
   whatsapp: '+919521750202',
   email: undefined,
-  address: { line1: '', line2: '', city: 'Jaipur', state: 'Rajasthan', pincode: '' },
+  address: { line1: '', line2: '', city: '', state: '', pincode: '' },
   showAddress: false,
   businessHours: '',
   social: {},

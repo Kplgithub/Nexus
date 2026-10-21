@@ -28,6 +28,7 @@ const idParam = {
   schema: { type: 'string', pattern: '^[a-f0-9]{24}$' },
 };
 const admin = { tags: ['Admin'], security: [{ session: [], csrf: [] }] };
+const user = { tags: ['Accounts'], security: [{ userSession: [], csrf: [] }] };
 const q = (name: string, schema: object, description?: string) => ({
   name,
   in: 'query',
@@ -44,10 +45,11 @@ export const openApiDocument = {
       'REST API for the NEXUS Estate rental platform. All responses use the envelope `{ ok, data, meta? }` or `{ ok: false, error }`. Admin endpoints need the `nexus_session` cookie and, for writes, the `X-CSRF-Token` header (value returned at login and in the `nexus_csrf` cookie).',
   },
   servers: [{ url: '/api/v1' }],
-  tags: [{ name: 'Public' }, { name: 'Admin' }, { name: 'System' }],
+  tags: [{ name: 'Public' }, { name: 'Accounts' }, { name: 'Admin' }, { name: 'System' }],
   components: {
     securitySchemes: {
       session: { type: 'apiKey', in: 'cookie', name: 'nexus_session' },
+      userSession: { type: 'apiKey', in: 'cookie', name: 'nexus_user' },
       csrf: { type: 'apiKey', in: 'header', name: 'X-CSRF-Token' },
     },
     schemas: {
@@ -85,7 +87,8 @@ export const openApiDocument = {
           title: { type: 'string' },
           category: { type: 'string', enum: ['residential', 'commercial', 'industrial'] },
           propertyType: { type: 'string' },
-          monthlyRent: { type: 'integer', description: 'INR per month' },
+          listingType: { type: 'string', enum: ['rent', 'sale'] },
+          price: { type: 'integer', description: 'INR per month (rent) or total price (sale)' },
           areaValue: { type: 'number' },
           areaUnit: { type: 'string', enum: ['sqft', 'sqyd', 'sqm'] },
           bedrooms: { type: ['integer', 'null'] },
@@ -112,7 +115,8 @@ export const openApiDocument = {
           'propertyType',
           'citySlug',
           'localitySlug',
-          'monthlyRent',
+          'listingType',
+          'price',
           'areaValue',
           'areaUnit',
           'furnishingStatus',
@@ -128,7 +132,8 @@ export const openApiDocument = {
           },
           citySlug: { type: 'string' },
           localitySlug: { type: 'string' },
-          monthlyRent: { type: 'integer', minimum: 1 },
+          listingType: { type: 'string', enum: ['rent', 'sale'] },
+          price: { type: 'integer', minimum: 1 },
           securityDeposit: { type: ['integer', 'null'], minimum: 0 },
           areaValue: { type: 'number' },
           areaUnit: { type: 'string' },
@@ -179,8 +184,12 @@ export const openApiDocument = {
           q('propertyType', { type: 'string' }, 'Comma separated'),
           q('city', { type: 'string' }),
           q('locality', { type: 'string' }),
-          q('minRent', { type: 'integer' }),
-          q('maxRent', { type: 'integer' }),
+          q('listingType', { type: 'string', enum: ['rent', 'sale'] }),
+          q('minPrice', { type: 'integer' }),
+          q('maxPrice', { type: 'integer' }),
+          q('possession', { type: 'string', enum: ['ready', 'under-construction'] }, 'Sale only'),
+          q('postedBy', { type: 'string', enum: ['owner', 'agent', 'builder', 'nexus'] }),
+          q('verified', { type: 'boolean' }),
           q('furnishing', { type: 'string' }),
           q('bedrooms', { type: 'integer' }, 'Minimum'),
           q('bathrooms', { type: 'integer' }, 'Minimum'),
@@ -190,7 +199,7 @@ export const openApiDocument = {
           q('parking', { type: 'boolean' }),
           q('availableNow', { type: 'boolean' }),
           q('q', { type: 'string' }),
-          q('sort', { type: 'string', enum: ['newest', 'rent_asc', 'rent_desc'] }),
+          q('sort', { type: 'string', enum: ['newest', 'price_asc', 'price_desc'] }),
           q('page', { type: 'integer' }),
           q('limit', { type: 'integer', maximum: 48 }),
         ],
@@ -272,11 +281,231 @@ export const openApiDocument = {
         responses: { '201': { description: 'Saved; returns leadId' }, ...errors },
       },
     },
-    '/property-submissions': {
-      post: {
+    '/states': {
+      get: {
         tags: ['Public'],
-        summary: 'Landlord listing request (rate limited)',
-        responses: { '201': { description: 'Saved; returns leadId' }, ...errors },
+        summary: 'Indian states and union territories',
+        responses: { '200': { description: 'OK' } },
+      },
+    },
+    '/auth/config': {
+      get: {
+        tags: ['Accounts'],
+        summary: 'Which sign-in options are available (SMS codes, email reset)',
+        responses: { '200': { description: 'OK' } },
+      },
+    },
+    '/auth/signup': {
+      post: {
+        tags: ['Accounts'],
+        summary:
+          'Create an account (role: individual | agent | builder); signs in and sends a phone code when SMS is enabled',
+        responses: {
+          '201': { description: 'Created' },
+          '409': { description: 'Email or phone already registered' },
+          ...errors,
+        },
+      },
+    },
+    '/auth/login': {
+      post: {
+        tags: ['Accounts'],
+        summary: 'Sign in with email or mobile and password',
+        responses: {
+          '200': { description: 'Signed in' },
+          '401': { description: 'Invalid credentials' },
+          ...errors,
+        },
+      },
+    },
+    '/auth/otp/request': {
+      post: {
+        tags: ['Accounts'],
+        summary: 'Send a sign-in code by SMS',
+        responses: {
+          '200': { description: 'Sent' },
+          '503': { description: 'SMS not configured' },
+          ...errors,
+        },
+      },
+    },
+    '/auth/otp/login': {
+      post: {
+        tags: ['Accounts'],
+        summary: 'Sign in with an SMS code',
+        responses: { '200': { description: 'Signed in' }, ...errors },
+      },
+    },
+    '/auth/forgot-password': {
+      post: {
+        tags: ['Accounts'],
+        summary: 'Send a reset code (mobile) or link (email)',
+        responses: { '200': { description: 'Sent if the account exists' }, ...errors },
+      },
+    },
+    '/auth/reset-password': {
+      post: {
+        tags: ['Accounts'],
+        summary: 'Set a new password with a code or link token',
+        responses: { '200': { description: 'Reset and signed in' }, ...errors },
+      },
+    },
+    '/auth/logout': {
+      post: {
+        tags: ['Accounts'],
+        summary: 'Sign out',
+        responses: { '200': { description: 'OK' } },
+      },
+    },
+    '/me': {
+      get: {
+        ...user,
+        summary: 'Current account',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+      patch: {
+        ...user,
+        summary: 'Update profile',
+        responses: { '200': { description: 'OK' }, ...authErrors, ...errors },
+      },
+    },
+    '/me/dashboard': {
+      get: {
+        ...user,
+        summary: 'Listing, lead and saved counts',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/verify-phone/request': {
+      post: {
+        ...user,
+        summary: 'Send a phone verification code',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/verify-phone/confirm': {
+      post: {
+        ...user,
+        summary: 'Confirm the phone code',
+        responses: { '200': { description: 'OK' }, ...authErrors, ...errors },
+      },
+    },
+    '/me/change-password': {
+      post: {
+        ...user,
+        summary: 'Change password (signs out other sessions)',
+        responses: { '200': { description: 'OK' }, ...authErrors, ...errors },
+      },
+    },
+    '/me/logout-all': {
+      post: {
+        ...user,
+        summary: 'Sign out everywhere',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/properties': {
+      get: {
+        ...user,
+        summary: 'My listings',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+      post: {
+        ...user,
+        summary: 'Create a listing as draft or submit it for review',
+        responses: { '201': { description: 'Created' }, ...authErrors, ...errors },
+      },
+    },
+    '/me/properties/{id}': {
+      get: {
+        ...user,
+        summary: 'One of my listings',
+        parameters: [idParam],
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+      patch: {
+        ...user,
+        summary: 'Edit (a live listing goes back to review)',
+        parameters: [idParam],
+        responses: { '200': { description: 'OK' }, ...authErrors, ...errors },
+      },
+      delete: {
+        ...user,
+        summary: 'Delete a listing that is not live',
+        parameters: [idParam],
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/properties/{id}/status': {
+      post: {
+        ...user,
+        summary: 'Submit, withdraw, mark rented/sold or deactivate',
+        parameters: [idParam],
+        responses: { '200': { description: 'OK' }, ...authErrors, ...errors },
+      },
+    },
+    '/me/uploads': {
+      post: {
+        ...user,
+        summary: 'Upload listing photos',
+        responses: { '200': { description: 'Per-file results' }, ...authErrors, ...errors },
+      },
+    },
+    '/me/saved': {
+      get: {
+        ...user,
+        summary: 'Saved properties',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/saved/ids': {
+      get: {
+        ...user,
+        summary: 'Saved property ids',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/saved/{id}': {
+      put: {
+        ...user,
+        summary: 'Save a property',
+        parameters: [idParam],
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+      delete: {
+        ...user,
+        summary: 'Remove from saved',
+        parameters: [idParam],
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/leads': {
+      get: {
+        ...user,
+        summary: 'Enquiries received on my listings',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/leads/seen': {
+      post: {
+        ...user,
+        summary: 'Mark leads as seen',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/enquiries': {
+      get: {
+        ...user,
+        summary: 'Enquiries I sent',
+        responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+    },
+    '/me/contact/{id}': {
+      post: {
+        ...user,
+        summary: 'Reveal the poster’s phone number (recorded as a lead)',
+        parameters: [idParam],
+        responses: { '200': { description: 'OK' }, ...authErrors },
       },
     },
     '/admin/auth/login': {
@@ -435,19 +664,25 @@ export const openApiDocument = {
         responses: { '200': { description: 'OK' }, ...authErrors, ...errors },
       },
     },
-    '/admin/submissions': {
+    '/admin/users': {
       get: {
         ...admin,
-        summary: 'Landlord listing requests',
+        summary: 'Website users (filter by role, status, verified)',
         responses: { '200': { description: 'OK' }, ...authErrors },
       },
     },
-    '/admin/submissions/{id}': {
-      patch: {
+    '/admin/users/{id}': {
+      get: {
         ...admin,
-        summary: 'Update submission',
+        summary: 'One user',
         parameters: [idParam],
         responses: { '200': { description: 'OK' }, ...authErrors },
+      },
+      patch: {
+        ...admin,
+        summary: 'Verify, block or add a note (admin role)',
+        parameters: [idParam],
+        responses: { '200': { description: 'OK' }, ...authErrors, ...errors },
       },
     },
     '/admin/locations': {

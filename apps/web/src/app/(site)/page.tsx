@@ -1,80 +1,54 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { whatsappLink } from '@nexus/shared';
+import { USER_ROLE_LABELS, type PropertyCard as Card } from '@nexus/shared';
 import { getFaqs, getHome, getLocations, getSettings } from '@/lib/api';
 import { pageMetadata, websiteJsonLd } from '@/lib/seo';
 import { HeroSearch } from '@/components/search/HeroSearch';
 import { PropertyGrid } from '@/components/property/PropertyCard';
-import { FaqList, JsonLd, SectionHeading, faqJsonLd } from '@/components/ui';
+import { FaqList, JsonLd, faqJsonLd } from '@/components/ui';
+import { JaipurFacade } from '@/components/art/JaipurFacade';
 import { EnquiryForm } from '@/components/forms/EnquiryForm';
-import {
-  ArrowRight,
-  BuildingIcon,
-  ChatIcon,
-  HomeIcon,
-  KeyIcon,
-  MapPinIcon,
-  SearchIcon,
-  ShieldIcon,
-  WarehouseIcon,
-  WhatsAppIcon,
-  CalendarIcon,
-  LayersIcon,
-} from '@/components/icons';
+import { ArrowRight, BadgeCheckIcon, BriefcaseIcon, CraneIcon, HomeIcon } from '@/components/icons';
 
-export const metadata: Metadata = pageMetadata({
-  title: 'NEXUS Estate | Residential & Commercial Rentals in Jaipur',
-  description:
-    'Find flats, houses, villas, offices, shops and showrooms for rent in Jaipur. Search listings by locality and budget, and talk to the NEXUS Estate team.',
-  path: '/',
-});
+export const dynamic = 'force-dynamic';
 
-const WHY = [
+export async function generateMetadata(): Promise<Metadata> {
+  const cities = await getLocations();
+  const where = cities.length === 1 ? ` in ${cities[0]!.name}` : '';
+  return pageMetadata({
+    title: `NEXUS Estate | Property to Buy and Rent${where}`,
+    description: `Flats, houses, villas, plots, offices and shops for sale and rent${where}. Every listing is reviewed before it goes live. Owners, agents and builders can post property free.`,
+    path: '/',
+  });
+}
+
+const POSTERS = [
   {
-    Icon: ShieldIcon,
-    title: 'Listings we review first',
-    text: 'Every property is checked by our team before it is published, and owner details stay private.',
+    role: 'individual' as const,
+    Icon: HomeIcon,
+    title: 'Owners',
+    text: 'List a flat, house or shop you own — for sale or for rent. Your number stays hidden until you choose to show it.',
   },
   {
-    Icon: ChatIcon,
-    title: 'One team to talk to',
-    text: 'Call or message us for visits, questions and negotiation — you won’t be passed between strangers.',
+    role: 'agent' as const,
+    Icon: BriefcaseIcon,
+    title: 'Agents',
+    text: 'Manage every client listing from one dashboard and receive enquiries as leads you can follow up.',
   },
   {
-    Icon: LayersIcon,
-    title: 'Homes and business spaces',
-    text: 'Apartments, independent houses and villas alongside offices, shops and showrooms in one place.',
-  },
-  {
-    Icon: MapPinIcon,
-    title: 'Local focus',
-    text: 'We work locality by locality, so our suggestions reflect how each neighbourhood actually lives and trades.',
+    role: 'builder' as const,
+    Icon: CraneIcon,
+    title: 'Builders',
+    text: 'Showcase projects with RERA details, possession dates and floor-wise pricing for buyers to compare.',
   },
 ];
 
-const STEPS = [
-  {
-    Icon: SearchIcon,
-    title: 'Search or tell us',
-    text: 'Browse by locality, budget and type — or share your requirement and we’ll shortlist for you.',
-  },
-  {
-    Icon: CalendarIcon,
-    title: 'Visit',
-    text: 'We confirm availability with the owner and arrange visits at a time that suits you.',
-  },
-  {
-    Icon: ChatIcon,
-    title: 'Agree terms',
-    text: 'We help you understand rent, deposit, maintenance and lock-in before anything is signed.',
-  },
-  {
-    Icon: KeyIcon,
-    title: 'Move in',
-    text: 'Finalise the paperwork with the owner and collect your keys.',
-  },
-];
+const REVIEW_STEPS = [
+  ['Post', 'Add photos, price and details from your dashboard. Takes about ten minutes.'],
+  ['Review', 'Our team checks the listing for accuracy before it is published.'],
+  ['Go live', 'Buyers and tenants find it in search and contact you directly.'],
+] as const;
 
 export default async function HomePage() {
   const [settings, home, cities, faqs] = await Promise.all([
@@ -83,287 +57,231 @@ export default async function HomePage() {
     getLocations(),
     getFaqs({ home: true }),
   ]);
-  const city = cities[0];
-  const topLocalities = (city?.localities ?? [])
-    .filter((l) => (l.publishedCount ?? 0) > 0 || l.intro)
-    .sort((a, b) => (b.publishedCount ?? 0) - (a.publishedCount ?? 0))
-    .slice(0, 8);
+  const singleCity = cities.length === 1 ? cities[0] : undefined;
+  const localityList = (singleCity?.localities ?? [])
+    .slice()
+    .sort(
+      (a, b) => (b.publishedCount ?? 0) - (a.publishedCount ?? 0) || a.name.localeCompare(b.name),
+    )
+    .slice(0, 12);
 
   return (
     <>
       <JsonLd data={[websiteJsonLd(settings), ...(faqs.length ? [faqJsonLd(faqs)] : [])]} />
 
       {/* Hero */}
-      <section className="relative isolate overflow-hidden bg-brand-800">
+      <section className="relative isolate overflow-hidden bg-brand-900 text-white">
         <Image
           src={settings.home.heroImageUrl || '/images/hero-skyline.jpg'}
           alt=""
           fill
           priority
           sizes="100vw"
-          className="-z-10 object-cover opacity-35"
+          className="-z-20 object-cover opacity-30 mix-blend-luminosity"
         />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-brand-800/40 via-brand-800/70 to-brand-800" />
-        <div className="container-page pb-12 pt-16 sm:pt-24">
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(1,42,51,0.55)_0%,rgba(1,42,51,0.85)_55%,#012a33_100%)]" />
+        <div className="container-page pb-16 pt-16 sm:pb-24 sm:pt-24">
           <div className="max-w-3xl">
-            <p className="eyebrow !text-accent-100">Rentals · {city?.name ?? 'Jaipur'}</p>
-            <h1 className="mt-3 text-4xl font-bold leading-[1.1] text-white sm:text-5xl lg:text-[3.5rem]">
+            {singleCity && (
+              <p className="text-sm font-medium text-accent-100">
+                Now listing in {singleCity.name}
+              </p>
+            )}
+            <h1 className="mt-4 text-[2.6rem] leading-[1.05] tracking-[-0.01em] sm:text-[3.6rem] lg:text-[4.25rem]">
               {settings.home.heroHeadline}
             </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white/85">
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/80">
               {settings.home.heroSubheadline}
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/properties" className="btn btn-accent">
-                Explore Properties <ArrowRight size={18} />
-              </Link>
-              <Link
-                href="/list-your-property"
-                className="btn border border-white/40 text-white hover:bg-white/10"
-              >
-                List Your Property
-              </Link>
-            </div>
           </div>
-          <div className="mt-10">
+          <div className="mt-12 max-w-5xl">
             <HeroSearch cities={cities} />
           </div>
-        </div>
-      </section>
-
-      {/* Categories */}
-      <section className="container-page py-16" aria-labelledby="cat-heading">
-        <SectionHeading id="cat-heading" eyebrow="Browse" title="What are you looking for?" />
-        <div className="grid gap-5 md:grid-cols-3">
-          <CategoryTile
-            href="/residential"
-            Icon={HomeIcon}
-            title="Residential Rentals"
-            text="Apartments, builder floors, independent houses, villas and furnished homes."
-          />
-          <CategoryTile
-            href="/commercial"
-            Icon={BuildingIcon}
-            title="Commercial Rentals"
-            text="Offices, retail shops, showrooms, co-working and commercial buildings."
-          />
-          <div className="card flex flex-col bg-surface p-6 opacity-90">
-            <WarehouseIcon size={30} className="text-ink-muted" />
-            <h3 className="mt-4 text-xl font-semibold">Industrial Rentals</h3>
-            <p className="mt-2 flex-1 text-ink-soft">
-              Warehouses and sheds — coming soon. Tell us your requirement and we’ll help.
-            </p>
-            <Link
-              href="/contact?topic=industrial"
-              className="mt-4 inline-flex items-center gap-1 font-semibold text-brand hover:underline"
-            >
-              Share a requirement <ArrowRight size={16} />
-            </Link>
-          </div>
+          <dl className="mt-10 flex flex-wrap gap-x-10 gap-y-3 text-sm text-white/75">
+            {home.counts.sale > 0 && (
+              <div className="flex items-baseline gap-2">
+                <dt className="sr-only">For sale</dt>
+                <dd>
+                  <Link href="/buy" className="hover:text-white">
+                    <span className="tabular font-display text-2xl text-white">
+                      {home.counts.sale}
+                    </span>{' '}
+                    {home.counts.sale === 1 ? 'property' : 'properties'} for sale
+                  </Link>
+                </dd>
+              </div>
+            )}
+            {home.counts.rent > 0 && (
+              <div className="flex items-baseline gap-2">
+                <dt className="sr-only">For rent</dt>
+                <dd>
+                  <Link href="/rent" className="hover:text-white">
+                    <span className="tabular font-display text-2xl text-white">
+                      {home.counts.rent}
+                    </span>{' '}
+                    for rent
+                  </Link>
+                </dd>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <BadgeCheckIcon size={18} className="text-accent" />
+              Every listing reviewed before it goes live
+            </div>
+          </dl>
         </div>
       </section>
 
       {/* Featured */}
       {settings.home.showFeatured && home.featured.length > 0 && (
-        <section className="bg-surface py-16" aria-labelledby="featured-heading">
-          <div className="container-page">
-            <SectionHeading
-              id="featured-heading"
-              eyebrow="Handpicked"
-              title="Featured properties"
-              action={
-                <Link href="/properties" className="btn btn-outline">
-                  View all
-                </Link>
-              }
-            />
-            <PropertyGrid items={home.featured.slice(0, 6)} />
-          </div>
-        </section>
+        <Rail
+          id="featured"
+          title="Featured"
+          text="Selected by our team for location, condition and value."
+          href="/properties"
+          linkLabel="All properties"
+          items={home.featured.slice(0, 6)}
+        />
       )}
 
-      {/* Recent */}
-      {settings.home.showRecent && home.recent.length > 0 && (
-        <section className="container-page py-16" aria-labelledby="recent-heading">
-          <SectionHeading
-            id="recent-heading"
-            eyebrow="Just listed"
-            title="Recently added"
-            action={
-              <Link href="/properties" className="btn btn-outline">
-                See all listings
-              </Link>
-            }
-          />
-          <PropertyGrid items={home.recent.slice(0, 6)} />
-        </section>
+      {settings.home.showRecent && home.recentSale.length > 0 && (
+        <Rail
+          id="sale"
+          title="New to buy"
+          text="The latest homes and spaces listed for sale."
+          href="/buy"
+          linkLabel="Browse all for sale"
+          items={home.recentSale.slice(0, 6)}
+          tinted
+        />
       )}
 
-      {/* Locations */}
-      {city && topLocalities.length > 0 && (
-        <section className="container-page py-16" aria-labelledby="loc-heading">
-          <SectionHeading
-            id="loc-heading"
-            eyebrow="Neighbourhoods"
-            title={`Browse rentals across ${city.name}`}
-            action={
-              <Link href={`/rentals/${city.slug}`} className="btn btn-outline">
-                All {city.name} locations
+      {settings.home.showRecent && home.recentRent.length > 0 && (
+        <Rail
+          id="rent"
+          title="New to rent"
+          text="Fresh rentals, from furnished studios to ready offices."
+          href="/rent"
+          linkLabel="Browse all rentals"
+          items={home.recentRent.slice(0, 6)}
+        />
+      )}
+
+      {/* Localities */}
+      {singleCity && localityList.length > 0 && (
+        <section className="border-t border-line py-20" aria-labelledby="loc-heading">
+          <div className="container-page grid gap-12 lg:grid-cols-[1fr_2fr]">
+            <div>
+              <h2 id="loc-heading" className="text-[2rem] leading-tight sm:text-[2.4rem]">
+                Explore {singleCity.name} by neighbourhood
+              </h2>
+              {singleCity.intro && <p className="mt-4 text-ink-soft">{singleCity.intro}</p>}
+              <Link href="/locations" className="btn btn-outline mt-6">
+                See all localities
               </Link>
-            }
-          />
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {topLocalities.map((l) => (
-              <li key={l.slug}>
-                <Link
-                  href={`/rentals/${city.slug}/${l.slug}`}
-                  className="card flex items-center justify-between gap-3 p-4 hover:border-brand"
+            </div>
+            <ul className="grid gap-x-8 sm:grid-cols-2">
+              {localityList.map((l) => (
+                <li
+                  key={l.slug}
+                  className="flex items-center justify-between border-b border-line py-3.5"
                 >
-                  <span className="flex items-center gap-2.5 font-semibold">
-                    <MapPinIcon size={18} className="text-brand" /> {l.name}
+                  <Link
+                    href={`/buy/${singleCity.slug}/${l.slug}`}
+                    className="font-medium hover:text-brand"
+                  >
+                    {l.name}
+                  </Link>
+                  <span className="flex gap-4 text-sm">
+                    <Link
+                      href={`/buy/${singleCity.slug}/${l.slug}`}
+                      className="text-brand hover:underline"
+                    >
+                      Buy
+                    </Link>
+                    <Link
+                      href={`/rent/${singleCity.slug}/${l.slug}`}
+                      className="text-brand hover:underline"
+                    >
+                      Rent
+                    </Link>
                   </span>
-                  {(l.publishedCount ?? 0) > 0 && (
-                    <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-800">
-                      {l.publishedCount} {l.publishedCount === 1 ? 'listing' : 'listings'}
-                    </span>
-                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {/* Post property */}
+      <section
+        className="relative isolate overflow-hidden bg-brand-900 py-20 text-white"
+        aria-labelledby="post-heading"
+      >
+        <JaipurFacade
+          className="absolute inset-x-0 bottom-0 -z-10 h-2/3 w-full text-accent"
+          opacity={0.12}
+        />
+        <div className="container-page">
+          <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+            <div>
+              <h2 id="post-heading" className="text-[2.2rem] leading-tight sm:text-[2.75rem]">
+                Have property to sell or rent out? List it free.
+              </h2>
+              <p className="mt-4 max-w-xl text-lg text-white/75">
+                Create an account as an owner, agent or builder and post from your own dashboard.
+                Enquiries come straight to you.
+              </p>
+            </div>
+            <ol className="grid gap-6 sm:grid-cols-3">
+              {REVIEW_STEPS.map(([title, text], i) => (
+                <li key={title} className="border-t border-white/20 pt-4">
+                  <p className="tabular text-sm text-accent-100">Step {i + 1}</p>
+                  <h3 className="mt-1 text-lg font-semibold">{title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-white/70">{text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <ul className="mt-14 grid gap-4 md:grid-cols-3">
+            {POSTERS.map(({ role, Icon, title, text }) => (
+              <li key={role}>
+                <Link
+                  href={`/signup?role=${role}&next=${encodeURIComponent('/dashboard/listings/new')}`}
+                  className="group flex h-full flex-col rounded-2xl bg-white/[0.06] p-6 ring-1 ring-white/10 transition-colors hover:bg-white/[0.1]"
+                >
+                  <Icon size={26} className="text-accent" />
+                  <h3 className="mt-5 text-xl font-semibold">{title}</h3>
+                  <p className="mt-2 flex-1 text-white/70">{text}</p>
+                  <span className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-100">
+                    Sign up as{' '}
+                    {role === 'individual' ? 'owner' : USER_ROLE_LABELS[role].toLowerCase()}
+                    <ArrowRight
+                      size={16}
+                      className="transition-transform group-hover:translate-x-0.5"
+                    />
+                  </span>
                 </Link>
               </li>
             ))}
           </ul>
-        </section>
-      )}
-
-      {/* Why */}
-      <section className="bg-brand-800 py-16 text-white" aria-labelledby="why-heading">
-        <div className="container-page">
-          <p className="eyebrow !text-accent-100">Why NEXUS</p>
-          <h2 id="why-heading" className="mt-2 max-w-2xl text-3xl font-bold sm:text-[2.125rem]">
-            Renting is a big decision. We keep it straightforward.
-          </h2>
-          <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {WHY.map(({ Icon, title, text }) => (
-              <li
-                key={title}
-                className="rounded-[var(--radius-card)] border border-white/15 bg-white/5 p-6"
-              >
-                <Icon size={28} className="text-accent" />
-                <h3 className="mt-4 text-lg font-semibold">{title}</h3>
-                <p className="mt-2 text-white/80">{text}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* Process */}
-      <section className="container-page py-16" aria-labelledby="process-heading">
-        <SectionHeading id="process-heading" eyebrow="How it works" title="Our rental process" />
-        <ol className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(({ Icon, title, text }, i) => (
-            <li key={title} className="relative">
-              <div className="flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-full bg-accent-50 font-display text-lg font-bold text-brand-800">
-                  {i + 1}
-                </span>
-                <Icon size={22} className="text-brand" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold">{title}</h3>
-              <p className="mt-1.5 text-ink-soft">{text}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* Services */}
-      <section className="bg-surface py-16" aria-labelledby="services-heading">
-        <div className="container-page">
-          <SectionHeading
-            id="services-heading"
-            eyebrow="Services"
-            title="Residential and commercial rentals"
-          />
-          <div className="grid gap-6 lg:grid-cols-2">
-            <article className="card p-7">
-              <HomeIcon size={28} className="text-brand" />
-              <h3 className="mt-4 text-xl font-semibold">For families and professionals</h3>
-              <p className="mt-2 text-ink-soft">
-                Whether you need a furnished 1 BHK near work, a family flat close to schools, or an
-                independent house with parking, we shortlist homes that match your budget and
-                routine — and arrange visits around your schedule.
-              </p>
-              <Link
-                href="/residential"
-                className="mt-5 inline-flex items-center gap-1 font-semibold text-brand hover:underline"
-              >
-                Residential rentals <ArrowRight size={16} />
-              </Link>
-            </article>
-            <article className="card p-7">
-              <BuildingIcon size={28} className="text-brand" />
-              <h3 className="mt-4 text-xl font-semibold">For businesses</h3>
-              <p className="mt-2 text-ink-soft">
-                From a retail shop with street frontage to a ready-to-move office for a growing
-                team, we help you compare location, carpet area, power backup, parking and lock-in
-                terms before you commit.
-              </p>
-              <Link
-                href="/commercial"
-                className="mt-5 inline-flex items-center gap-1 font-semibold text-brand hover:underline"
-              >
-                Commercial rentals <ArrowRight size={16} />
-              </Link>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      {/* Owners */}
-      <section className="container-page py-16" aria-labelledby="owners-heading">
-        <div className="grid items-center gap-8 overflow-hidden rounded-[1.25rem] bg-accent-50 p-8 sm:p-12 lg:grid-cols-[1.3fr_1fr]">
-          <div>
-            <p className="eyebrow">For property owners</p>
-            <h2 id="owners-heading" className="mt-2 text-3xl font-bold">
-              Have a property to rent out?
-            </h2>
-            <p className="mt-3 max-w-xl text-lg text-ink-soft">
-              Share a few details and our team will get in touch to understand your property, agree
-              how it should be presented, and connect you with suitable tenants. Your phone number
-              is never published.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3 lg:justify-end">
-            <Link href="/list-your-property" className="btn btn-primary">
-              List Your Property
-            </Link>
-            <a
-              href={whatsappLink(
-                settings.whatsapp,
-                'Hello NEXUS Estate, I want to list my property for rent.',
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline"
-            >
-              <WhatsAppIcon size={18} /> WhatsApp us
-            </a>
-          </div>
         </div>
       </section>
 
       {/* FAQs */}
       {faqs.length > 0 && (
-        <section className="container-page py-16" aria-labelledby="faq-heading">
+        <section className="container-page py-20" aria-labelledby="faq-heading">
           <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
             <div>
-              <p className="eyebrow">FAQs</p>
-              <h2 id="faq-heading" className="mt-2 text-3xl font-bold">
-                Questions people ask us
+              <h2 id="faq-heading" className="text-[2rem] leading-tight sm:text-[2.4rem]">
+                Questions, answered
               </h2>
-              <p className="mt-3 text-ink-soft">Can’t find what you need?</p>
+              <p className="mt-3 text-ink-soft">
+                More about buying, renting and posting on NEXUS Estate.
+              </p>
               <Link
                 href="/faq"
-                className="mt-4 inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+                className="mt-5 inline-flex items-center gap-1 font-semibold text-brand hover:underline"
               >
                 All FAQs <ArrowRight size={16} />
               </Link>
@@ -373,17 +291,16 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Final CTA */}
-      <section className="container-page py-8" aria-labelledby="cta-heading">
-        <div className="grid gap-10 rounded-[1.25rem] border border-line bg-white p-8 shadow-card sm:p-12 lg:grid-cols-2">
+      {/* Callback */}
+      <section className="container-page pb-8" aria-labelledby="cta-heading">
+        <div className="grid gap-10 rounded-[1.5rem] bg-surface p-8 sm:p-12 lg:grid-cols-2">
           <div>
-            <p className="eyebrow">Talk to our team</p>
-            <h2 id="cta-heading" className="mt-2 text-3xl font-bold">
-              Tell us what you’re looking for
+            <h2 id="cta-heading" className="text-[2rem] leading-tight">
+              Not finding the right fit?
             </h2>
             <p className="mt-3 text-lg text-ink-soft">
-              Share your budget, preferred locality and timeline. We’ll call you back with options
-              that fit.
+              Tell us your budget, preferred area and timeline. Our team will call you back with
+              options.
             </p>
           </div>
           <EnquiryForm type="general" sourcePage="/" submitLabel="Request a callback" compact />
@@ -393,29 +310,42 @@ export default async function HomePage() {
   );
 }
 
-function CategoryTile({
-  href,
-  Icon,
+function Rail({
+  id,
   title,
   text,
+  href,
+  linkLabel,
+  items,
+  tinted,
 }: {
-  href: string;
-  Icon: typeof HomeIcon;
+  id: string;
   title: string;
   text: string;
+  href: string;
+  linkLabel: string;
+  items: Card[];
+  tinted?: boolean;
 }) {
   return (
-    <Link
-      href={href}
-      className="group card flex flex-col p-6 transition-shadow hover:border-brand hover:shadow-lift"
-    >
-      <Icon size={30} className="text-brand" />
-      <h3 className="mt-4 text-xl font-semibold">{title}</h3>
-      <p className="mt-2 flex-1 text-ink-soft">{text}</p>
-      <span className="mt-4 inline-flex items-center gap-1 font-semibold text-brand">
-        Find a rental{' '}
-        <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
-      </span>
-    </Link>
+    <section className={`py-20 ${tinted ? 'bg-surface' : ''}`} aria-labelledby={`${id}-heading`}>
+      <div className="container-page">
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 id={`${id}-heading`} className="text-[2rem] leading-tight sm:text-[2.4rem]">
+              {title}
+            </h2>
+            <p className="mt-2 text-ink-soft">{text}</p>
+          </div>
+          <Link
+            href={href}
+            className="inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+          >
+            {linkLabel} <ArrowRight size={16} />
+          </Link>
+        </div>
+        <PropertyGrid items={items} />
+      </div>
+    </section>
   );
 }

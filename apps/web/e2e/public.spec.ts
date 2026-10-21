@@ -5,7 +5,7 @@ test.describe('public site', () => {
     await page.goto('/');
     await expect(page.getByRole('img', { name: /NEXUS Estate/ }).first()).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByRole('search', { name: 'Find a rental' })).toBeVisible();
+    await expect(page.getByRole('search', { name: 'Search properties' })).toBeVisible();
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
       /^https?:\/\/[^/]+\/?$/,
@@ -17,19 +17,17 @@ test.describe('public site', () => {
   });
 
   test('search filters are reflected in the URL and survive reload', async ({ page }) => {
-    await page.goto('/properties?category=residential&minRent=10000&maxRent=25000');
-    await expect(page).toHaveURL(/minRent=10000/);
-    await expect(
-      page.getByRole('heading', { level: 1, name: /Properties for rent/ }),
-    ).toBeVisible();
+    await page.goto('/rent?category=residential&minPrice=10000&maxPrice=25000');
+    await expect(page).toHaveURL(/minPrice=10000/);
+    await expect(page.getByRole('heading', { level: 1, name: /Property for rent/ })).toBeVisible();
     await page.reload();
-    await expect(page).toHaveURL(/maxRent=25000/);
+    await expect(page).toHaveURL(/maxPrice=25000/);
     // Filtered combinations are not indexed.
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   });
 
   test('invalid filters do not break the page', async ({ page }) => {
-    const res = await page.goto('/properties?category=castle&minRent=abc&page=-1');
+    const res = await page.goto('/properties?category=castle&minPrice=abc&page=-1');
     expect(res?.status()).toBe(200);
   });
 
@@ -45,13 +43,28 @@ test.describe('public site', () => {
     expect(robots).toContain('Sitemap:');
     const sitemap = await request.get('/sitemap.xml');
     expect(sitemap.status()).toBe(200);
-    expect(await sitemap.text()).toContain('/residential');
+    const xml = await sitemap.text();
+    expect(xml).toContain('/buy');
+    expect(xml).toContain('/rent');
   });
 
   test('admin redirects to login and is noindex', async ({ page }) => {
     await page.goto('/admin');
     await expect(page).toHaveURL(/\/admin\/login/);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  });
+
+  test('old rental URLs redirect to the new pages', async ({ page }) => {
+    await page.goto('/list-your-property');
+    await expect(page).toHaveURL(/\/post-property$/);
+    await page.goto('/rentals');
+    await expect(page).toHaveURL(/\/locations$/);
+  });
+
+  test('dashboard requires sign-in', async ({ page }) => {
+    await page.goto('/dashboard/listings');
+    await expect(page).toHaveURL(/\/login\?next=%2Fdashboard%2Flistings/);
+    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
   });
 
   test('contact form validates before sending', async ({ page }) => {

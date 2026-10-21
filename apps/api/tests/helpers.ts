@@ -85,6 +85,7 @@ export const IMG = {
 };
 
 export const residential = (overrides: Record<string, unknown> = {}) => ({
+  listingType: 'rent',
   title: '2 BHK apartment near Gandhi Path',
   description:
     'A bright two-bedroom apartment with good ventilation and covered parking for one car.',
@@ -92,7 +93,7 @@ export const residential = (overrides: Record<string, unknown> = {}) => ({
   propertyType: 'apartment',
   citySlug: 'jaipur',
   localitySlug: 'vaishali-nagar',
-  monthlyRent: 18000,
+  price: 18000,
   securityDeposit: 36000,
   areaValue: 1050,
   areaUnit: 'sqft',
@@ -108,6 +109,7 @@ export const residential = (overrides: Record<string, unknown> = {}) => ({
 });
 
 export const commercial = (overrides: Record<string, unknown> = {}) => ({
+  listingType: 'rent',
   title: 'Furnished office near Ashok Marg',
   description:
     'Ready-to-move office with twenty workstations, a cabin, conference room and pantry.',
@@ -115,12 +117,84 @@ export const commercial = (overrides: Record<string, unknown> = {}) => ({
   propertyType: 'office',
   citySlug: 'jaipur',
   localitySlug: 'c-scheme',
-  monthlyRent: 85000,
+  price: 85000,
   areaValue: 1600,
   areaUnit: 'sqft',
   furnishingStatus: 'furnished',
   amenities: ['power-backup', 'lift'],
   parking: 'covered',
+  images: [IMG],
+  ...overrides,
+});
+
+let phoneSeq = 0;
+/** A unique, valid Indian mobile for each test user. */
+export const nextPhone = () => `98290${String(10000 + ++phoneSeq).slice(-5)}`;
+
+/** Signs up a website user and returns a cookie-carrying agent that sends the user CSRF token. */
+export async function signUpUser(
+  app: Express,
+  role: 'individual' | 'agent' | 'builder' = 'individual',
+  overrides: Record<string, unknown> = {},
+) {
+  const agent = request.agent(app);
+  const phone = nextPhone();
+  const body = {
+    role,
+    name: role === 'individual' ? 'Asha Verma' : 'Rahul Mehta',
+    email: `user${phoneSeq}@example.test`,
+    phone,
+    password: 'secret123',
+    acceptTerms: true,
+    ...(role !== 'individual'
+      ? { companyName: role === 'agent' ? 'Mehta Realty' : 'Mehta Builders' }
+      : {}),
+    ...overrides,
+  };
+  const res = await agent.post('/api/v1/auth/signup').send(body);
+  if (res.status !== 201)
+    throw new Error(`signup failed: ${res.status} ${JSON.stringify(res.body)}`);
+  const cookies = ([] as string[]).concat(res.headers['set-cookie'] ?? []);
+  const csrf = cookies
+    .find((c) => c.startsWith('nexus_ucsrf='))!
+    .split(';')[0]!
+    .split('=')[1]!;
+  return {
+    agent,
+    csrf,
+    user: res.body.data.user as {
+      id: string;
+      phone: string;
+      email: string;
+      phoneVerified: boolean;
+    },
+    devCode: res.body.data.verification?.devCode as string | undefined,
+    password: body.password as string,
+    get: (url: string) => agent.get(url),
+    post: (url: string, b?: object) => agent.post(url).set('X-CSRF-Token', csrf).send(b),
+    put: (url: string, b?: object) => agent.put(url).set('X-CSRF-Token', csrf).send(b),
+    patch: (url: string, b?: object) => agent.patch(url).set('X-CSRF-Token', csrf).send(b),
+    del: (url: string) => agent.delete(url).set('X-CSRF-Token', csrf),
+  };
+}
+
+/** A listing payload a user would post (no admin-only fields). */
+export const userListing = (overrides: Record<string, unknown> = {}) => ({
+  listingType: 'sale',
+  title: '3 BHK flat for sale near Gandhi Path',
+  description:
+    'A bright three-bedroom flat with two balconies, modular kitchen and covered parking.',
+  category: 'residential',
+  propertyType: 'apartment',
+  citySlug: 'jaipur',
+  localitySlug: 'vaishali-nagar',
+  price: 5500000,
+  areaValue: 1400,
+  areaUnit: 'sqft',
+  bedrooms: 3,
+  bathrooms: 2,
+  furnishingStatus: 'semi-furnished',
+  possessionStatus: 'ready',
   images: [IMG],
   ...overrides,
 });

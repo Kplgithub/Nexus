@@ -1,24 +1,26 @@
 import type { Metadata, Viewport } from 'next';
-import { Outfit, Plus_Jakarta_Sans } from 'next/font/google';
+import { Manrope, Newsreader } from 'next/font/google';
 import { SITE_NOINDEX, SITE_URL } from '@/lib/site';
 import './globals.css';
 
-const heading = Outfit({
+/** Editorial serif for headlines; geometric sans (close to the logo's lettering) for everything else. */
+const heading = Newsreader({
   subsets: ['latin'],
   variable: '--font-heading',
   display: 'swap',
-  weight: ['500', '600', '700'],
+  weight: ['400', '500', '600'],
+  style: ['normal', 'italic'],
 });
-const body = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
+const body = Manrope({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'NEXUS Estate | Rentals | Properties in Jaipur',
+    default: 'NEXUS Estate | Buy, Rent & Sell Property',
     template: '%s | NEXUS Estate',
   },
   description:
-    'Residential homes and commercial spaces for rent in Jaipur. Browse verified listings and talk to the NEXUS Estate team.',
+    'Homes, offices and shops to buy or rent. Search listings from owners, agents and builders, or post your property free on NEXUS Estate.',
   applicationName: 'NEXUS Estate',
   icons: {
     icon: [

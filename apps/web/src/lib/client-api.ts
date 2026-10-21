@@ -20,7 +20,7 @@ function readCookie(name: string): string | undefined {
 }
 
 type Opts = {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
   form?: FormData;
   signal?: AbortSignal;
@@ -28,7 +28,7 @@ type Opts = {
 
 /**
  * Browser fetch against the same-origin API (/api/v1). Sends cookies and, for
- * writes, the CSRF token from the readable nexus_csrf cookie.
+ * writes, the CSRF token for the matching session (staff or website user).
  */
 export async function apiFetch<T>(
   path: string,
@@ -37,7 +37,8 @@ export async function apiFetch<T>(
   const method = opts.method ?? 'GET';
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (method !== 'GET') {
-    const csrf = readCookie('nexus_csrf');
+    // Staff and website users have separate sessions and CSRF tokens.
+    const csrf = readCookie(path.startsWith('/admin') ? 'nexus_csrf' : 'nexus_ucsrf');
     if (csrf) headers['X-CSRF-Token'] = csrf;
   }
   let body: BodyInit | undefined;

@@ -18,6 +18,7 @@
     "format:check": "prettier --check .",
     "seed:admin": "pnpm --filter @nexus/api seed:admin",
     "seed:base": "pnpm --filter @nexus/api seed:base",
+    "seed:locations": "pnpm --filter @nexus/api seed:locations",
     "seed:demo": "pnpm --filter @nexus/api seed:demo",
     "demo:remove": "pnpm --filter @nexus/api demo:remove"
   },

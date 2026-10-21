@@ -16,10 +16,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: url('/'), lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: url('/properties'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: url('/residential'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: url('/buy'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: url('/rent'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: url('/commercial'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: url('/rentals'), changeFrequency: 'weekly', priority: 0.6 },
-    { url: url('/list-your-property'), changeFrequency: 'monthly', priority: 0.6 },
+    { url: url('/locations'), changeFrequency: 'weekly', priority: 0.6 },
+    { url: url('/post-property'), changeFrequency: 'monthly', priority: 0.6 },
     { url: url('/about'), changeFrequency: 'monthly', priority: 0.4 },
     { url: url('/contact'), changeFrequency: 'monthly', priority: 0.5 },
     { url: url('/faq'), changeFrequency: 'monthly', priority: 0.4 },
@@ -28,18 +29,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/cookie-policy'), changeFrequency: 'yearly', priority: 0.1 },
   ];
 
-  const locationPages: MetadataRoute.Sitemap = cities.flatMap((c) => [
-    ...((c.publishedCount ?? 0) > 0 || c.intro
-      ? [{ url: url(`/rentals/${c.slug}`), changeFrequency: 'daily' as const, priority: 0.8 }]
-      : []),
-    ...c.localities
-      .filter((l) => (l.publishedCount ?? 0) > 0 || l.intro)
-      .map((l) => ({
-        url: url(`/rentals/${c.slug}/${l.slug}`),
-        changeFrequency: 'daily' as const,
-        priority: 0.7,
-      })),
-  ]);
+  const locationPages: MetadataRoute.Sitemap = cities.flatMap((c) =>
+    ['/buy', '/rent'].flatMap((root) => [
+      ...((c.publishedCount ?? 0) > 0 || c.intro
+        ? [{ url: url(`${root}/${c.slug}`), changeFrequency: 'daily' as const, priority: 0.8 }]
+        : []),
+      ...c.localities
+        .filter((l) => (l.publishedCount ?? 0) > 0 || l.intro)
+        .map((l) => ({
+          url: url(`${root}/${c.slug}/${l.slug}`),
+          changeFrequency: 'daily' as const,
+          priority: 0.7,
+        })),
+    ]),
+  );
 
   const listingPages: MetadataRoute.Sitemap = properties.map((p) => ({
     url: url(`/properties/${p.slug}`),

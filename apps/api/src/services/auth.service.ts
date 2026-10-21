@@ -16,8 +16,12 @@ const HASH_OPTS = {
 
 export const hashPassword = (password: string) => argon2.hash(password, HASH_OPTS);
 
+export const verifyPassword = (hash: string, password: string) =>
+  argon2.verify(hash, password).catch(() => false);
+export const passwordNeedsRehash = (hash: string) => argon2.needsRehash(hash, HASH_OPTS);
+
 let dummyHash: string | null = null;
-async function burnTime(password: string) {
+export async function burnTime(password: string) {
   dummyHash ??= await argon2.hash('not-a-real-password-placeholder', HASH_OPTS);
   await argon2.verify(dummyHash, password).catch(() => false);
 }

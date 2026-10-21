@@ -11,3 +11,4 @@ process.env.UPLOAD_DRIVER = 'local';
 process.env.LOCAL_UPLOAD_DIR = mkdtempSync(path.join(tmpdir(), 'nexus-uploads-'));
 process.env.LOG_LEVEL = 'silent';
 process.env.ENABLE_API_DOCS = 'true';
+process.env.SMS_DRIVER = 'console';

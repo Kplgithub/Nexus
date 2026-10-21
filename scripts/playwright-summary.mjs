@@ -22,7 +22,7 @@ function walk(suite, path) {
           .slice(0, 8)
           .join('\n');
         failures.push(
-          `[${t.projectName}] ${[...path, spec.title].filter(Boolean).join(' › ')}\n${err}`,
+          `[${t.projectName}] ${[...path, spec.title].filter(Boolean).join(' › ')} (${last.status}, ${Math.round((last.duration ?? 0) / 1000)}s)\n${err}`,
         );
       }
     }

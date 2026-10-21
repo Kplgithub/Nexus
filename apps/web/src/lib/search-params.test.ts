@@ -6,12 +6,12 @@ describe('search params', () => {
     const s = parseSearch({
       category: 'residential',
       city: 'jaipur',
-      minRent: '10000',
-      maxRent: '25000',
+      minPrice: '10000',
+      maxPrice: '25000',
       sort: 'newest',
       page: '1',
     });
-    expect(toQueryString(s)).toBe('category=residential&city=jaipur&minRent=10000&maxRent=25000');
+    expect(toQueryString(s)).toBe('category=residential&city=jaipur&minPrice=10000&maxPrice=25000');
   });
 
   it('drops junk and keeps valid values', () => {
@@ -36,6 +36,6 @@ describe('search params', () => {
   it('detects user filters', () => {
     expect(hasUserFilters({})).toBe(false);
     expect(hasUserFilters({ utm_source: 'x' })).toBe(false);
-    expect(hasUserFilters({ minRent: '5000' })).toBe(true);
+    expect(hasUserFilters({ minPrice: '5000' })).toBe(true);
   });
 });

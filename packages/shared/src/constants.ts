@@ -10,7 +10,7 @@ export type Category = (typeof CATEGORIES)[number];
 export const ACTIVE_CATEGORIES: readonly Category[] = ['residential', 'commercial'];
 
 export const PROPERTY_TYPES = {
-  residential: ['apartment', 'independent-house', 'builder-floor', 'villa', 'studio', 'pg'],
+  residential: ['apartment', 'independent-house', 'builder-floor', 'villa', 'studio', 'pg', 'plot'],
   commercial: [
     'office',
     'shop',
@@ -39,6 +39,7 @@ export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   'builder-floor': 'Builder Floor',
   villa: 'Villa / Bungalow',
   studio: 'Studio Apartment',
+  plot: 'Residential Plot',
   pg: 'PG / Shared Accommodation',
   office: 'Office Space',
   shop: 'Retail Shop',
@@ -59,8 +60,73 @@ export const TYPES_REQUIRING_ROOMS: readonly PropertyType[] = [
   'villa',
 ];
 
-export const PROPERTY_STATUSES = ['draft', 'published', 'rented', 'inactive', 'archived'] as const;
+/** Whether a listing is offered for rent or for sale. */
+export const LISTING_TYPES = ['rent', 'sale'] as const;
+export type ListingType = (typeof LISTING_TYPES)[number];
+
+export const LISTING_TYPE_LABELS: Record<ListingType, string> = { rent: 'Rent', sale: 'Sale' };
+
+/**
+ * Lifecycle: draft → pending (submitted by a user, awaiting admin review) →
+ * published, or rejected. Closed listings become rented / sold. inactive and
+ * archived hide a listing without deleting it.
+ */
+export const PROPERTY_STATUSES = [
+  'draft',
+  'pending',
+  'published',
+  'rejected',
+  'rented',
+  'sold',
+  'inactive',
+  'archived',
+] as const;
 export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
+
+export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = {
+  draft: 'Draft',
+  pending: 'Under review',
+  published: 'Live',
+  rejected: 'Needs changes',
+  rented: 'Rented out',
+  sold: 'Sold',
+  inactive: 'Inactive',
+  archived: 'Archived',
+};
+
+/** Statuses whose detail page stays reachable by the public. */
+export const PUBLIC_DETAIL_STATUSES: readonly PropertyStatus[] = ['published', 'rented', 'sold'];
+
+/** Statuses a signed-in user may set on their own listing directly. */
+export const USER_SETTABLE_STATUSES = ['draft', 'pending', 'rented', 'sold', 'inactive'] as const;
+
+export const POSSESSION_STATUSES = ['ready', 'under-construction'] as const;
+export type PossessionStatus = (typeof POSSESSION_STATUSES)[number];
+export const POSSESSION_LABELS: Record<PossessionStatus, string> = {
+  ready: 'Ready to move',
+  'under-construction': 'Under construction',
+};
+
+export const TRANSACTION_TYPES = ['new', 'resale'] as const;
+export type TransactionType = (typeof TRANSACTION_TYPES)[number];
+export const TRANSACTION_LABELS: Record<TransactionType, string> = {
+  new: 'New booking',
+  resale: 'Resale',
+};
+
+export const OWNERSHIP_TYPES = [
+  'freehold',
+  'leasehold',
+  'cooperative',
+  'power-of-attorney',
+] as const;
+export type OwnershipType = (typeof OWNERSHIP_TYPES)[number];
+export const OWNERSHIP_LABELS: Record<OwnershipType, string> = {
+  freehold: 'Freehold',
+  leasehold: 'Leasehold',
+  cooperative: 'Co-operative society',
+  'power-of-attorney': 'Power of attorney',
+};
 
 export const LISTING_VISIBILITY = ['public', 'unlisted'] as const;
 export type ListingVisibility = (typeof LISTING_VISIBILITY)[number];
@@ -158,33 +224,129 @@ export const AMENITY_LABELS: Record<Amenity, string> = {
 
 export const PREFERRED_TENANTS = ['any', 'family', 'bachelors', 'company', 'students'] as const;
 export type PreferredTenant = (typeof PREFERRED_TENANTS)[number];
+export const PREFERRED_TENANT_LABELS: Record<PreferredTenant, string> = {
+  any: 'Anyone',
+  family: 'Families',
+  bachelors: 'Bachelors',
+  company: 'Company lease',
+  students: 'Students',
+};
 
 export const ENQUIRY_STATUSES = ['new', 'contacted', 'qualified', 'closed', 'spam'] as const;
 export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
 
-export const ENQUIRY_TYPES = ['property', 'general', 'callback'] as const;
+/** "contact" = a signed-in user revealed the poster's phone number. */
+export const ENQUIRY_TYPES = ['property', 'general', 'callback', 'contact'] as const;
 export type EnquiryType = (typeof ENQUIRY_TYPES)[number];
 
-export const SUBMISSION_STATUSES = ['new', 'reviewing', 'converted', 'rejected', 'spam'] as const;
-export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
-
-export const SORT_OPTIONS = ['newest', 'rent_asc', 'rent_desc'] as const;
+export const SORT_OPTIONS = ['newest', 'price_asc', 'price_desc'] as const;
 export type SortOption = (typeof SORT_OPTIONS)[number];
 
 export const SORT_LABELS: Record<SortOption, string> = {
   newest: 'Newest first',
-  rent_asc: 'Rent: low to high',
-  rent_desc: 'Rent: high to low',
+  price_asc: 'Price: low to high',
+  price_desc: 'Price: high to low',
 };
 
 export const ADMIN_ROLES = ['owner', 'admin', 'editor'] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 
+/* ---------------- Website users ---------------- */
+
+/** Account types offered at sign-up. "individual" covers buyers, owners and tenants. */
+export const USER_ROLES = ['individual', 'agent', 'builder'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  individual: 'Buyer / Owner / Tenant',
+  agent: 'Agent',
+  builder: 'Builder',
+};
+
+export const USER_ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  individual: 'Looking to buy or rent, or own a property you want to sell or rent out.',
+  agent: 'A real estate agent or broker listing properties for clients.',
+  builder: 'A developer or builder listing projects and units.',
+};
+
+/** Who posted a listing, as shown on the site. "nexus" = posted by the NEXUS team. */
+export const POSTER_TYPES = ['nexus', 'owner', 'agent', 'builder'] as const;
+export type PosterType = (typeof POSTER_TYPES)[number];
+export const POSTER_LABELS: Record<PosterType, string> = {
+  nexus: 'NEXUS Estate',
+  owner: 'Owner',
+  agent: 'Agent',
+  builder: 'Builder',
+};
+
+/** Active (live or under review) listings a user may hold at once. */
+export const LISTING_LIMITS: Record<UserRole, number> = { individual: 5, agent: 200, builder: 500 };
+
+export const USER_STATUSES = ['active', 'blocked'] as const;
+export type UserStatus = (typeof USER_STATUSES)[number];
+
+export const OTP_PURPOSES = ['login', 'verify', 'reset'] as const;
+export type OtpPurpose = (typeof OTP_PURPOSES)[number];
+export const OTP_LENGTH = 6;
+export const OTP_TTL_SECONDS = 600;
+export const OTP_RESEND_SECONDS = 30;
+export const OTP_MAX_ATTEMPTS = 5;
+
+/** All Indian states and union territories, for adding cities anywhere in the country. */
+export const INDIAN_STATES = [
+  'Andaman and Nicobar Islands',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chandigarh',
+  'Chhattisgarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jammu and Kashmir',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Ladakh',
+  'Lakshadweep',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Puducherry',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+] as const;
+
+export const FAQ_CATEGORIES = [
+  'general',
+  'buyers',
+  'tenants',
+  'owners',
+  'agents',
+  'commercial',
+] as const;
+export type FaqCategory = (typeof FAQ_CATEGORIES)[number];
+
 export const PAGE_SIZE_DEFAULT = 12;
 export const PAGE_SIZE_MAX = 48;
 
-/** Upper bound on any rent/deposit figure (₹10 crore/month) — guards against typos. */
-export const MAX_MONEY_INR = 100_000_000;
+/** Upper bound on any price (₹1,000 crore) — guards against typos. */
+export const MAX_MONEY_INR = 10_000_000_000;
 
 export const IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 export const IMAGE_MAX_PER_PROPERTY = 30;

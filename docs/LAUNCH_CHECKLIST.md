@@ -23,7 +23,8 @@
 - [ ] VPS created; your SSH public key added
 - [ ] MongoDB Atlas cluster, DB user, IP allow-list = server IP
 - [ ] Cloudinary account (cloud name, API key, secret)
-- [ ] SMTP account for lead emails (optional)
+- [ ] MSG91 account with a DLT-registered sender ID and OTP template (for mobile OTP login and verification); set `SMS_DRIVER=msg91`
+- [ ] SMTP account for lead emails and password-reset links (recommended)
 - [ ] GitHub Actions secrets for the Deploy workflow (optional)
 - [ ] Google Search Console property (verify via DNS TXT)
 
@@ -36,9 +37,12 @@
 - [ ] `/api/v1/health` returns `db: up`
 - [ ] Indexes synced (`deploy.sh` does this)
 - [ ] Owner admin created with `seed-admin`; additional staff accounts with `editor` role
+- [ ] Cities and localities added in Admin → Locations (only these appear on the website)
+- [ ] Signup → OTP → post listing → admin approval tested on production with a real phone
 - [ ] **Demo data removed** (`pnpm demo:remove`) and no demo images left (the script warns)
 - [ ] At least one real published listing per category you advertise
 - [ ] Full journey tested on production (admin → publish → search → enquiry → admin update)
+- [ ] Terms and privacy policy reviewed for user accounts and user-posted listings
 - [ ] Lead email received (if SMTP configured)
 - [ ] Backups scheduled and one restore tested
 - [ ] Uptime monitor on `/api/v1/health`

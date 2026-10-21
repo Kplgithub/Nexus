@@ -13,7 +13,7 @@ export const FALLBACK_SETTINGS: SiteSettings = {
   tagline: 'Rentals | Properties',
   phone: '+919521750202',
   whatsapp: '+919521750202',
-  address: { line1: '', line2: '', city: 'Jaipur', state: 'Rajasthan', pincode: '' },
+  address: { line1: '', line2: '', city: '', state: '', pincode: '' },
   showAddress: false,
   businessHours: '',
   social: {},
@@ -30,10 +30,12 @@ export const FALLBACK_SETTINGS: SiteSettings = {
 export const absoluteUrl = (path = '/') => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 export const NAV_LINKS = [
-  { href: '/residential', label: 'Residential' },
+  { href: '/buy', label: 'Buy' },
+  { href: '/rent', label: 'Rent' },
   { href: '/commercial', label: 'Commercial' },
-  { href: '/properties', label: 'All properties' },
-  { href: '/rentals', label: 'Locations' },
+  { href: '/locations', label: 'Locations' },
   { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
 ] as const;
+
+/** Where the "Post property" button leads: sign-up for visitors, the form for members. */
+export const POST_PROPERTY_PATH = '/dashboard/listings/new';

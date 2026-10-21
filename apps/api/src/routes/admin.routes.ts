@@ -1,10 +1,10 @@
 import { Router, type Router as RouterType } from 'express';
 import multer from 'multer';
-import { z } from 'zod';
 import {
   IMAGE_MAX_BYTES,
-  SUBMISSION_STATUSES,
   adminEnquiryQuerySchema,
+  adminUserQuerySchema,
+  adminUserUpdateSchema,
   adminPropertyQuerySchema,
   changePasswordSchema,
   cityCreateSchema,
@@ -17,7 +17,6 @@ import {
   propertyStatusChangeSchema,
   propertyUpdateSchema,
   siteSettingsUpdateSchema,
-  submissionUpdateSchema,
 } from '@nexus/shared';
 import { clearSession, issueSession, requireAuth, requireRole } from '../middleware/auth.js';
 import { limiters } from '../middleware/security.js';
@@ -33,6 +32,7 @@ import { getSettings, updateSettings } from '../services/settings.service.js';
 import { getDashboard } from '../services/dashboard.service.js';
 import { storeImage } from '../services/upload.service.js';
 import { audit } from '../services/support.service.js';
+import * as adminUsers from '../services/admin-users.service.js';
 
 export const adminRouter: RouterType = Router();
 
@@ -118,8 +118,8 @@ adminRouter.patch('/properties/:id', requireRole('editor'), async (req, res) => 
 
 adminRouter.post('/properties/:id/status', requireRole('editor'), async (req, res) => {
   const id = parseId(req);
-  const { status } = parseBody(propertyStatusChangeSchema, req);
-  const p = await properties.changeStatus(id, status, req.admin!.id);
+  const { status, note } = parseBody(propertyStatusChangeSchema, req);
+  const p = await properties.changeStatus(id, status, req.admin!.id, note);
   await audit(req.admin, `status:${status}`, 'property', id, p.title);
   ok(res, p);
 });
@@ -208,26 +208,22 @@ adminRouter.patch('/enquiries/:id', async (req, res) => {
   ok(res, e);
 });
 
-/* ---------------- Landlord submissions ---------------- */
+/* ---------------- Website users ---------------- */
 
-const submissionQuery = z.object({
-  status: z.enum(SUBMISSION_STATUSES).optional().catch(undefined),
-  q: z.string().max(80).optional().catch(undefined),
-  page: z.coerce.number().int().min(1).max(10_000).catch(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).catch(20).default(20),
-});
-
-adminRouter.get('/submissions', async (req, res) => {
-  const { items, meta } = await leads.listSubmissions(parseQuery(submissionQuery, req));
+adminRouter.get('/users', async (req, res) => {
+  const { items, meta } = await adminUsers.listUsers(parseQuery(adminUserQuerySchema, req));
   ok(res, items, meta);
 });
 
-adminRouter.patch('/submissions/:id', async (req, res) => {
+adminRouter.get('/users/:id', async (req, res) => ok(res, await adminUsers.getUser(parseId(req))));
+
+adminRouter.patch('/users/:id', requireRole('admin'), async (req, res) => {
   const id = parseId(req);
-  ok(
-    res,
-    await leads.updateSubmission(id, parseBody(submissionUpdateSchema, req), req.admin!.name),
-  );
+  const patch = onlySentKeys(parseBody(adminUserUpdateSchema, req), req.body);
+  if (!Object.keys(patch).length) throw badRequest('Nothing to update');
+  const u = await adminUsers.updateUser(id, patch, req.admin!.name);
+  await audit(req.admin, 'update', 'user', id, Object.keys(patch).join(', '));
+  ok(res, u);
 });
 
 /* ---------------- Locations ---------------- */

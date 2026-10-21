@@ -2,135 +2,204 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { PROPERTY_TYPES, PROPERTY_TYPE_LABELS, type Category, type City } from '@nexus/shared';
+import {
+  PROPERTY_TYPES,
+  PROPERTY_TYPE_LABELS,
+  type City,
+  type ListingType,
+  type PropertyType,
+} from '@nexus/shared';
 import { toQueryString } from '@/lib/search-params';
-import { RENT_STEPS, rentLabel } from './options';
-import { BuildingIcon, HomeIcon, SearchIcon } from '../icons';
+import { priceLabel, priceSteps } from './options';
+import { SearchIcon } from '../icons';
+
+type Tab = 'sale' | 'rent' | 'commercial';
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'sale', label: 'Buy' },
+  { id: 'rent', label: 'Rent' },
+  { id: 'commercial', label: 'Commercial' },
+];
+
+const RESIDENTIAL: readonly PropertyType[] = PROPERTY_TYPES.residential;
+const COMMERCIAL: readonly PropertyType[] = PROPERTY_TYPES.commercial;
 
 /**
- * Home-page search. Works as a plain GET form without JavaScript; with JS it
- * builds a clean URL (no empty params) and navigates client-side.
+ * Home-page search. Cities and localities are exactly the ones the admin has
+ * added. Works as a plain GET form without JavaScript.
  */
 export function HeroSearch({ cities }: { cities: City[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [category, setCategory] = useState<Category>('residential');
+  const [tab, setTab] = useState<Tab>('sale');
   const [city, setCity] = useState(cities[0]?.slug ?? '');
-  const localities = cities.find((c) => c.slug === city)?.localities ?? [];
+  const [deal, setDeal] = useState<ListingType>('sale');
+  const localities = [...(cities.find((c) => c.slug === city)?.localities ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  const listingType: ListingType = tab === 'commercial' ? deal : tab;
+  const types = tab === 'commercial' ? COMMERCIAL : RESIDENTIAL;
+  const steps = priceSteps(listingType);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const num = (k: string) => (fd.get(k) ? Number(fd.get(k)) : undefined);
+    const locality = (fd.get('locality') as string) || undefined;
+    const maxPrice = fd.get('maxPrice') ? Number(fd.get('maxPrice')) : undefined;
+    const propertyType = (fd.get('propertyType') as PropertyType) || undefined;
+    if (tab === 'commercial') {
+      const qs = toQueryString({
+        listingType,
+        city: city || undefined,
+        locality,
+        propertyType: propertyType ? [propertyType] : undefined,
+        maxPrice,
+      });
+      return start(() => router.push(`/commercial${qs ? `?${qs}` : ''}`));
+    }
+    const root = tab === 'sale' ? '/buy' : '/rent';
+    const path = city ? (locality ? `${root}/${city}/${locality}` : `${root}/${city}`) : root;
     const qs = toQueryString({
-      category,
-      city: (fd.get('city') as string) || undefined,
-      locality: (fd.get('locality') as string) || undefined,
-      propertyType: fd.get('propertyType') ? [fd.get('propertyType') as never] : undefined,
-      maxRent: num('maxRent'),
+      category: 'residential',
+      propertyType: propertyType ? [propertyType] : undefined,
+      maxPrice,
     });
-    start(() => router.push(`/properties${qs ? `?${qs}` : ''}`));
+    start(() => router.push(`${path}${qs ? `?${qs}` : ''}`));
   }
 
   return (
     <form
-      action="/properties"
+      action={tab === 'sale' ? '/buy' : tab === 'rent' ? '/rent' : '/commercial'}
       method="get"
       onSubmit={onSubmit}
-      className="card p-3 sm:p-4"
       role="search"
-      aria-label="Find a rental"
+      aria-label="Search properties"
+      className="relative"
     >
-      <input type="hidden" name="category" value={category} />
-      <div
-        role="radiogroup"
-        aria-label="Property category"
-        className="mb-3 inline-flex rounded-lg bg-surface p-1"
-      >
-        {(['residential', 'commercial'] as const).map((c) => (
+      <div role="tablist" aria-label="What are you looking for" className="flex gap-1 pl-2">
+        {TABS.map((t) => (
           <button
-            key={c}
+            key={t.id}
             type="button"
-            role="radio"
-            aria-checked={category === c}
-            onClick={() => setCategory(c)}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
-              category === c ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-muted hover:text-ink'
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={`rounded-t-xl px-5 py-2.5 text-sm font-semibold transition-colors ${
+              tab === t.id ? 'bg-white text-brand-900' : 'text-white/80 hover:text-white'
             }`}
           >
-            {c === 'residential' ? <HomeIcon size={17} /> : <BuildingIcon size={17} />}
-            {c === 'residential' ? 'Residential' : 'Commercial'}
+            {t.label}
           </button>
         ))}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
-        <div>
-          <label htmlFor="hs-city" className="field-label">
-            City
-          </label>
-          <select
-            id="hs-city"
-            name="city"
-            className="field"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          >
-            {cities.length === 0 && <option value="">Jaipur</option>}
-            {cities.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.name}
-              </option>
+      <div className="rounded-2xl rounded-tl-none bg-white p-3 shadow-[0_24px_60px_-20px_rgba(1,42,51,0.45)] sm:p-4">
+        {tab === 'commercial' && (
+          <div className="mb-3 flex gap-2 px-1" role="radiogroup" aria-label="Deal">
+            {(['sale', 'rent'] as const).map((d) => (
+              <button
+                key={d}
+                type="button"
+                role="radio"
+                aria-checked={deal === d}
+                onClick={() => setDeal(d)}
+                className={`chip ${deal === d ? 'chip-active' : ''}`}
+              >
+                {d === 'sale' ? 'To buy' : 'To lease'}
+              </button>
             ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="hs-locality" className="field-label">
-            Locality
-          </label>
-          <select id="hs-locality" name="locality" className="field" defaultValue="">
-            <option value="">Any locality</option>
-            {localities.map((l) => (
-              <option key={l.slug} value={l.slug}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="hs-type" className="field-label">
-            Property type
-          </label>
-          <select id="hs-type" name="propertyType" className="field" defaultValue="" key={category}>
-            <option value="">Any type</option>
-            {PROPERTY_TYPES[category].map((t) => (
-              <option key={t} value={t}>
-                {PROPERTY_TYPE_LABELS[t]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="hs-budget" className="field-label">
-            Max monthly rent
-          </label>
-          <select id="hs-budget" name="maxRent" className="field" defaultValue="">
-            <option value="">Any budget</option>
-            {RENT_STEPS.map((r) => (
-              <option key={r} value={r}>
-                Up to {rentLabel(r)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-end">
-          <button
-            type="submit"
-            className="btn btn-primary w-full lg:w-auto lg:px-6"
-            disabled={pending}
-          >
-            <SearchIcon size={18} />
-            {pending ? 'Searching…' : 'Search'}
+            <input type="hidden" name="listingType" value={deal} />
+          </div>
+        )}
+        <div className="grid gap-2 md:grid-cols-[1.4fr_1fr_1fr_auto]">
+          <div className="flex rounded-xl border border-line focus-within:border-brand">
+            {cities.length > 1 && (
+              <label className="sr-only" htmlFor="hs-city">
+                City
+              </label>
+            )}
+            {cities.length > 1 ? (
+              <select
+                id="hs-city"
+                name="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="max-w-[9rem] rounded-l-xl border-r border-line bg-surface px-3 text-sm font-semibold outline-none"
+              >
+                {cities.map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <>
+                <input type="hidden" name="city" value={city} />
+                {cities[0] && (
+                  <span className="flex items-center rounded-l-xl border-r border-line bg-surface px-3 text-sm font-semibold text-brand-900">
+                    {cities[0].name}
+                  </span>
+                )}
+              </>
+            )}
+            <label className="sr-only" htmlFor="hs-locality">
+              Locality
+            </label>
+            <select
+              id="hs-locality"
+              name="locality"
+              defaultValue=""
+              key={city}
+              className="h-12 w-full min-w-0 rounded-r-xl bg-white px-3 text-ink outline-none"
+            >
+              <option value="">{localities.length ? 'All localities' : 'No localities yet'}</option>
+              {localities.map((l) => (
+                <option key={l.slug} value={l.slug}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="sr-only" htmlFor="hs-type">
+              Property type
+            </label>
+            <select
+              id="hs-type"
+              name="propertyType"
+              defaultValue=""
+              key={tab}
+              className="field h-12"
+            >
+              <option value="">Any property type</option>
+              {types.map((t) => (
+                <option key={t} value={t}>
+                  {PROPERTY_TYPE_LABELS[t]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="sr-only" htmlFor="hs-budget">
+              Budget
+            </label>
+            <select
+              id="hs-budget"
+              name="maxPrice"
+              defaultValue=""
+              key={listingType}
+              className="field h-12"
+            >
+              <option value="">{listingType === 'rent' ? 'Any monthly rent' : 'Any budget'}</option>
+              {steps.map((s) => (
+                <option key={s} value={s}>
+                  Up to {priceLabel(s)}
+                  {listingType === 'rent' ? '/mo' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="btn btn-primary h-12 px-7" disabled={pending}>
+            <SearchIcon size={18} /> {pending ? 'Searching…' : 'Search'}
           </button>
         </div>
       </div>

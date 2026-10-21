@@ -7,15 +7,18 @@ import {
   AMENITY_LABELS,
   FURNISHING_LABELS,
   FURNISHING_STATUSES,
+  POSSESSION_LABELS,
+  POSSESSION_STATUSES,
   PROPERTY_TYPES,
   PROPERTY_TYPE_LABELS,
   type Amenity,
   type Category,
   type City,
+  type ListingType,
   type PropertySearch,
 } from '@nexus/shared';
 import { toQueryString } from '@/lib/search-params';
-import { AREA_STEPS, RENT_STEPS, rentLabel } from './options';
+import { AREA_STEPS, priceLabel, priceSteps } from './options';
 import { CloseIcon, FilterIcon } from '../icons';
 
 const RESIDENTIAL_AMENITIES: Amenity[] = [
@@ -46,7 +49,7 @@ type Props = {
   cities: City[];
   basePath: string;
   /** Scope fixed by the page (category page or location page) — not editable here. */
-  fixed?: { category?: Category; city?: string; locality?: string };
+  fixed?: { listingType?: ListingType; category?: Category; city?: string; locality?: string };
   resultCount: number;
 };
 
@@ -56,6 +59,8 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<Category | ''>(fixed.category ?? search.category ?? '');
   const [city, setCity] = useState(fixed.city ?? search.city ?? '');
+  const [deal, setDeal] = useState<ListingType | ''>(fixed.listingType ?? search.listingType ?? '');
+  const steps = priceSteps(deal || undefined);
   const localities = cities.find((c) => c.slug === city)?.localities ?? [];
 
   const isResidential = category === 'residential';
@@ -70,11 +75,15 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
         : [...new Set([...RESIDENTIAL_AMENITIES, ...COMMERCIAL_AMENITIES])];
 
   const activeCount = [
+    !fixed.listingType && search.listingType,
     !fixed.category && search.category,
     !fixed.city && search.city,
     !fixed.locality && search.locality,
-    search.minRent,
-    search.maxRent,
+    search.minPrice,
+    search.maxPrice,
+    search.possession,
+    search.postedBy,
+    search.verified,
     search.propertyType?.length,
     search.furnishing?.length,
     search.bedrooms,
@@ -95,12 +104,19 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
     };
     const all = (k: string) => fd.getAll(k).map(String).filter(Boolean);
     const next: Partial<PropertySearch> = {
+      listingType: (deal || undefined) as ListingType | undefined,
       category: (category || undefined) as Category | undefined,
       city: city || undefined,
       locality: (fd.get('locality') as string) || undefined,
       propertyType: all('propertyType') as PropertySearch['propertyType'],
-      minRent: n('minRent'),
-      maxRent: n('maxRent'),
+      minPrice: n('minPrice'),
+      maxPrice: n('maxPrice'),
+      possession:
+        deal === 'sale'
+          ? (fd.get('possession') as PropertySearch['possession']) || undefined
+          : undefined,
+      postedBy: (fd.get('postedBy') as PropertySearch['postedBy']) || undefined,
+      verified: fd.get('verified') === 'true' || undefined,
       furnishing: all('furnishing') as PropertySearch['furnishing'],
       bedrooms: isResidential || !category ? n('bedrooms') : undefined,
       bathrooms: isResidential || !category ? n('bathrooms') : undefined,
@@ -108,11 +124,12 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
       maxArea: n('maxArea'),
       amenities: all('amenities') as PropertySearch['amenities'],
       parking: fd.get('parking') === 'true' || undefined,
-      availableNow: fd.get('availableNow') === 'true' || undefined,
+      availableNow: deal !== 'sale' && fd.get('availableNow') === 'true' ? true : undefined,
       q: search.q,
       sort: search.sort,
     };
     const omit: (keyof PropertySearch)[] = [];
+    if (fixed.listingType) omit.push('listingType');
     if (fixed.category) omit.push('category');
     if (fixed.city) omit.push('city');
     if (fixed.locality) omit.push('locality');
@@ -139,7 +156,7 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
         action={basePath}
         method="get"
         aria-label="Filter properties"
-        className={`${open ? 'block' : 'hidden'} card mt-3 p-5 lg:mt-0 lg:block`}
+        className={`${open ? 'block' : 'hidden'} mt-3 rounded-2xl border border-line bg-white p-5 lg:mt-0 lg:block`}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Filters</h2>
@@ -154,6 +171,35 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
         </div>
 
         <div className="space-y-5">
+          {!fixed.listingType && (
+            <fieldset>
+              <legend className="field-label">Looking to</legend>
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-surface p-1 text-sm">
+                {(
+                  [
+                    ['', 'Any'],
+                    ['sale', 'Buy'],
+                    ['rent', 'Rent'],
+                  ] as const
+                ).map(([v, label]) => (
+                  <label
+                    key={v}
+                    className={`cursor-pointer rounded-md px-2 py-2 text-center font-medium ${deal === v ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-muted'}`}
+                  >
+                    <input
+                      type="radio"
+                      name="listingType"
+                      value={v}
+                      className="sr-only"
+                      checked={deal === v}
+                      onChange={() => setDeal(v)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
           {!fixed.category && (
             <fieldset>
               <legend className="field-label">Category</legend>
@@ -229,36 +275,79 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
           )}
 
           <fieldset>
-            <legend className="field-label">Monthly rent</legend>
+            <legend className="field-label">
+              {deal === 'rent' ? 'Monthly rent' : deal === 'sale' ? 'Budget' : 'Price'}
+            </legend>
             <div className="grid grid-cols-2 gap-2">
               <select
-                name="minRent"
-                aria-label="Minimum rent"
+                name="minPrice"
+                aria-label="Minimum price"
                 className="field"
-                defaultValue={search.minRent ?? ''}
+                defaultValue={search.minPrice ?? ''}
+                key={`min-${deal}`}
               >
                 <option value="">No min</option>
-                {RENT_STEPS.map((r) => (
+                {steps.map((r) => (
                   <option key={r} value={r}>
-                    {rentLabel(r)}
+                    {priceLabel(r)}
                   </option>
                 ))}
               </select>
               <select
-                name="maxRent"
-                aria-label="Maximum rent"
+                name="maxPrice"
+                aria-label="Maximum price"
                 className="field"
-                defaultValue={search.maxRent ?? ''}
+                defaultValue={search.maxPrice ?? ''}
+                key={`max-${deal}`}
               >
                 <option value="">No max</option>
-                {RENT_STEPS.map((r) => (
+                {steps.map((r) => (
                   <option key={r} value={r}>
-                    {rentLabel(r)}
+                    {priceLabel(r)}
                   </option>
                 ))}
               </select>
             </div>
           </fieldset>
+
+          {deal === 'sale' && (
+            <div>
+              <label htmlFor="f-possession" className="field-label">
+                Possession
+              </label>
+              <select
+                id="f-possession"
+                name="possession"
+                className="field"
+                defaultValue={search.possession ?? ''}
+              >
+                <option value="">Any</option>
+                {POSSESSION_STATUSES.map((p) => (
+                  <option key={p} value={p}>
+                    {POSSESSION_LABELS[p]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="f-posted" className="field-label">
+              Posted by
+            </label>
+            <select
+              id="f-posted"
+              name="postedBy"
+              className="field"
+              defaultValue={search.postedBy ?? ''}
+            >
+              <option value="">Anyone</option>
+              <option value="owner">Owner</option>
+              <option value="agent">Agent</option>
+              <option value="builder">Builder</option>
+              <option value="nexus">NEXUS Estate</option>
+            </select>
+          </div>
 
           <fieldset>
             <legend className="field-label">Property type</legend>
@@ -408,15 +497,27 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
               />
               Parking available
             </label>
+            {deal !== 'sale' && (
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  name="availableNow"
+                  value="true"
+                  defaultChecked={search.availableNow}
+                  className="size-4 accent-[var(--color-brand)]"
+                />
+                Available now
+              </label>
+            )}
             <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft">
               <input
                 type="checkbox"
-                name="availableNow"
+                name="verified"
                 value="true"
-                defaultChecked={search.availableNow}
+                defaultChecked={search.verified}
                 className="size-4 accent-[var(--color-brand)]"
               />
-              Available now
+              Verified listings only
             </label>
           </fieldset>
         </div>

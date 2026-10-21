@@ -4,9 +4,12 @@
  * removed by `pnpm demo:remove`. Never run this on the production database
  * after launch.
  */
+import { randomBytes } from 'node:crypto';
 import { propertyCreateSchema, type PropertyCreateInput } from '@nexus/shared';
 import { Property } from '../models/property.model.js';
 import { createProperty } from '../services/property.service.js';
+import { hashPassword } from '../services/auth.service.js';
+import { User } from '../models/user.model.js';
 import { runScript } from './run.js';
 import { Types } from 'mongoose';
 
@@ -21,7 +24,9 @@ const img = (file: string, alt: string) => ({
   height: 1067,
 });
 
-const demos: PropertyCreateInput[] = [
+type Demo = PropertyCreateInput & { poster?: 'owner' | 'agent' | 'builder' };
+
+const rentDemos: Omit<Demo, 'listingType'>[] = [
   {
     title: '2 BHK semi-furnished apartment',
     description: `${NOTE}\n\nA bright two-bedroom apartment on a middle floor with cross ventilation, a modular kitchen and covered parking. Suitable for a small family or working professionals.`,
@@ -33,7 +38,7 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'vaishali-nagar',
     approvedAddress: 'Near Gandhi Path (demo address)',
-    monthlyRent: 18000,
+    price: 18000,
     securityDeposit: 36000,
     maintenanceCharges: 1500,
     areaValue: 1050,
@@ -56,6 +61,7 @@ const demos: PropertyCreateInput[] = [
     ],
   },
   {
+    poster: 'owner',
     title: '3 BHK builder floor with terrace access',
     description: `${NOTE}\n\nA spacious three-bedroom builder floor in a quiet lane, with a private entrance, terrace access and car parking in front of the building.`,
     category: 'residential',
@@ -64,7 +70,7 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'malviya-nagar',
     approvedAddress: 'Sector 3 area (demo address)',
-    monthlyRent: 26000,
+    price: 26000,
     securityDeposit: 52000,
     maintenanceIncluded: true,
     areaValue: 200,
@@ -85,6 +91,7 @@ const demos: PropertyCreateInput[] = [
     ],
   },
   {
+    poster: 'agent',
     title: '1 BHK furnished flat for working professionals',
     description: `${NOTE}\n\nA compact, fully furnished one-bedroom flat with air conditioning, a fridge, washing machine and Wi-Fi ready wiring. Close to colleges and IT offices.`,
     category: 'residential',
@@ -93,7 +100,7 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'jagatpura',
     approvedAddress: 'Near Jagatpura Road (demo address)',
-    monthlyRent: 11000,
+    price: 11000,
     securityDeposit: 22000,
     maintenanceCharges: 800,
     areaValue: 560,
@@ -123,9 +130,9 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'c-scheme',
     approvedAddress: 'Off Prithviraj Road (demo address)',
-    monthlyRent: 95000,
+    price: 95000,
     securityDeposit: 285000,
-    rentNegotiable: true,
+    priceNegotiable: true,
     lockInMonths: 11,
     areaValue: 450,
     areaUnit: 'sqyd',
@@ -154,7 +161,7 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'mansarovar',
     approvedAddress: 'Near Madhyam Marg (demo address)',
-    monthlyRent: 22000,
+    price: 22000,
     securityDeposit: 44000,
     areaValue: 1800,
     areaUnit: 'sqft',
@@ -179,7 +186,7 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'c-scheme',
     approvedAddress: 'Ashok Marg area (demo address)',
-    monthlyRent: 85000,
+    price: 85000,
     securityDeposit: 255000,
     maintenanceCharges: 6000,
     lockInMonths: 12,
@@ -204,6 +211,7 @@ const demos: PropertyCreateInput[] = [
     images: [img('office-interior', 'Open office floor'), img('coworking', 'Meeting area')],
   },
   {
+    poster: 'agent',
     title: 'Ground-floor retail shop on main road',
     description: `${NOTE}\n\nA ground-floor shop with wide road frontage, a glass front and good footfall, suitable for retail, a pharmacy or a café.`,
     category: 'commercial',
@@ -212,7 +220,7 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'vaishali-nagar',
     approvedAddress: 'Main market road (demo address)',
-    monthlyRent: 45000,
+    price: 45000,
     securityDeposit: 135000,
     areaValue: 420,
     areaUnit: 'sqft',
@@ -235,9 +243,9 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'tonk-road',
     approvedAddress: 'Tonk Road (demo address)',
-    monthlyRent: 220000,
+    price: 220000,
     securityDeposit: 660000,
-    rentNegotiable: true,
+    priceNegotiable: true,
     lockInMonths: 36,
     areaValue: 3200,
     areaUnit: 'sqft',
@@ -260,7 +268,7 @@ const demos: PropertyCreateInput[] = [
     citySlug: 'jaipur',
     localitySlug: 'malviya-nagar',
     approvedAddress: 'JLN Marg area (demo address)',
-    monthlyRent: 7500,
+    price: 7500,
     securityDeposit: 7500,
     areaValue: 60,
     areaUnit: 'sqft',
@@ -289,7 +297,7 @@ const demos: PropertyCreateInput[] = [
     status: 'draft',
     citySlug: 'jaipur',
     localitySlug: 'raja-park',
-    monthlyRent: 16000,
+    price: 16000,
     areaValue: 950,
     areaUnit: 'sqft',
     bedrooms: 2,
@@ -299,16 +307,204 @@ const demos: PropertyCreateInput[] = [
   },
 ];
 
+const saleDemos: Omit<Demo, 'listingType'>[] = [
+  {
+    poster: 'builder',
+    title: '3 BHK apartment in a new gated project',
+    projectName: 'Demo Greens Residency',
+    description: `${NOTE}\n\nA three-bedroom apartment in a new gated project with clubhouse, pool and landscaped gardens. Possession expected next year.`,
+    highlights: ['Clubhouse and pool', 'Corner unit with two balconies', 'Bank loans available'],
+    category: 'residential',
+    propertyType: 'apartment',
+    status: 'published',
+    featured: true,
+    citySlug: 'jaipur',
+    localitySlug: 'jagatpura',
+    approvedAddress: 'Near Jagatpura flyover (demo address)',
+    price: 6850000,
+    priceNegotiable: true,
+    maintenanceCharges: 3000,
+    possessionStatus: 'under-construction',
+    possessionDate: new Date(new Date().getFullYear() + 1, 5, 30),
+    transactionType: 'new',
+    ownershipType: 'freehold',
+    reraId: 'DEMO-RERA-0001',
+    areaValue: 1450,
+    areaUnit: 'sqft',
+    areaType: 'super-built-up',
+    bedrooms: 3,
+    bathrooms: 3,
+    balconies: 2,
+    floorNumber: 7,
+    totalFloors: 14,
+    furnishingStatus: 'unfurnished',
+    amenities: [
+      'lift',
+      'power-backup',
+      'gated-community',
+      'swimming-pool',
+      'clubhouse',
+      'gym',
+      'cctv',
+      'park',
+    ],
+    parking: 'covered',
+    images: [
+      img('apartment-exterior', 'Project towers'),
+      img('living-room', 'Sample flat living room'),
+      img('kitchen', 'Sample flat kitchen'),
+    ],
+  },
+  {
+    poster: 'owner',
+    title: '2 BHK resale flat, ready to move',
+    description: `${NOTE}\n\nA well-kept two-bedroom flat on a middle floor, with modular kitchen and covered parking. Ready to move.`,
+    category: 'residential',
+    propertyType: 'apartment',
+    status: 'published',
+    citySlug: 'jaipur',
+    localitySlug: 'mansarovar',
+    approvedAddress: 'Near Mansarovar metro (demo address)',
+    price: 4200000,
+    possessionStatus: 'ready',
+    transactionType: 'resale',
+    ownershipType: 'freehold',
+    ageOfPropertyYears: 6,
+    areaValue: 1100,
+    areaUnit: 'sqft',
+    bedrooms: 2,
+    bathrooms: 2,
+    balconies: 1,
+    floorNumber: 3,
+    totalFloors: 8,
+    furnishingStatus: 'semi-furnished',
+    amenities: ['lift', 'power-backup', 'security', 'modular-kitchen'],
+    parking: 'covered',
+    images: [
+      img('apartment-exterior', 'Building'),
+      img('bedroom', 'Bedroom'),
+      img('kitchen', 'Kitchen'),
+    ],
+  },
+  {
+    title: '4 BHK luxury villa with private garden',
+    description: `${NOTE}\n\nA spacious independent villa on a 300 sq yd plot with a private garden, servant room and parking for three cars.`,
+    category: 'residential',
+    propertyType: 'villa',
+    status: 'published',
+    featured: true,
+    verified: true,
+    citySlug: 'jaipur',
+    localitySlug: 'vaishali-nagar',
+    approvedAddress: 'Off Queens Road (demo address)',
+    price: 32500000,
+    priceNegotiable: true,
+    possessionStatus: 'ready',
+    transactionType: 'resale',
+    ownershipType: 'freehold',
+    ageOfPropertyYears: 3,
+    areaValue: 300,
+    areaUnit: 'sqyd',
+    areaType: 'plot',
+    bedrooms: 4,
+    bathrooms: 5,
+    balconies: 3,
+    totalFloors: 2,
+    furnishingStatus: 'semi-furnished',
+    amenities: ['gated-community', 'security', 'cctv', 'park', 'servant-room', 'power-backup'],
+    parking: 'car',
+    images: [
+      img('villa-exterior', 'Villa front'),
+      img('living-room', 'Living room'),
+      img('bedroom', 'Master bedroom'),
+    ],
+  },
+  {
+    poster: 'agent',
+    title: 'Office space for sale on main road',
+    description: `${NOTE}\n\nA bare-shell office on the fourth floor of a commercial complex with lift, power backup and visitor parking.`,
+    category: 'commercial',
+    propertyType: 'office',
+    status: 'published',
+    citySlug: 'jaipur',
+    localitySlug: 'tonk-road',
+    approvedAddress: 'Tonk Road (demo address)',
+    price: 9500000,
+    possessionStatus: 'ready',
+    transactionType: 'resale',
+    ownershipType: 'freehold',
+    areaValue: 1250,
+    areaUnit: 'sqft',
+    areaType: 'super-built-up',
+    washrooms: 2,
+    floorNumber: 4,
+    totalFloors: 8,
+    furnishingStatus: 'unfurnished',
+    amenities: ['lift', 'power-backup', 'fire-safety', 'visitor-parking'],
+    parking: 'covered',
+    suitableFor: ['Corporate office', 'Clinic', 'Consultancy'],
+    images: [img('office-interior', 'Office floor'), img('coworking', 'Reception')],
+  },
+];
+
+const DEMO_USERS = {
+  owner: {
+    role: 'individual',
+    name: 'Demo Owner',
+    email: 'demo.owner@example.com',
+    phone: '+919000000001',
+  },
+  agent: {
+    role: 'agent',
+    name: 'Demo Agent',
+    companyName: 'Demo Realty Associates',
+    email: 'demo.agent@example.com',
+    phone: '+919000000002',
+    verified: true,
+  },
+  builder: {
+    role: 'builder',
+    name: 'Demo Builder',
+    companyName: 'Demo Developers Pvt Ltd',
+    email: 'demo.builder@example.com',
+    phone: '+919000000003',
+    verified: true,
+  },
+} as const;
 await runScript('seed:demo', async () => {
   const existing = await Property.countDocuments({ isDemo: true });
   if (existing > 0) {
     console.warn(`${existing} demo listings already exist — run demo:remove first to reseed.`);
     return;
   }
-  const systemId = new Types.ObjectId().toString();
-  for (const d of demos) {
-    const input = propertyCreateSchema.parse({ ...d, isDemo: true });
-    await createProperty(input, systemId);
+  // Sample poster accounts. Random passwords: they are for display only.
+  const posters: Record<string, string> = {};
+  for (const [key, u] of Object.entries(DEMO_USERS)) {
+    const doc = await User.create({
+      ...u,
+      phoneVerified: true,
+      passwordHash: await hashPassword(randomBytes(24).toString('base64url')),
+      termsAcceptedAt: new Date(),
+      isDemo: true,
+    });
+    posters[key] = String(doc._id);
   }
-  console.warn(`Inserted ${demos.length} demo listings (isDemo=true).`);
+  const systemId = new Types.ObjectId().toString();
+  const all: Demo[] = [
+    ...rentDemos.map((d) => ({ ...d, listingType: 'rent' as const })),
+    ...saleDemos.map((d) => ({ ...d, listingType: 'sale' as const })),
+  ];
+  for (const { poster, ...d } of all) {
+    const input = propertyCreateSchema.parse({ ...d, isDemo: true });
+    const created = await createProperty(input, systemId);
+    if (poster) {
+      await Property.updateOne(
+        { _id: created.id },
+        { $set: { postedBy: posters[poster], posterType: poster } },
+      );
+    }
+  }
+  console.warn(
+    `Inserted ${all.length} demo listings and ${Object.keys(posters).length} demo accounts.`,
+  );
 });
