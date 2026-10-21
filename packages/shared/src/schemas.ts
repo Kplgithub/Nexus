@@ -571,3 +571,26 @@ export const imageReorderSchema = z.object({
   images: z.array(propertyImageSchema).max(30),
   coverImageIndex: z.number().int().min(0).default(0),
 });
+
+/* ------------------------------------------------------------------ */
+/* AI-generated site images (hero / section art — never listing photos) */
+/* ------------------------------------------------------------------ */
+
+export const AI_IMAGE_KINDS = ['hero', 'section'] as const;
+export type AiImageKind = (typeof AI_IMAGE_KINDS)[number];
+
+export const aiImageRequestSchema = z.object({
+  kind: z.enum(AI_IMAGE_KINDS).default('hero'),
+  /** What the image should show, in plain words (English or Hinglish). */
+  brief: plainText(10, 500),
+});
+export type AiImageRequest = z.infer<typeof aiImageRequestSchema>;
+
+export type AiImageResult = {
+  url: string;
+  publicId: string;
+  width?: number;
+  height?: number;
+  alt: string;
+  prompt: string;
+};

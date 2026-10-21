@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { SiteSettings } from '@nexus/shared';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
+import { AiImageGenerator } from '@/components/admin/AiImageGenerator';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 
@@ -173,11 +174,16 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
         </div>
         {input(
           'heroImageUrl',
-          'Hero image URL (optional — upload via a property or Cloudinary)',
+          'Hero image URL (optional — paste a Cloudinary URL or generate one below)',
           s.home.heroImageUrl ?? '',
           (v) => setS({ ...s, home: { ...s.home, heroImageUrl: v } }),
           { type: 'url' },
         )}
+        <AiImageGenerator
+          kind="hero"
+          useLabel="Use as hero image"
+          onUse={(img) => setS({ ...s, home: { ...s.home, heroImageUrl: img.url } })}
+        />
         <div className="flex flex-wrap gap-6">
           <label className="flex items-center gap-2 text-sm">
             <input

@@ -6,6 +6,7 @@ import {
   SUBMISSION_STATUSES,
   adminEnquiryQuerySchema,
   adminPropertyQuerySchema,
+  aiImageRequestSchema,
   changePasswordSchema,
   cityCreateSchema,
   cityUpdateSchema,
@@ -32,6 +33,8 @@ import * as faqs from '../services/faq.service.js';
 import { getSettings, updateSettings } from '../services/settings.service.js';
 import { getDashboard } from '../services/dashboard.service.js';
 import { storeImage } from '../services/upload.service.js';
+import { generateSiteImage } from '../services/ai-image.service.js';
+import { aiImagesEnabled } from '../config/env.js';
 import { audit } from '../services/support.service.js';
 
 export const adminRouter: RouterType = Router();
@@ -172,6 +175,23 @@ adminRouter.post(
     ok(res, results);
   },
 );
+
+/* ---------------- AI images (site art, not listing photos) ---------------- */
+
+adminRouter.get('/ai-images/status', (_req, res) => ok(res, { enabled: aiImagesEnabled }));
+
+adminRouter.post('/ai-images', limiters.aiImage, requireRole('admin'), async (req, res) => {
+  const input = parseBody(aiImageRequestSchema, req);
+  const image = await generateSiteImage(input);
+  await audit(
+    req.admin,
+    'generate',
+    'ai-image',
+    undefined,
+    `${input.kind}: ${input.brief.slice(0, 80)}`,
+  );
+  ok(res, image);
+});
 
 /* ---------------- Enquiries ---------------- */
 
