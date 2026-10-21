@@ -31,6 +31,7 @@ const ORDER: WizardStep[] = [...STEPS.map((s) => s.id), 'review'];
 const DRAFT_KEY = 'nexus:new-listing';
 
 function readDraft(): ListingFormState | null {
+  if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY);
     return raw ? (JSON.parse(raw) as ListingFormState) : null;
@@ -51,13 +52,16 @@ function writeDraft(f: ListingFormState | null) {
 export function ListingWizard({ listing }: { listing?: OwnListing }) {
   const router = useRouter();
   const { user } = useSession();
-  const [f, setF] = useState<ListingFormState>(() => formFromListing(listing));
+  // New listings keep an in-browser copy so a refresh doesn't lose work.
+  const [f, setF] = useState<ListingFormState>(() =>
+    listing ? formFromListing(listing) : (readDraft() ?? formFromListing()),
+  );
   const [step, setStep] = useState<WizardStep>('basics');
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
-  const [restored, setRestored] = useState(false);
+  const [restored, setRestored] = useState(() => !listing && readDraft() !== null);
   const top = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,15 +75,6 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
       .catch(() => setCities([]));
   }, [listing]);
 
-  // New listings keep an in-browser copy so a refresh doesn't lose work.
-  useEffect(() => {
-    if (listing) return;
-    const saved = readDraft();
-    if (saved) {
-      setF(saved);
-      setRestored(true);
-    }
-  }, [listing]);
   useEffect(() => {
     if (!listing) writeDraft(f);
   }, [f, listing]);

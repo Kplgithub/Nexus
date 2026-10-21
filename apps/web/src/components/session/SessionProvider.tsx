@@ -65,7 +65,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    // Deferred so the first check runs after mount, outside the effect body.
+    const t = setTimeout(() => void refresh(), 0);
+    return () => clearTimeout(t);
   }, [refresh]);
 
   const requireLogin = useCallback(

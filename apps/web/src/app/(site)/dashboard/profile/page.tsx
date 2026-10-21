@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatIndianPhone, type City, type SessionUser } from '@nexus/shared';
 import { useApi } from '@/components/admin/useApi';
@@ -378,6 +379,7 @@ function PasswordForm() {
 
 function SignOutEverywhere() {
   const { setUser } = useSession();
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   return (
     <section>
@@ -394,7 +396,7 @@ function SignOutEverywhere() {
             setBusy(true);
             await apiFetch('/me/logout-all', { method: 'POST' }).catch(() => undefined);
             setUser(null);
-            window.location.href = '/login';
+            router.push('/login');
           }}
         >
           Sign out everywhere
