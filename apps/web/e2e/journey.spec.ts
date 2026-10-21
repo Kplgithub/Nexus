@@ -172,6 +172,10 @@ test.describe('journeys', () => {
       await expect(page.getByRole('link', { name: title })).toBeVisible({ timeout: 2000 });
     }).toPass({ timeout: 90_000 });
     await page.getByRole('link', { name: title }).click();
-    await expect(page.getByText('Posted by owner')).toBeVisible();
+    await expect(
+      page
+        .getByRole('complementary', { name: 'Contact about this property' })
+        .getByText('Posted by owner'),
+    ).toBeVisible();
   });
 });
