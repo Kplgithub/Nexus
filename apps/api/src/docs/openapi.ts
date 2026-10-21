@@ -401,6 +401,41 @@ export const openApiDocument = {
         responses: { '200': { description: 'Per-file results' }, ...authErrors, ...errors },
       },
     },
+    '/admin/ai-images/status': {
+      get: {
+        ...admin,
+        summary: 'Whether AI image generation is configured on the server',
+        responses: { '200': { description: '{ enabled: boolean }' }, ...authErrors },
+      },
+    },
+    '/admin/ai-images': {
+      post: {
+        ...admin,
+        summary:
+          'Generate a site image (home hero / section art) from a brief (admin role, 20/hour). Not for listing photos.',
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['brief'],
+                properties: {
+                  kind: { type: 'string', enum: ['hero', 'section'], default: 'hero' },
+                  brief: { type: 'string', minLength: 10, maxLength: 500 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: '{ url, publicId, width, height, alt, prompt }' },
+          '502': { description: 'Image provider failed' },
+          '503': { description: 'AI images not configured' },
+          ...authErrors,
+          ...errors,
+        },
+      },
+    },
     '/admin/enquiries': {
       get: {
         ...admin,

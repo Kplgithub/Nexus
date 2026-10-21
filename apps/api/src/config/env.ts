@@ -44,6 +44,21 @@ const envSchema = z
     SMTP_PASS: z.string().optional(),
     MAIL_FROM: z.string().optional(),
 
+    /**
+     * AI image generation (Admin → Settings → hero image). Disabled unless both keys are set.
+     * Claude writes the prompt + alt text; OpenAI renders the image; it is stored like any upload.
+     */
+    ANTHROPIC_API_KEY: z.string().optional(),
+    OPENAI_API_KEY: z.string().optional(),
+    AI_PROMPT_MODEL: z.string().default('claude-sonnet-5-5'),
+    AI_IMAGE_MODEL: z.string().default('gpt-image-1'),
+    AI_IMAGE_QUALITY: z.enum(['low', 'medium', 'high']).default('medium'),
+    AI_BRAND_STYLE: z
+      .string()
+      .default(
+        'premium real-estate photography, warm golden-hour light, calm and uncluttered, modern Indian residential architecture, true-to-life colours',
+      ),
+
     ENABLE_API_DOCS: bool,
     /** Seconds; public GET responses get Cache-Control: public, s-maxage=... */
     PUBLIC_CACHE_SECONDS: z.coerce.number().int().min(0).max(3600).default(60),
@@ -112,3 +127,4 @@ export const corsOrigins = env.CORS_ORIGINS.split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 export const mailEnabled = Boolean(env.SMTP_HOST && env.MAIL_FROM);
+export const aiImagesEnabled = Boolean(env.ANTHROPIC_API_KEY && env.OPENAI_API_KEY);

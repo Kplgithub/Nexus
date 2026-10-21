@@ -25,6 +25,8 @@ const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ['@nexus/shared'],
+  // The dev /api rewrite times out after 30s by default; AI image generation can take longer.
+  experimental: { proxyTimeout: 180_000 },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1600],

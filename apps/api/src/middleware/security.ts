@@ -59,4 +59,6 @@ export const limiters = {
     'Too many submissions from this network. Please call us instead.',
   ),
   upload: make(60_000, 40, 'Too many uploads. Please wait a minute.'),
+  // Each AI image costs money — keep a tight cap.
+  aiImage: make(60 * 60_000, 20, 'AI image limit reached. Please try again in an hour.'),
 };
