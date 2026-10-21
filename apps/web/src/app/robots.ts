@@ -8,8 +8,17 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        // Admin and API are private; images under /uploads stay crawlable.
-        disallow: ['/admin', '/admin/', '/api/'],
+        // Admin, accounts and API are private; images under /uploads stay crawlable.
+        disallow: [
+          '/admin',
+          '/admin/',
+          '/api/',
+          '/dashboard',
+          '/login',
+          '/signup',
+          '/forgot-password',
+          '/reset-password',
+        ],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

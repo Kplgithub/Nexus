@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import {
   PROPERTY_TYPE_LABELS,
   formatINR,
+  formatINRShort,
   type PropertyCard,
   type PublicProperty,
   type SiteSettings,
@@ -58,15 +59,17 @@ export function propertyDescription(p: PublicProperty | PropertyCard): string {
   const parts = [
     PROPERTY_TYPE_LABELS[p.propertyType],
     p.bedrooms ? `${p.bedrooms} BHK` : null,
-    `for rent in ${p.locality.name}, ${p.city.name}`,
-    `at ${formatINR(p.monthlyRent)} per month`,
+    `for ${p.listingType === 'rent' ? 'rent' : 'sale'} in ${p.locality.name}, ${p.city.name}`,
+    p.listingType === 'rent'
+      ? `at ${formatINR(p.price)} per month`
+      : `priced at ${formatINRShort(p.price)}`,
   ].filter(Boolean);
   return `${parts.join(' ')}. View photos, details and enquire with NEXUS Estate.`;
 }
 
 /* ---------------- JSON-LD builders (only genuine data, no ratings/reviews) ---------------- */
 
-export function organizationJsonLd(s: SiteSettings) {
+export function organizationJsonLd(s: SiteSettings, cities: { name: string }[] = []) {
   const sameAs = Object.values(s.social).filter(Boolean);
   return {
     '@context': 'https://schema.org',
@@ -90,7 +93,9 @@ export function organizationJsonLd(s: SiteSettings) {
           },
         }
       : {}),
-    areaServed: { '@type': 'City', name: s.address.city || 'Jaipur' },
+    ...(cities.length
+      ? { areaServed: cities.map((c) => ({ '@type': 'City', name: c.name })) }
+      : {}),
     ...(sameAs.length ? { sameAs } : {}),
   };
 }
@@ -132,13 +137,16 @@ export function listingJsonLd(p: PublicProperty) {
     image: p.images.slice(0, 6).map((i) => (i.url.startsWith('http') ? i.url : absoluteUrl(i.url))),
     offers: {
       '@type': 'Offer',
-      price: p.monthlyRent,
+      price: p.price,
       priceCurrency: 'INR',
-      businessFunction: 'http://purl.org/goodrelations/v1#LeaseOut',
+      businessFunction:
+        p.listingType === 'rent'
+          ? 'http://purl.org/goodrelations/v1#LeaseOut'
+          : 'http://purl.org/goodrelations/v1#Sell',
       availability:
-        p.status === 'rented' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+        p.status !== 'published' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
       ...(p.availableFrom ? { availabilityStarts: p.availableFrom } : {}),
-      seller: { '@id': `${SITE_URL}/#organization` },
+      ...(p.poster.type === 'nexus' ? { seller: { '@id': `${SITE_URL}/#organization` } } : {}),
     },
     contentLocation: {
       '@type': 'Place',

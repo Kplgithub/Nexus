@@ -42,8 +42,9 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
             height={108}
           />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-soft">
-            Residential and commercial rentals, property discovery and rental consultancy in{' '}
-            {settings.address.city || 'Jaipur'}.
+            Homes and commercial spaces to buy and rent
+            {cities.length ? ` in ${cities.map((c) => c.name).join(', ')}` : ''}. Every listing is
+            reviewed before it goes live.
           </p>
           {socials.length > 0 && (
             <ul className="mt-5 flex gap-2" aria-label="Social media">
@@ -64,39 +65,40 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
           )}
         </div>
 
-        <nav aria-label="Rentals">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-ink">Rentals</h2>
+        <nav aria-label="Explore">
+          <h2 className="text-sm font-semibold text-ink">Explore</h2>
+          <ul className="mt-4 space-y-2.5 text-sm">
+            {[
+              ['/buy', 'Property for sale'],
+              ['/rent', 'Property for rent'],
+              ['/commercial', 'Commercial property'],
+              ['/properties', 'All properties'],
+              ['/locations', 'Browse by location'],
+            ].map(([href, label]) => (
+              <li key={href}>
+                <Link className="text-ink-soft hover:text-brand" href={href!}>
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <h2 className="mt-8 text-sm font-semibold text-ink">Owners, agents &amp; builders</h2>
           <ul className="mt-4 space-y-2.5 text-sm">
             <li>
-              <Link className="text-ink-soft hover:text-brand" href="/residential">
-                Residential rentals
+              <Link className="text-ink-soft hover:text-brand" href="/post-property">
+                Post property free
               </Link>
             </li>
             <li>
-              <Link className="text-ink-soft hover:text-brand" href="/commercial">
-                Commercial rentals
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/properties">
-                All properties
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/list-your-property">
-                List your property
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/rentals">
-                Browse by location
+              <Link className="text-ink-soft hover:text-brand" href="/dashboard">
+                My dashboard
               </Link>
             </li>
           </ul>
         </nav>
 
         <nav aria-label="Company">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-ink">Company</h2>
+          <h2 className="text-sm font-semibold text-ink">Company</h2>
           <ul className="mt-4 space-y-2.5 text-sm">
             <li>
               <Link className="text-ink-soft hover:text-brand" href="/about">
@@ -132,7 +134,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
         </nav>
 
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-ink">Talk to us</h2>
+          <h2 className="text-sm font-semibold text-ink">Talk to us</h2>
           <ul className="mt-4 space-y-3 text-sm">
             <li>
               <a
@@ -146,7 +148,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
               <a
                 href={whatsappLink(
                   settings.whatsapp,
-                  'Hello NEXUS Estate, I would like to know more about rentals.',
+                  'Hello NEXUS Estate, I would like to know more about a property.',
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -194,9 +196,9 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
                 <li key={`${l.city.slug}-${l.slug}`}>
                   <Link
                     className="text-ink-muted hover:text-brand"
-                    href={`/rentals/${l.city.slug}/${l.slug}`}
+                    href={`/buy/${l.city.slug}/${l.slug}`}
                   >
-                    Rentals in {l.name}
+                    Property in {l.name}
                   </Link>
                 </li>
               ))}
@@ -210,7 +212,10 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
           <p>
             © {year} {settings.businessName}. All rights reserved.
           </p>
-          <p>Listings, rents and availability are subject to confirmation by the property owner.</p>
+          <p>
+            Listing details are shared by owners, agents and builders and should be confirmed before
+            any payment.
+          </p>
         </div>
       </div>
     </footer>

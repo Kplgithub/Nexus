@@ -14,9 +14,11 @@ export const metadata: Metadata = pageMetadata({
 
 const GROUPS: { key: Faq['category']; title: string }[] = [
   { key: 'general', title: 'General' },
-  { key: 'tenants', title: 'For tenants' },
+  { key: 'buyers', title: 'Buying' },
+  { key: 'tenants', title: 'Renting' },
+  { key: 'owners', title: 'Posting as an owner' },
+  { key: 'agents', title: 'Agents and builders' },
   { key: 'commercial', title: 'Commercial spaces' },
-  { key: 'owners', title: 'For property owners' },
 ];
 
 export default async function FaqPage() {

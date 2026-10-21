@@ -44,6 +44,21 @@ const config: NextConfig = {
       { source: '/uploads/:path*', destination: `${apiInternal}/uploads/:path*` },
     ];
   },
+  // Old rental-only URLs keep working after the move to Buy / Rent.
+  async redirects() {
+    return [
+      { source: '/rentals', destination: '/locations', permanent: true },
+      { source: '/rentals/:city', destination: '/rent/:city', permanent: true },
+      { source: '/rentals/:city/:locality', destination: '/rent/:city/:locality', permanent: true },
+      { source: '/residential', destination: '/properties?category=residential', permanent: true },
+      { source: '/list-your-property', destination: '/post-property', permanent: true },
+      {
+        source: '/admin/submissions',
+        destination: '/admin/properties?status=pending',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },

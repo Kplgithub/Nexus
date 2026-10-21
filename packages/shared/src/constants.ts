@@ -10,7 +10,7 @@ export type Category = (typeof CATEGORIES)[number];
 export const ACTIVE_CATEGORIES: readonly Category[] = ['residential', 'commercial'];
 
 export const PROPERTY_TYPES = {
-  residential: ['apartment', 'independent-house', 'builder-floor', 'villa', 'studio', 'pg'],
+  residential: ['apartment', 'independent-house', 'builder-floor', 'villa', 'studio', 'pg', 'plot'],
   commercial: [
     'office',
     'shop',
@@ -39,6 +39,7 @@ export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   'builder-floor': 'Builder Floor',
   villa: 'Villa / Bungalow',
   studio: 'Studio Apartment',
+  plot: 'Residential Plot',
   pg: 'PG / Shared Accommodation',
   office: 'Office Space',
   shop: 'Retail Shop',
@@ -223,6 +224,13 @@ export const AMENITY_LABELS: Record<Amenity, string> = {
 
 export const PREFERRED_TENANTS = ['any', 'family', 'bachelors', 'company', 'students'] as const;
 export type PreferredTenant = (typeof PREFERRED_TENANTS)[number];
+export const PREFERRED_TENANT_LABELS: Record<PreferredTenant, string> = {
+  any: 'Anyone',
+  family: 'Families',
+  bachelors: 'Bachelors',
+  company: 'Company lease',
+  students: 'Students',
+};
 
 export const ENQUIRY_STATUSES = ['new', 'contacted', 'qualified', 'closed', 'spam'] as const;
 export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];

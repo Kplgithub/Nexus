@@ -1,0 +1,18 @@
+import type { Metadata } from 'next';
+import {
+  ListingPage,
+  listingMetadata,
+  type RawSearchParams,
+} from '@/components/search/ListingPage';
+
+type Props = { params: Promise<{ city: string }>; searchParams: Promise<RawSearchParams> };
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const { city } = await params;
+  return listingMetadata({ deal: 'rent', city }, await searchParams);
+}
+
+export default async function Page({ params, searchParams }: Props) {
+  const { city } = await params;
+  return <ListingPage scope={{ deal: 'rent', city }} raw={await searchParams} />;
+}

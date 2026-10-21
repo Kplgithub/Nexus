@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
-import { PROPERTY_STATUSES, formatINR, type AdminProperty } from '@nexus/shared';
+import {
+  POSTER_LABELS,
+  PROPERTY_STATUSES,
+  PROPERTY_STATUS_LABELS,
+  formatPrice,
+  type AdminProperty,
+} from '@nexus/shared';
 import { PageTitle, StatusPill, useAdmin } from '@/components/admin/AdminShell';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
@@ -13,6 +19,9 @@ function PropertiesList() {
   const { toast, can } = useAdmin();
   const [status, setStatus] = useState(params.get('status') ?? '');
   const [category, setCategory] = useState('');
+  const [listingType, setListingType] = useState(params.get('listingType') ?? '');
+  const [postedBy, setPostedBy] = useState(params.get('postedBy') ?? '');
+  const userId = params.get('userId') ?? '';
   const [q, setQ] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -21,6 +30,9 @@ function PropertiesList() {
     limit: '20',
     ...(status && { status }),
     ...(category && { category }),
+    ...(listingType && { listingType }),
+    ...(postedBy && { postedBy }),
+    ...(userId && { userId }),
     ...(query && { q: query }),
   });
   const { data, meta, loading, error, reload } = useApi<AdminProperty[]>(`/admin/properties?${qs}`);
@@ -31,7 +43,9 @@ function PropertiesList() {
         method: 'POST',
         body: { status: next },
       });
-      toast(`“${p.title}” is now ${next}`);
+      toast(
+        `“${p.title}” is now ${PROPERTY_STATUS_LABELS[next as AdminProperty['status']].toLowerCase()}`,
+      );
       reload();
     } catch (err) {
       toast(errMsg(err), 'error');
@@ -76,7 +90,7 @@ function PropertiesList() {
       </PageTitle>
 
       <form
-        className="card mb-4 grid gap-3 p-4 sm:grid-cols-[1fr_10rem_10rem_auto]"
+        className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_9rem_9rem_9rem_9rem_auto]"
         onSubmit={(e) => {
           e.preventDefault();
           setPage(1);
@@ -108,9 +122,41 @@ function PropertiesList() {
           <option value="">All statuses</option>
           {PROPERTY_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {PROPERTY_STATUS_LABELS[s]}
             </option>
           ))}
+        </select>
+        <label className="sr-only" htmlFor="ap-deal">
+          Deal
+        </label>
+        <select
+          id="ap-deal"
+          className="field"
+          value={listingType}
+          onChange={(e) => {
+            setListingType(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">Sale and rent</option>
+          <option value="sale">For sale</option>
+          <option value="rent">For rent</option>
+        </select>
+        <label className="sr-only" htmlFor="ap-poster">
+          Posted by
+        </label>
+        <select
+          id="ap-poster"
+          className="field"
+          value={postedBy}
+          onChange={(e) => {
+            setPostedBy(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">Anyone</option>
+          <option value="nexus">NEXUS team</option>
+          <option value="users">Owners, agents, builders</option>
         </select>
         <label className="sr-only" htmlFor="ap-cat">
           Category
@@ -145,7 +191,7 @@ function PropertiesList() {
             <tr>
               <th className="px-4 py-3">Property</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Rent</th>
+              <th className="px-4 py-3">Price</th>
               <th className="px-4 py-3">Leads</th>
               <th className="px-4 py-3">Updated</th>
               <th className="px-4 py-3 text-right">Actions</th>
@@ -176,7 +222,11 @@ function PropertiesList() {
                     {p.title}
                   </Link>
                   <div className="mt-0.5 text-xs text-ink-muted">
-                    {p.locality.name}, {p.city.name} · {p.category}
+                    {p.locality.name}, {p.city.name} · {p.listingType === 'sale' ? 'Sale' : 'Rent'}{' '}
+                    ·{' '}
+                    {p.poster.type === 'nexus'
+                      ? 'NEXUS'
+                      : `${POSTER_LABELS[p.poster.type]}: ${p.poster.companyName || p.poster.name}`}
                     {p.featured && (
                       <span className="ml-2 rounded bg-accent-50 px-1.5 text-accent-700">
                         Featured
@@ -193,7 +243,9 @@ function PropertiesList() {
                 <td className="px-4 py-3">
                   <StatusPill status={p.status} />
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap">{formatINR(p.monthlyRent)}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {formatPrice(p.price, p.listingType)}
+                </td>
                 <td className="px-4 py-3">
                   {p.enquiryCount ? (
                     <Link
@@ -214,7 +266,12 @@ function PropertiesList() {
                     <Link href={`/admin/properties/${p.id}`} className="btn btn-outline btn-sm">
                       Edit
                     </Link>
-                    {['published', 'rented'].includes(p.status) && (
+                    {p.status === 'pending' && (
+                      <Link href={`/admin/review#${p.id}`} className="btn btn-primary btn-sm">
+                        Review
+                      </Link>
+                    )}
+                    {['published', 'rented', 'sold'].includes(p.status) && (
                       <a
                         href={`/properties/${p.slug}`}
                         target="_blank"
@@ -224,7 +281,7 @@ function PropertiesList() {
                         View
                       </a>
                     )}
-                    {p.status !== 'published' && p.status !== 'archived' && (
+                    {!['published', 'archived', 'pending'].includes(p.status) && !p.postedBy && (
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm text-success"
@@ -238,16 +295,18 @@ function PropertiesList() {
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
-                          onClick={() => setPropertyStatus(p, 'draft')}
+                          onClick={() => setPropertyStatus(p, p.postedBy ? 'inactive' : 'draft')}
                         >
                           Unpublish
                         </button>
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
-                          onClick={() => setPropertyStatus(p, 'rented')}
+                          onClick={() =>
+                            setPropertyStatus(p, p.listingType === 'sale' ? 'sold' : 'rented')
+                          }
                         >
-                          Mark rented
+                          {p.listingType === 'sale' ? 'Mark sold' : 'Mark rented'}
                         </button>
                         <button
                           type="button"

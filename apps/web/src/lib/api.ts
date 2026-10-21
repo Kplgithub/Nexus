@@ -1,6 +1,7 @@
 import 'server-only';
 import type {
   ApiResponse,
+  AuthConfig,
   City,
   Faq,
   PaginationMeta,
@@ -75,15 +76,18 @@ export async function getProperty(slug: string): Promise<DetailResponse | null> 
   }
 }
 
-export async function getHome() {
+export type HomeSections = {
+  featured: PropertyCard[];
+  recentSale: PropertyCard[];
+  recentRent: PropertyCard[];
+  counts: { sale: number; rent: number };
+};
+
+export async function getHome(): Promise<HomeSections> {
   try {
-    return (
-      await get<{ featured: PropertyCard[]; recent: PropertyCard[] }>('/home', {
-        tags: ['properties'],
-      })
-    ).data;
+    return (await get<HomeSections>('/home', { tags: ['properties'] })).data;
   } catch {
-    return { featured: [], recent: [] };
+    return { featured: [], recentSale: [], recentRent: [], counts: { sale: 0, rent: 0 } };
   }
 }
 
@@ -123,5 +127,13 @@ export async function getSitemapProperties(): Promise<{ slug: string; updatedAt:
     ).data;
   } catch {
     return [];
+  }
+}
+
+export async function getAuthConfig(): Promise<AuthConfig> {
+  try {
+    return (await get<AuthConfig>('/auth/config', { revalidate: 300 })).data;
+  } catch {
+    return { otpEnabled: false, emailResetEnabled: false };
   }
 }

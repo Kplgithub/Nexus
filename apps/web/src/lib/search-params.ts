@@ -1,14 +1,20 @@
-import { propertySearchSchema, type Category, type PropertySearch } from '@nexus/shared';
+import {
+  propertySearchSchema,
+  type Category,
+  type ListingType,
+  type PropertySearch,
+} from '@nexus/shared';
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
 const KEYS = [
+  'listingType',
   'category',
   'propertyType',
   'city',
   'locality',
-  'minRent',
-  'maxRent',
+  'minPrice',
+  'maxPrice',
   'furnishing',
   'bedrooms',
   'bathrooms',
@@ -17,6 +23,9 @@ const KEYS = [
   'amenities',
   'parking',
   'availableNow',
+  'possession',
+  'postedBy',
+  'verified',
   'q',
   'sort',
   'page',
@@ -25,7 +34,7 @@ const KEYS = [
 /** Validate raw URL params with the same schema the API uses. Invalid values are dropped. */
 export function parseSearch(
   raw: RawSearchParams,
-  forced?: { category?: Category; city?: string; locality?: string },
+  forced?: { listingType?: ListingType; category?: Category; city?: string; locality?: string },
 ): PropertySearch {
   const input: Record<string, unknown> = {};
   for (const k of KEYS) {
@@ -37,6 +46,7 @@ export function parseSearch(
         : v[0]
       : v;
   }
+  if (forced?.listingType) input.listingType = forced.listingType;
   if (forced?.category) input.category = forced.category;
   if (forced?.city) input.city = forced.city;
   if (forced?.locality) input.locality = forced.locality;
@@ -60,12 +70,13 @@ export function toQueryString(
     }
     qs.set(k, String(v));
   };
+  put('listingType', s.listingType);
   put('category', s.category);
   put('propertyType', s.propertyType);
   put('city', s.city);
   put('locality', s.locality);
-  put('minRent', s.minRent);
-  put('maxRent', s.maxRent);
+  put('minPrice', s.minPrice);
+  put('maxPrice', s.maxPrice);
   put('furnishing', s.furnishing);
   put('bedrooms', s.bedrooms);
   put('bathrooms', s.bathrooms);
@@ -74,6 +85,9 @@ export function toQueryString(
   put('amenities', s.amenities);
   put('parking', s.parking);
   put('availableNow', s.availableNow);
+  put('possession', s.possession);
+  put('postedBy', s.postedBy);
+  put('verified', s.verified);
   put('q', s.q);
   if (s.sort && s.sort !== 'newest') put('sort', s.sort);
   if (s.page && s.page > 1) put('page', s.page);

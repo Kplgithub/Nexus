@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
-import type { Category, City, PropertySearch } from '@nexus/shared';
+import type { Category, City, ListingType, PropertySearch } from '@nexus/shared';
 import { searchProperties } from '@/lib/api';
 import { toApiQuery, toQueryString } from '@/lib/search-params';
 import { EmptyState, Pagination } from '../ui';
@@ -14,7 +14,7 @@ type Props = {
   search: PropertySearch;
   cities: City[];
   basePath: string;
-  fixed?: { category?: Category; city?: string; locality?: string };
+  fixed?: { listingType?: ListingType; category?: Category; city?: string; locality?: string };
   phone: string;
 };
 
@@ -100,8 +100,8 @@ export async function ListingResults({ search, cities, basePath, fixed = {}, pho
               </>
             }
           >
-            Try widening your budget or locality. New properties are added regularly — share your
-            requirement and we’ll let you know.
+            Try widening your budget or choosing a nearby locality. New properties are reviewed and
+            added regularly — share your requirement and our team will get back to you.
           </EmptyState>
         )}
       </section>

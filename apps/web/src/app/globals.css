@@ -9,6 +9,7 @@
   --color-brand: #02667b;
   --color-brand-700: #014e5e;
   --color-brand-800: #013b47;
+  --color-brand-900: #012a33;
   --color-brand-50: #e8f2f4;
   --color-brand-100: #cfe3e8;
   --color-accent: #2faea6;
@@ -30,7 +31,7 @@
   --color-warn-50: #fffaeb;
 
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-heading), var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), ui-serif, Georgia, serif;
 
   --radius-card: 0.875rem;
   --shadow-card: 0 1px 2px rgb(1 59 71 / 0.06), 0 4px 16px -6px rgb(1 59 71 / 0.1);
@@ -50,12 +51,20 @@
     text-rendering: optimizeLegibility;
   }
   h1,
-  h2,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
   h3,
   h4 {
-    font-family: var(--font-display);
-    letter-spacing: -0.015em;
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
     text-wrap: balance;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
   p {
     text-wrap: pretty;
@@ -219,11 +228,35 @@
     box-shadow: var(--shadow-card);
   }
 
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: #fff;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.875rem;
+    color: var(--color-ink-soft);
+    transition:
+      border-color 0.15s,
+      color 0.15s;
+  }
+  .chip:hover {
+    border-color: var(--color-brand);
+    color: var(--color-brand-800);
+  }
+  .chip-active {
+    border-color: var(--color-brand);
+    background: var(--color-brand);
+    color: #fff;
+  }
+  .chip-active:hover {
+    color: #fff;
+  }
   .eyebrow {
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: var(--color-brand);
   }
 

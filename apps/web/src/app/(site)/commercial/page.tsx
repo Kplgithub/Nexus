@@ -1,57 +1,55 @@
 import type { Metadata } from 'next';
-import { hasUserFilters, type RawSearchParams } from '@/lib/search-params';
-import { pageMetadata } from '@/lib/seo';
-import { CategoryPage } from '@/components/search/CategoryPage';
+import {
+  ListingPage,
+  listingMetadata,
+  type RawSearchParams,
+} from '@/components/search/ListingPage';
 
 type Props = { searchParams: Promise<RawSearchParams> };
+const scope = { category: 'commercial' } as const;
+
+const TYPES = [
+  [
+    'Office spaces',
+    'Bare-shell, warm-shell and plug-and-play offices, with workstations, cabins and washrooms listed.',
+  ],
+  ['Retail shops', 'Ground-floor and high-street shops where frontage and footfall matter most.'],
+  [
+    'Showrooms',
+    'Large-format spaces with display frontage for automobiles, furniture and lifestyle brands.',
+  ],
+  [
+    'Commercial buildings',
+    'Entire buildings or floors for clinics, institutes and corporate offices.',
+  ],
+  ['Co-working', 'Flexible desks and private cabins with shared meeting rooms.'],
+] as const;
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  return pageMetadata({
-    title: 'Commercial Property for Rent in Jaipur — Offices, Shops & Showrooms',
-    description:
-      'Office spaces, retail shops, showrooms and co-working space for rent in Jaipur. Compare area, rent, parking, power backup and lock-in.',
-    path: '/commercial',
-    index: !hasUserFilters(await searchParams),
-  });
+  return listingMetadata(scope, await searchParams);
 }
 
 export default async function CommercialPage({ searchParams }: Props) {
   return (
-    <CategoryPage
-      category="commercial"
+    <ListingPage
+      scope={scope}
       raw={await searchParams}
-      copy={{
-        h1: 'Commercial property for rent',
-        intro:
-          'Offices, retail shops, showrooms and co-working space. Filter by area, budget, furnishing, parking and facilities such as power backup.',
-        faqCategory: 'commercial',
-        types: [
-          {
-            label: 'Office spaces',
-            text: 'Bare-shell, warm-shell and plug-and-play offices for teams of every size, with details on workstations, cabins and washrooms.',
-          },
-          {
-            label: 'Retail shops',
-            text: 'Ground-floor and high-street shops where frontage, footfall and visibility matter most.',
-          },
-          {
-            label: 'Showrooms',
-            text: 'Large-format spaces with display frontage for automobiles, furniture, electronics and lifestyle brands.',
-          },
-          {
-            label: 'Commercial buildings',
-            text: 'Entire buildings or floors for institutions, clinics, training centres and corporate offices.',
-          },
-          {
-            label: 'Co-working spaces',
-            text: 'Flexible desks and private cabins with shared meeting rooms, listed when available.',
-          },
-          {
-            label: 'Other commercial units',
-            text: 'Tell us how you plan to use the space and we will check suitability, permissions and terms with the owner.',
-          },
-        ],
-      }}
+      intro="Offices, shops, showrooms and commercial buildings to buy or lease. Use the deal filter to switch between sale and rent."
+      after={
+        <section className="mt-20 border-t border-line pt-12" aria-labelledby="types-heading">
+          <h2 id="types-heading" className="text-2xl">
+            Spaces listed here
+          </h2>
+          <dl className="mt-6 grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+            {TYPES.map(([label, text]) => (
+              <div key={label}>
+                <dt className="font-semibold">{label}</dt>
+                <dd className="mt-1 text-ink-soft">{text}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      }
     />
   );
 }

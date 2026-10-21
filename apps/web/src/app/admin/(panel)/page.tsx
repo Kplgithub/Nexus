@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatINR, type DashboardStats } from '@nexus/shared';
+import { formatPrice, type DashboardStats } from '@nexus/shared';
 import { PageTitle, StatusPill, useAdmin } from '@/components/admin/AdminShell';
 import { useApi } from '@/components/admin/useApi';
 
@@ -33,11 +33,34 @@ export default function DashboardPage() {
               <code>pnpm demo:remove</code> before launch.
             </p>
           )}
+          {data.properties.pending > 0 && (
+            <Link
+              href="/admin/review"
+              className="flex items-center justify-between rounded-xl bg-brand-900 p-5 text-white hover:bg-brand-800"
+            >
+              <span>
+                <span className="block text-lg font-semibold">
+                  {data.properties.pending} listing{data.properties.pending === 1 ? '' : 's'}{' '}
+                  waiting for review
+                </span>
+                <span className="text-sm text-white/70">
+                  Approve or reject so posters hear back quickly.
+                </span>
+              </span>
+              <span className="btn btn-accent btn-sm">Open review queue</span>
+            </Link>
+          )}
           <section
             aria-label="Property counts"
-            className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6"
+            className="grid gap-4 sm:grid-cols-4 lg:grid-cols-8"
           >
             <Stat label="Total properties" value={data.properties.total} href="/admin/properties" />
+            <Stat
+              label="Pending review"
+              value={data.properties.pending}
+              href="/admin/review"
+              highlight={data.properties.pending > 0}
+            />
             <Stat
               label="Published"
               value={data.properties.published}
@@ -53,6 +76,7 @@ export default function DashboardPage() {
               value={data.properties.rented}
               href="/admin/properties?status=rented"
             />
+            <Stat label="Sold" value={data.properties.sold} href="/admin/properties?status=sold" />
             <Stat
               label="Inactive"
               value={data.properties.inactive}
@@ -84,11 +108,21 @@ export default function DashboardPage() {
               highlight={data.enquiries.followUpsDue > 0}
             />
             <Stat
-              label="New owner submissions"
-              value={data.submissions.new}
-              href="/admin/submissions"
-              highlight={data.submissions.new > 0}
+              label="Qualified"
+              value={data.enquiries.qualified}
+              href="/admin/enquiries?status=qualified"
             />
+          </section>
+          <section aria-label="User counts" className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            <Stat label="Website users" value={data.users.total} href="/admin/users" />
+            <Stat label="New this week" value={data.users.newThisWeek} href="/admin/users" />
+            <Stat
+              label="Buyers / owners / tenants"
+              value={data.users.individual}
+              href="/admin/users?role=individual"
+            />
+            <Stat label="Agents" value={data.users.agent} href="/admin/users?role=agent" />
+            <Stat label="Builders" value={data.users.builder} href="/admin/users?role=builder" />
           </section>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -107,7 +141,7 @@ export default function DashboardPage() {
                       {p.title}
                     </Link>
                     <span className="flex shrink-0 items-center gap-2">
-                      <span className="text-ink-muted">{formatINR(p.monthlyRent)}</span>
+                      <span className="text-ink-muted">{formatPrice(p.price, p.listingType)}</span>
                       <StatusPill status={p.status} />
                     </span>
                   </li>

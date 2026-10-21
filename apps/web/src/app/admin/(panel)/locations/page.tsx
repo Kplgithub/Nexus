@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { slugify, type City, type Locality } from '@nexus/shared';
+import { INDIAN_STATES, slugify, type City, type Locality } from '@nexus/shared';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
@@ -30,9 +30,9 @@ export default function LocationsPage() {
     <>
       <PageTitle title="Locations" />
       <p className="mb-6 max-w-3xl text-sm text-ink-muted">
-        Cities and localities power search filters and location pages. A locality page is indexed by
-        search engines only when it has published listings or a written introduction — so write a
-        short, genuine introduction for areas you want to rank for.
+        Only the cities and localities added here appear on the website — in search, filters, the
+        posting form and location pages. Untick “Active” to hide one without deleting it. A location
+        page is indexed by search engines only when it has live listings or a written introduction.
       </p>
       {error && (
         <p role="alert" className="mb-4 rounded-lg bg-danger-50 p-3 text-danger">
@@ -40,6 +40,15 @@ export default function LocationsPage() {
         </p>
       )}
       {loading && !data && <p className="text-ink-muted">Loading…</p>}
+      {data?.length === 0 && (
+        <div className="card mb-6 p-8 text-center">
+          <p className="font-semibold">No cities yet</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            Add your first city below, then add its localities. Nothing is shown on the website
+            until you do.
+          </p>
+        </div>
+      )}
       <div className="space-y-6">
         {data?.map((c) => (
           <CityEditor
@@ -72,13 +81,19 @@ export default function LocationsPage() {
             <label htmlFor="nc-state" className="field-label">
               State
             </label>
-            <input
+            <select
               id="nc-state"
               className="field"
               required
               value={newCity.state}
               onChange={(e) => setNewCity((s) => ({ ...s, state: e.target.value }))}
-            />
+            >
+              {INDIAN_STATES.map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
           </div>
           <button type="submit" className="btn btn-primary">
             Add city
@@ -141,17 +156,29 @@ function CityEditor({
     }
   }
 
+  /** Add one or many localities (separated by commas or new lines). Saved with the city. */
   function addLocality(e: React.FormEvent) {
     e.preventDefault();
-    const name = newLocality.trim();
-    if (!name) return;
-    const slug = slugify(name);
-    if (c.localities.some((l) => l.slug === slug)) {
-      toast('That locality already exists', 'error');
+    const names = newLocality
+      .split(/[\n,]/)
+      .map((n) => n.trim())
+      .filter((n) => n.length >= 2);
+    if (!names.length) return;
+    const existing = new Set(c.localities.map((l) => l.slug));
+    const fresh: Locality[] = [];
+    for (const name of names) {
+      const slug = slugify(name);
+      if (!slug || existing.has(slug)) continue;
+      existing.add(slug);
+      fresh.push({ name, slug, active: true, intro: '' });
+    }
+    if (!fresh.length) {
+      toast('Those localities already exist', 'error');
       return;
     }
-    setC((s) => ({ ...s, localities: [...s.localities, { name, slug, active: true, intro: '' }] }));
+    setC((s) => ({ ...s, localities: [...s.localities, ...fresh] }));
     setNewLocality('');
+    toast(`${fresh.length} added — click Save ${c.name} to publish`);
   }
 
   return (
@@ -160,7 +187,7 @@ function CityEditor({
         <h2 className="text-lg font-semibold">
           {c.name}{' '}
           <span className="text-sm font-normal text-ink-muted">
-            /rentals/{c.slug} · {c.publishedCount ?? 0} live listings
+            {c.state} · /buy/{c.slug} · /rent/{c.slug} · {c.publishedCount ?? 0} live listings
           </span>
         </h2>
         <label className="flex items-center gap-2 text-sm">
@@ -176,7 +203,7 @@ function CityEditor({
       </div>
       <div className="mt-4 grid gap-3">
         <label className="field-label" htmlFor={`intro-${c.id}`}>
-          City introduction (shown on /rentals/{c.slug})
+          City introduction (shown on the city’s Buy and Rent pages)
         </label>
         <textarea
           id={`intro-${c.id}`}
@@ -264,17 +291,20 @@ function CityEditor({
 
       {canEdit && (
         <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-          <form onSubmit={addLocality} className="flex gap-2">
-            <label className="sr-only" htmlFor={`nl-${c.id}`}>
-              New locality
-            </label>
-            <input
-              id={`nl-${c.id}`}
-              className="field w-56"
-              placeholder="New locality name"
-              value={newLocality}
-              onChange={(e) => setNewLocality(e.target.value)}
-            />
+          <form onSubmit={addLocality} className="flex flex-1 flex-wrap items-end gap-2">
+            <div className="min-w-64 flex-1">
+              <label className="field-label" htmlFor={`nl-${c.id}`}>
+                Add localities
+              </label>
+              <textarea
+                id={`nl-${c.id}`}
+                className="field min-h-11"
+                rows={1}
+                placeholder="One name, or several separated by commas"
+                value={newLocality}
+                onChange={(e) => setNewLocality(e.target.value)}
+              />
+            </div>
             <button type="submit" className="btn btn-outline">
               Add
             </button>

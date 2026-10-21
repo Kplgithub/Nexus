@@ -26,9 +26,10 @@ const rank = { editor: 1, admin: 2, owner: 3 } as const;
 
 const NAV = [
   { href: '/admin', label: 'Dashboard' },
+  { href: '/admin/review', label: 'Review queue' },
   { href: '/admin/properties', label: 'Properties' },
   { href: '/admin/enquiries', label: 'Enquiries' },
-  { href: '/admin/submissions', label: 'Owner submissions' },
+  { href: '/admin/users', label: 'Users' },
   { href: '/admin/locations', label: 'Locations' },
   { href: '/admin/faqs', label: 'FAQs' },
   { href: '/admin/settings', label: 'Settings' },
@@ -177,6 +178,11 @@ const STATUS_STYLES: Record<string, string> = {
   published: 'bg-success-50 text-success',
   draft: 'bg-surface text-ink-soft ring-1 ring-line',
   rented: 'bg-brand-50 text-brand-800',
+  sold: 'bg-brand-50 text-brand-800',
+  pending: 'bg-accent-50 text-accent-700',
+  rejected: 'bg-danger-50 text-danger',
+  active: 'bg-success-50 text-success',
+  blocked: 'bg-danger-50 text-danger',
   inactive: 'bg-warn-50 text-warn',
   archived: 'bg-surface text-ink-muted',
   new: 'bg-accent-50 text-accent-700',
@@ -184,9 +190,6 @@ const STATUS_STYLES: Record<string, string> = {
   qualified: 'bg-success-50 text-success',
   closed: 'bg-surface text-ink-muted',
   spam: 'bg-danger-50 text-danger',
-  reviewing: 'bg-brand-50 text-brand-800',
-  converted: 'bg-success-50 text-success',
-  rejected: 'bg-surface text-ink-muted',
 };
 
 export function StatusPill({ status }: { status: string }) {
