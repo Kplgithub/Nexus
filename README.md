@@ -1,9 +1,11 @@
 # NEXUS Estate | Rentals | Properties
 
-Residential and commercial rental platform for NEXUS Estate (launch market: Jaipur, Rajasthan).
+Property marketplace for NEXUS Estate — homes and commercial spaces to buy and rent (launch market: Jaipur; cities and localities are added from the admin, so more can follow without code changes).
 
-- **Public site** — search with real server-side filters, property pages, location pages, lead forms, SEO.
-- **Admin dashboard** (`/admin`) — properties, photos, enquiries, owner submissions, locations, FAQs, business settings.
+- **Public site** — Buy / Rent / Commercial search with server-side filters, property pages, location pages, lead forms, SEO.
+- **Accounts** — sign up as Buyer / Owner / Tenant, Agent or Builder; email + password or mobile OTP login; dashboard with listings, leads, saved properties and profile.
+- **Posting** — owners, agents and builders post sale or rent listings; every listing is reviewed by staff before it goes live.
+- **Admin dashboard** (`/admin`) — review queue, properties, photos, enquiries, website users, locations, FAQs, business settings.
 - **REST API** (`/api/v1`) — Express + MongoDB, documented with OpenAPI at `/api/docs`.
 
 > **Status:** MVP code complete. Type-checked and partially unit-tested offline; full install, API tests, build and E2E run in CI (the authoring sandbox could not reach the npm registry). See [docs/TEST_REPORT.md](docs/TEST_REPORT.md).
@@ -43,7 +45,8 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 # edit apps/api/.env: set JWT_SECRET (openssl rand -base64 48) and MONGODB_URI
 
-pnpm seed:base                     # Jaipur + localities, starter FAQs, default settings
+pnpm seed:base                     # starter FAQs and default settings
+pnpm seed:locations                # optional: Jaipur with sample localities (or add them in Admin → Locations)
 ADMIN_EMAIL=you@example.com ADMIN_NAME="Your Name" pnpm seed:admin   # prompts for a password
 pnpm seed:demo                     # optional: clearly-labelled demo listings
 pnpm dev                           # web on :3000, API on :4000 (/api/v1 is proxied by Next)
@@ -63,12 +66,13 @@ Open http://localhost:3000 and http://localhost:3000/admin. API docs: http://loc
 
 ## Managing the site (admin quick guide)
 
-1. **Locations** — add cities/localities first; write a short, genuine intro for localities you want indexed.
-2. **Properties → Add property** — fill the form, upload photos (choose cover, add alt text), then **Save & publish**. Bedrooms/bathrooms are required only for homes.
-3. **Status** — Draft (hidden), Published, Rented (page stays up, removed from search), Inactive, Archived. Changing a slug keeps the old URL redirecting.
-4. **Enquiries** — new leads appear here; set status, follow-up date, assignee and private notes; export CSV (admin role).
-5. **Owner submissions** — requests from “List your property”.
-6. **Settings** — phone/WhatsApp, email, address (hidden unless enabled), social links, hero text, lead-notification email.
+1. **Locations** — add cities and localities first (several at once, comma separated). Only these appear on the website, in search and in the posting form.
+2. **Review queue** — listings posted by owners, agents and builders wait here. Approve to publish, or reject with a note telling the poster what to fix.
+3. **Properties → Add property** — staff listings for sale or rent; upload photos, then **Save & publish**. Bedrooms/bathrooms are required only for homes.
+4. **Status** — Draft, Pending review, Published, Rejected, Rented/Sold (page stays up, removed from search), Inactive, Archived. Changing a slug keeps the old URL redirecting.
+5. **Enquiries** — every lead, including those for user listings; set status, follow-up date, assignee and notes; export CSV (admin role).
+6. **Users** — see website accounts, verify agents/builders after checking documents, block abusive accounts (their listings go offline).
+7. **Settings** — phone/WhatsApp, email, address (hidden unless enabled), social links, hero text and image, lead-notification email.
 
 ## Documentation
 
