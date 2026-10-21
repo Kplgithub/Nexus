@@ -36,6 +36,8 @@ async function typeOtp(page: Page) {
 test.describe('journeys', () => {
   test.skip(!email || !password, 'Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD');
   test.describe.configure({ mode: 'serial' });
+  // Each journey waits for public caches to refresh, so allow more than the default.
+  test.setTimeout(180_000);
 
   const cases = [
     {
