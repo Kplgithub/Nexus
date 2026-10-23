@@ -52,7 +52,8 @@ services:
       options: { max-size: '10m', max-file: '5' }
 
   mongo:
-    image: mongo:8
+    # Pinned: MongoDB 8 refuses to start on Linux kernel 6.19+ (SERVER-121912).
+    image: mongo:7.0
     profiles: [localdb]
     restart: unless-stopped
     command: ['--auth', '--bind_ip_all', '--wiredTigerCacheSizeGB', '0.5']
