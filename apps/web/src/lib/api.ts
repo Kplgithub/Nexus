@@ -92,8 +92,17 @@ export type HomeSections = {
 export async function getHome(): Promise<HomeSections> {
   try {
     const data = (await get<HomeSections>('/home', { tags: ['properties'] })).data;
-    // An older API (or a cached response from one) has no projects row.
-    return { ...data, projects: data.projects ?? [] };
+    // Every section defaults to empty, so an older API (or a cached response) can't break the page.
+    return {
+      featured: data?.featured ?? [],
+      recentSale: data?.recentSale ?? [],
+      recentRent: data?.recentRent ?? [],
+      counts: {
+        sale: data?.counts?.sale ?? 0,
+        rent: data?.counts?.rent ?? 0,
+      },
+      projects: data?.projects ?? [],
+    };
   } catch {
     return {
       featured: [],
