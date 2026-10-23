@@ -232,7 +232,10 @@ test('admin screens and workflow', async ({ page }, info) => {
       .getByLabel('Add private note')
       .fill('Called the customer, visit fixed for Sunday 11 am.');
     await page.getByRole('button', { name: 'Add note' }).click();
-    await page.getByLabel('Status', { exact: true }).last().selectOption('contacted');
+    await page
+      .getByRole('dialog', { name: 'Enquiry details' })
+      .getByLabel('Status', { exact: true })
+      .selectOption('contacted');
     await page.waitForTimeout(800);
     await shot(page, p, 'admin-enquiry-detail', false);
     await page.getByRole('button', { name: 'Close' }).click();

@@ -108,7 +108,10 @@ test.describe('journeys', () => {
       await page.getByPlaceholder(/Name, phone/).fill(ref!.trim());
       await page.getByRole('button', { name: 'Search' }).click();
       await page.getByRole('button', { name: ref!.trim() }).click();
-      await page.getByLabel('Status', { exact: true }).last().selectOption('contacted');
+      // Act inside the lead drawer once it has loaded (the list also has a Status filter).
+      const drawer = page.getByRole('dialog', { name: 'Enquiry details' });
+      await expect(drawer.getByRole('heading', { name: ref!.trim() })).toBeVisible();
+      await drawer.getByLabel('Status', { exact: true }).selectOption('contacted');
       await expect(page.getByText('Marked contacted')).toBeVisible();
     });
   }

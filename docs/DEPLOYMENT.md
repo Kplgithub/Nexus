@@ -2,6 +2,24 @@
 
 Target: one Linux VPS (Ubuntu 24.04 LTS assumed below — adjust for other distributions) running Docker Compose behind Nginx with Let’s Encrypt, and MongoDB Atlas. Nothing here assumes you already own a domain or server.
 
+## Quick path: one script on a new server
+
+For a fresh Ubuntu 24.04 droplet (2 vCPU / 4 GB, Bangalore region, created with your SSH key):
+
+1. At your domain registrar add A records for `@` and `www` pointing to the droplet's IP.
+2. Have your Cloudinary cloud name, API key and secret ready (Dashboard → API Keys).
+3. Run:
+
+```bash
+ssh root@SERVER_IP
+curl -fsSLo server-setup.sh https://raw.githubusercontent.com/Kplgithub/Nexus/main/deploy/scripts/server-setup.sh
+bash server-setup.sh
+```
+
+It asks for the domain, an email for SSL, the database choice (on the server, or MongoDB Atlas) and the Cloudinary details, then installs everything, gets HTTPS, builds and starts the site, creates your admin login, schedules nightly backups and prints the four GitHub secrets for one-click deploys. Re-running it is safe. The manual steps below describe the same setup in detail.
+
+Day-to-day commands (as `deploy` in `/srv/nexus`): `./deploy/scripts/deploy.sh main` to update, `./deploy/scripts/nexus.sh logs -f api` for logs, `./deploy/scripts/nexus.sh seed-admin` for another staff login.
+
 ## 0. What you need
 
 | Item               | Notes                                                                                                                             |

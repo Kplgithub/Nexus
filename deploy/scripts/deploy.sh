@@ -9,6 +9,10 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 REF="${1:-origin/main}"
 COMPOSE=(docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production)
+# Bundled MongoDB (set up by server-setup.sh) runs under the localdb profile.
+if grep -qE '^USE_LOCAL_MONGO=true' deploy/.env.production 2>/dev/null; then
+  COMPOSE+=(--profile localdb)
+fi
 
 git fetch --quiet --tags origin
 # Accept a branch name (main), origin/<branch>, a tag or a SHA.
