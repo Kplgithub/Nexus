@@ -85,7 +85,16 @@ export type HomeSections = {
 
 export async function getHome(): Promise<HomeSections> {
   try {
-    return (await get<HomeSections>('/home', { tags: ['properties'] })).data;
+    const data = (await get<HomeSections>('/home', { tags: ['properties'] })).data;
+    return {
+      featured: data?.featured ?? [],
+      recentSale: data?.recentSale ?? [],
+      recentRent: data?.recentRent ?? [],
+      counts: {
+        sale: data?.counts?.sale ?? 0,
+        rent: data?.counts?.rent ?? 0,
+      },
+    };
   } catch {
     return { featured: [], recentSale: [], recentRent: [], counts: { sale: 0, rent: 0 } };
   }
