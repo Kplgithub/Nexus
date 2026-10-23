@@ -4,14 +4,15 @@ Target: one Linux VPS (Ubuntu 24.04 LTS assumed below — adjust for other distr
 
 ## 0. What you need
 
-| Item            | Notes                                                                                                                             |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Domain          | Any registrar. You’ll add DNS records (step 2).                                                                                   |
-| Server          | 2 vCPU / 4 GB RAM is comfortable (the Next.js build needs ~2 GB). Any provider with Ubuntu 24.04.                                 |
-| SSH access      | Give access by **adding a public key** to the server — never share passwords or private keys in chat or email.                    |
-| MongoDB Atlas   | M0/M10 cluster in a Mumbai (ap-south-1) region; database user with `readWrite` on `nexus`; IP access list = the server’s IP only. |
-| Cloudinary      | Free tier is enough to start. Copy cloud name, API key and secret into the server env file.                                       |
-| SMTP (optional) | For lead emails (e.g. Zoho, Google Workspace, Amazon SES).                                                                        |
+| Item               | Notes                                                                                                                             |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Domain             | Any registrar. You’ll add DNS records (step 2).                                                                                   |
+| Server             | 2 vCPU / 4 GB RAM is comfortable (the Next.js build needs ~2 GB). Any provider with Ubuntu 24.04.                                 |
+| SSH access         | Give access by **adding a public key** to the server — never share passwords or private keys in chat or email.                    |
+| MongoDB Atlas      | M0/M10 cluster in a Mumbai (ap-south-1) region; database user with `readWrite` on `nexus`; IP access list = the server’s IP only. |
+| Cloudinary         | Free tier is enough to start. Copy cloud name, API key and secret into the server env file.                                       |
+| SMTP (recommended) | Lead emails and password-reset links (e.g. Zoho, Google Workspace, Amazon SES).                                                   |
+| MSG91 (for OTP)    | Mobile OTP login/verification. Needs DLT registration; until ready keep `SMS_DRIVER=disabled`.                                    |
 
 ## 1. Prepare the server
 
@@ -72,7 +73,7 @@ docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.producti
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production exec -it -e ADMIN_EMAIL=you@example.com -e ADMIN_NAME="Your Name" api node dist/scripts/seed-admin.js
 ```
 
-Do **not** run `seed-demo` on production.
+Do **not** run `seed-demo` on production. `seed-base` adds FAQs and settings only — add Jaipur and its localities in Admin → Locations (or run `seed-locations.js` once for a starting list).
 
 ## 6. Verify (required before calling it live)
 
