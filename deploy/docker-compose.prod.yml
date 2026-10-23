@@ -1,4 +1,6 @@
 # Production stack: Next.js + API behind the host's Nginx (see deploy/nginx/nexus.conf).
+# The API is built from the backend repo (Kplgithub/Nexus_Backend), checked out at ./backend
+# next to this repo's files (deploy.sh keeps it on the right commit).
 # Database: MongoDB Atlas, or the bundled `mongo` service when USE_LOCAL_MONGO=true in
 # .env.production (deploy.sh then adds `--profile localdb`; server-setup.sh configures it).
 #
@@ -9,7 +11,7 @@ name: nexus
 services:
   api:
     build:
-      context: ..
+      context: ../backend
       dockerfile: apps/api/Dockerfile
     image: nexus-api:${RELEASE:-latest}
     restart: unless-stopped

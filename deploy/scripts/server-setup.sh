@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 # One-time setup of a fresh Ubuntu 24.04 server (e.g. a DigitalOcean droplet) for NEXUS Estate.
 #
-#   ssh root@SERVER_IP
-#   curl -fsSLo server-setup.sh https://raw.githubusercontent.com/Kplgithub/Nexus/main/deploy/scripts/server-setup.sh
-#   bash server-setup.sh
+#   ssh root@SERVER_IP, then paste the bootstrap commands from docs/DEPLOYMENT.md ("First-time
+#   server setup"): they give the server read access to this private repo and run this script.
 #
 # It asks a few questions, then: hardens the server, installs Docker + Nginx, creates a `deploy`
-# user, clones the code to /srv/nexus, writes deploy/.env.production (secrets are generated or typed
+# user, clones the website to /srv/nexus and the backend (Kplgithub/Nexus_Backend) to
+# /srv/nexus/backend with read-only deploy keys, writes deploy/.env.production (secrets are generated or typed
 # here, never sent anywhere else), gets an HTTPS certificate, builds and starts the site, seeds
 # FAQs/settings, creates the first admin, schedules backups and prepares a key for GitHub deploys.
 # Safe to re-run: finished steps are skipped and an existing .env.production is kept.
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/Kplgithub/Nexus.git}"
+REPO_URL="${REPO_URL:-git@github-nexus-web:Kplgithub/Nexus.git}"
+BACKEND_URL="${BACKEND_URL:-git@github-nexus-backend:Kplgithub/Nexus_Backend.git}"
 APP_DIR=/srv/nexus
 DEPLOY_USER=deploy
 ENV_FILE="$APP_DIR/deploy/.env.production"
@@ -113,13 +114,67 @@ fi
 chown "$DEPLOY_USER:" "/home/$DEPLOY_USER/.ssh/authorized_keys" && chmod 600 "/home/$DEPLOY_USER/.ssh/authorized_keys"
 
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$APP_DIR"
+
+# Both repositories are private: the server reads them with two read-only deploy keys
+# (GitHub allows one repo per key). the bootstrap commands may already have made the website key.
+SSH_DIR="/home/$DEPLOY_USER/.ssh"
+for name in web backend; do
+  key="$SSH_DIR/nexus_$name"
+  if [ ! -f "$key" ]; then
+    if [ "$name" = web ] && [ -f /root/.ssh/nexus_web ]; then
+      install -m 600 -o "$DEPLOY_USER" -g "$DEPLOY_USER" /root/.ssh/nexus_web "$key"
+      install -m 644 -o "$DEPLOY_USER" -g "$DEPLOY_USER" /root/.ssh/nexus_web.pub "$key.pub"
+    else
+      sudo -u "$DEPLOY_USER" ssh-keygen -q -t ed25519 -N "" -C "nexus-server-$name" -f "$key"
+    fi
+  fi
+done
+cat >"$SSH_DIR/config" <<EOF
+Host github-nexus-web
+  HostName github.com
+  User git
+  IdentityFile $SSH_DIR/nexus_web
+  IdentitiesOnly yes
+Host github-nexus-backend
+  HostName github.com
+  User git
+  IdentityFile $SSH_DIR/nexus_backend
+  IdentitiesOnly yes
+EOF
+chown "$DEPLOY_USER:" "$SSH_DIR/config" && chmod 600 "$SSH_DIR/config"
+ssh-keyscan -t ed25519 github.com 2>/dev/null >"$SSH_DIR/known_hosts.github"
+sort -u "$SSH_DIR/known_hosts.github" "$SSH_DIR/known_hosts" 2>/dev/null -o "$SSH_DIR/known_hosts" || cp "$SSH_DIR/known_hosts.github" "$SSH_DIR/known_hosts"
+rm -f "$SSH_DIR/known_hosts.github"
+chown "$DEPLOY_USER:" "$SSH_DIR/known_hosts"
+
+can_read() { sudo -u "$DEPLOY_USER" -H git ls-remote -q "$1" HEAD >/dev/null 2>&1; }
+need_key() {
+  local repo="$1" url="$2" pub="$3"
+  while ! can_read "$url"; do
+    echo
+    warn "This server can't read $repo yet. Add its deploy key:"
+    echo "    GitHub → $repo → Settings → Deploy keys → Add deploy key"
+    echo "    Title: nexus-server   (leave \"Allow write access\" unticked)"
+    echo "    Key:   $(cat "$pub")"
+    read -r -p "  Press Enter once it is added... " _ </dev/tty
+  done
+}
+need_key Kplgithub/Nexus "$REPO_URL" "$SSH_DIR/nexus_web.pub"
+need_key Kplgithub/Nexus_Backend "$BACKEND_URL" "$SSH_DIR/nexus_backend.pub"
+ok "GitHub access for both repositories (read-only)"
+
 if [ ! -d "$APP_DIR/.git" ]; then
-  sudo -u "$DEPLOY_USER" git clone -q "$REPO_URL" "$APP_DIR"
+  sudo -u "$DEPLOY_USER" -H git clone -q "$REPO_URL" "$APP_DIR"
 else
-  as_deploy "git fetch -q origin"
+  as_deploy "git remote set-url origin '$REPO_URL' && git fetch -q origin"
 fi
-chmod +x "$APP_DIR"/deploy/scripts/*.sh
-ok "Code in $APP_DIR (owned by $DEPLOY_USER)"
+if [ ! -d "$APP_DIR/backend/.git" ]; then
+  sudo -u "$DEPLOY_USER" -H git clone -q "$BACKEND_URL" "$APP_DIR/backend"
+else
+  as_deploy "git -C backend remote set-url origin '$BACKEND_URL' && git -C backend fetch -q origin"
+fi
+chmod +x "$APP_DIR"/deploy/scripts/*.sh "$APP_DIR"/scripts/*.sh
+ok "Website code in $APP_DIR, backend in $APP_DIR/backend (owned by $DEPLOY_USER)"
 
 # ------------------------------------------------------------------ settings
 bold "3/8  Settings (deploy/.env.production)"
@@ -151,7 +206,7 @@ USER_SESSION_TTL_DAYS=30
 COOKIE_SECURE=true
 
 # Mobile OTP: set SMS_DRIVER=msg91 and the two keys once your DLT template is approved,
-# then run ./deploy/scripts/deploy.sh main. Until then users sign in with email + password.
+# then run ./deploy/scripts/deploy.sh main main. Until then users sign in with email + password.
 SMS_DRIVER=disabled
 MSG91_AUTH_KEY=
 MSG91_TEMPLATE_ID=
@@ -223,7 +278,7 @@ ok "HTTPS certificate installed; renews automatically"
 
 # ------------------------------------------------------------------ build + start
 bold "5/8  Building and starting the site (first build takes 5–10 minutes)"
-as_deploy "./deploy/scripts/deploy.sh main"
+as_deploy "./deploy/scripts/deploy.sh main main"
 ok "Site is running"
 
 # ------------------------------------------------------------------ data
@@ -281,8 +336,9 @@ cat <<EOF
 
 $(printf '\033[1m')Done. Your site: https://$DOMAIN   Admin: https://$DOMAIN/admin$(printf '\033[0m')
 
-Next, connect GitHub so updates deploy with one click:
-  GitHub → Kplgithub/Nexus → Settings → Secrets and variables → Actions → New repository secret
+Next, connect GitHub so updates deploy with one click. In BOTH repositories
+(Kplgithub/Nexus and Kplgithub/Nexus_Backend):
+  Settings → Secrets and variables → Actions → New repository secret
     DEPLOY_HOST     $SERVER_IP
     DEPLOY_USER     $DEPLOY_USER
     DEPLOY_PATH     $APP_DIR
@@ -290,7 +346,7 @@ Next, connect GitHub so updates deploy with one click:
   Then Settings → Environments → New environment "production" → add yourself as a required reviewer.
 
 Useful commands (as $DEPLOY_USER, in $APP_DIR):
-  ./deploy/scripts/deploy.sh main          update to the latest code
+  ./deploy/scripts/deploy.sh main main     update website + backend to the latest code
   ./deploy/scripts/nexus.sh logs -f api    live logs
   ./deploy/scripts/nexus.sh seed-admin     add another staff login
 EOF

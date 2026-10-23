@@ -1,5 +1,10 @@
 # Deployment
 
+Two private repositories make up the site: this one (website + deployment files) and
+[Kplgithub/Nexus_Backend](https://github.com/Kplgithub/Nexus_Backend) (API + shared package). On the
+server the website lives in `/srv/nexus` and the backend in `/srv/nexus/backend`; the server reads
+both with read-only deploy keys, and `deploy.sh <web-ref> <backend-ref>` deploys them together.
+
 Target: one Linux VPS (Ubuntu 24.04 LTS assumed below — adjust for other distributions) running Docker Compose behind Nginx with Let’s Encrypt, and MongoDB Atlas. Nothing here assumes you already own a domain or server.
 
 ## Quick path: one script on a new server
@@ -8,17 +13,27 @@ For a fresh Ubuntu 24.04 droplet (2 vCPU / 4 GB, Bangalore region, created with 
 
 1. At your domain registrar add A records for `@` and `www` pointing to the droplet's IP.
 2. Have your Cloudinary cloud name, API key and secret ready (Dashboard → API Keys).
-3. Run:
+3. Log in and make the server's key for this repo:
 
 ```bash
 ssh root@SERVER_IP
-curl -fsSLo server-setup.sh https://raw.githubusercontent.com/Kplgithub/Nexus/main/deploy/scripts/server-setup.sh
-bash server-setup.sh
+ssh-keygen -q -t ed25519 -N "" -C nexus-server-web -f /root/.ssh/nexus_web
+cat /root/.ssh/nexus_web.pub
 ```
 
-It asks for the domain, an email for SSL, the database choice (on the server, or MongoDB Atlas) and the Cloudinary details, then installs everything, gets HTTPS, builds and starts the site, creates your admin login, schedules nightly backups and prints the four GitHub secrets for one-click deploys. Re-running it is safe. The manual steps below describe the same setup in detail.
+4. Copy the line it prints into GitHub → Kplgithub/Nexus → Settings → Deploy keys → Add deploy key
+   (title `nexus-server`, leave "Allow write access" unticked). Then run:
 
-Day-to-day commands (as `deploy` in `/srv/nexus`): `./deploy/scripts/deploy.sh main` to update, `./deploy/scripts/nexus.sh logs -f api` for logs, `./deploy/scripts/nexus.sh seed-admin` for another staff login.
+```bash
+GIT_SSH_COMMAND="ssh -i /root/.ssh/nexus_web -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
+  git clone -q git@github.com:Kplgithub/Nexus.git /tmp/nexus
+bash /tmp/nexus/deploy/scripts/server-setup.sh
+```
+
+The script prints a second key, for Kplgithub/Nexus_Backend; add it the same way in that repo's
+Deploy keys and press Enter. It then asks for the domain, an email for SSL, the database choice (on the server, or MongoDB Atlas) and the Cloudinary details, then installs everything, gets HTTPS, builds and starts the site, creates your admin login, schedules nightly backups and prints the four GitHub secrets for one-click deploys (add them to both repos). Re-running it is safe. The manual steps below describe the same setup in detail.
+
+Day-to-day commands (as `deploy` in `/srv/nexus`): `./deploy/scripts/deploy.sh main main` to update website and backend, `./deploy/scripts/nexus.sh logs -f api` for logs, `./deploy/scripts/nexus.sh seed-admin` for another staff login.
 
 ## 0. What you need
 
@@ -63,7 +78,9 @@ Wait until `dig +short example.com` returns the server IP.
 ```bash
 sudo mkdir -p /srv/nexus && sudo chown deploy: /srv/nexus
 su - deploy
-git clone https://github.com/Kplgithub/Nexus.git /srv/nexus   # use a read-only deploy key for private repos
+# both repos are private: add a read-only deploy key per repo (see the quick path above)
+git clone git@github.com:Kplgithub/Nexus.git /srv/nexus
+git clone git@github.com:Kplgithub/Nexus_Backend.git /srv/nexus/backend
 cd /srv/nexus
 cp deploy/.env.production.example deploy/.env.production && chmod 600 deploy/.env.production
 nano deploy/.env.production   # fill every <...> value
@@ -86,7 +103,7 @@ sudo systemctl status certbot.timer   # automatic renewal
 
 ```bash
 cd /srv/nexus
-./deploy/scripts/deploy.sh main
+./deploy/scripts/deploy.sh main main
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production exec api node dist/scripts/seed-base.js
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production exec -it -e ADMIN_EMAIL=you@example.com -e ADMIN_NAME="Your Name" api node dist/scripts/seed-admin.js
 ```
@@ -107,16 +124,20 @@ Then in a browser: sign in to `/admin`, create and publish a property with a pho
 
 ## Subsequent deploys
 
-- Manually on the server: `./deploy/scripts/deploy.sh main`
-- From GitHub: Actions → **Deploy** → Run workflow (requires the secrets in docs/ENVIRONMENT.md).
+- Manually on the server: `./deploy/scripts/deploy.sh main main` (website ref, backend ref)
+- From GitHub: Actions → **Deploy** → Run workflow, in either repo; each asks for both refs
+  (requires the `DEPLOY_*` secrets in docs/ENVIRONMENT.md, in each repo you deploy from).
+
+The deploy stops before building if `packages/shared` differs between the two commits; change the
+shared package in both repos together.
 
 ## Rollback
 
-Every successful deploy appends its commit to `deploy/.releases`.
+Every successful deploy appends its website and backend commits to `deploy/.releases`.
 
 ```bash
-tail deploy/.releases                    # pick the previous good SHA
-./deploy/scripts/deploy.sh <sha>
+tail deploy/.releases                          # pick the previous good pair
+./deploy/scripts/deploy.sh <web-sha> <api-sha>
 ```
 
 Database changes are additive in this codebase; if a future release changes data shape, restore from backup (below) as part of rollback.
@@ -152,9 +173,10 @@ Images are stored in Cloudinary and referenced by URL; Cloudinary keeps original
 ## Alternative: PM2 instead of Docker
 
 ```bash
+(cd backend && pnpm install --frozen-lockfile && pnpm build)
 pnpm install --frozen-lockfile && pnpm build
-cd apps/api && pm2 start dist/server.js --name nexus-api --env production
-cd ../web && pm2 start "pnpm start" --name nexus-web
+(cd backend/apps/api && pm2 start dist/server.js --name nexus-api --env production)
+(cd apps/web && pm2 start "pnpm start" --name nexus-web)
 pm2 save && pm2 startup
 ```
 

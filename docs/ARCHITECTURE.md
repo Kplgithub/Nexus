@@ -15,7 +15,7 @@ Browser ──HTTPS──► Nginx ─┬─ /api/*  ──► API (Express, :40
 - **Shared validation.** `packages/shared` exports the Zod schemas, constants (types, amenities, statuses) and formatters used by both apps, so a rule such as “bedrooms are required for apartments but not offices” is defined once.
 - **Admin UI is a client app** under `/admin`, protected by a Next.js proxy (cookie presence → otherwise redirect to login) and, authoritatively, by the API on every request.
 
-## API modules (`apps/api/src`)
+## API modules (`apps/api/src` in Kplgithub/Nexus_Backend)
 
 | Folder            | Responsibility                                                                                     |
 | ----------------- | -------------------------------------------------------------------------------------------------- |

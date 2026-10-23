@@ -3,7 +3,5 @@ packages:
   - 'packages/*'
 
 onlyBuiltDependencies:
-  - argon2
-  - mongodb-memory-server
   - sharp
   - esbuild

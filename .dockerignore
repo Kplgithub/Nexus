@@ -12,3 +12,4 @@ deploy/backups
 **/uploads
 **/playwright-report
 **/test-results
+backend
