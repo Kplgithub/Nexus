@@ -405,14 +405,7 @@
   position: relative;
   border-radius: 1.125rem;
   padding: 2px;
-  background: conic-gradient(
-    from var(--nx-angle),
-    #2faea6,
-    #6ee7d8,
-    #02667b,
-    #f59e0b,
-    #2faea6
-  );
+  background: conic-gradient(from var(--nx-angle), #2faea6, #6ee7d8, #02667b, #f59e0b, #2faea6);
   animation: nx-spin 6s linear infinite;
 }
 .nx-ai-ring::before {

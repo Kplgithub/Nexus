@@ -235,7 +235,9 @@ export default async function HomePage() {
                     <Icon size={20} />
                   </span>
                   <span>
-                    <span className="block text-[0.9375rem] font-semibold leading-tight">{label}</span>
+                    <span className="block text-[0.9375rem] font-semibold leading-tight">
+                      {label}
+                    </span>
                     <span
                       className={`mt-0.5 block text-xs ${accent ? 'text-white/75' : 'text-ink-muted'}`}
                     >
