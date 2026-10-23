@@ -71,17 +71,22 @@ export function SectionHeading({
 export function FaqList({ faqs }: { faqs: Faq[] }) {
   if (!faqs.length) return null;
   return (
-    <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-white">
-      {faqs.map((f) => (
-        <details key={f.id} className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-ink hover:bg-surface [&::-webkit-details-marker]:hidden">
-            <h3 className="text-base">{f.question}</h3>
-            <ChevronDown
-              size={18}
-              className="shrink-0 text-brand transition-transform group-open:rotate-180"
-            />
+    <div className="space-y-3">
+      {faqs.map((f, i) => (
+        <details
+          key={f.id}
+          className="group rounded-2xl border border-line bg-white transition-shadow open:border-brand-100 open:shadow-[var(--shadow-card)]"
+        >
+          <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 text-left font-semibold text-ink [&::-webkit-details-marker]:hidden">
+            <span className="tabular grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-xs font-bold text-brand group-open:bg-brand group-open:text-white">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h3 className="flex-1 text-base group-hover:text-brand">{f.question}</h3>
+            <span className="grid size-8 shrink-0 place-items-center rounded-full border border-line text-brand transition-transform group-open:rotate-180 group-open:border-brand">
+              <ChevronDown size={16} />
+            </span>
           </summary>
-          <div className="px-5 pb-5 leading-relaxed text-ink-soft">{f.answer}</div>
+          <div className="pb-5 pl-[4.25rem] pr-5 leading-relaxed text-ink-soft">{f.answer}</div>
         </details>
       ))}
     </div>

@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { USER_ROLE_LABELS, type PropertyCard as Card } from '@nexus/shared';
+import { USER_ROLE_LABELS, whatsappLink, type PropertyCard as Card } from '@nexus/shared';
 import { getFaqs, getHome, getLocations, getSettings } from '@/lib/api';
 import { pageMetadata, websiteJsonLd } from '@/lib/seo';
 import { HeroSearch } from '@/components/search/HeroSearch';
@@ -21,10 +21,14 @@ import {
   KeyIcon,
   MapPinIcon,
   PlotIcon,
+  PhoneIcon,
   PlusIcon,
   CalculatorIcon,
+  ChatIcon,
+  ClockIcon,
   SparklesIcon,
   TrendingUpIcon,
+  WhatsAppIcon,
 } from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
@@ -59,6 +63,10 @@ const POSTERS = [
     text: 'Showcase projects with RERA details, possession dates and floor-wise pricing for buyers to compare.',
   },
 ];
+
+/** Hawa Mahal, Jaipur (Unsplash License). Admins can set their own in Settings. */
+const HERO_FALLBACK =
+  'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=2000&q=75&auto=format&fit=crop';
 
 const CATEGORIES = [
   { href: '/buy', label: 'Buy', hint: 'Flats, houses, villas', Icon: HomeIcon },
@@ -112,6 +120,12 @@ const TOOLS = [
   },
 ];
 
+const ASSIST = [
+  { Icon: ClockIcon, title: 'Quick callback', text: 'A real person calls you, not a bot.' },
+  { Icon: BadgeCheckIcon, title: 'Reviewed listings', text: 'Only options our team has checked.' },
+  { Icon: KeyIcon, title: 'Visit support', text: 'We help you plan site visits.' },
+];
+
 const REVIEW_STEPS = [
   ['Post', 'Add photos, price and details from your dashboard. Takes about ten minutes.'],
   ['Review', 'Our team checks the listing for accuracy before it is published.'],
@@ -140,7 +154,7 @@ export default async function HomePage() {
       {/* Hero: compact, search first */}
       <section className="relative isolate overflow-hidden bg-brand-900 text-white">
         <Image
-          src={settings.home.heroImageUrl || '/images/hero-skyline.jpg'}
+          src={settings.home.heroImageUrl || HERO_FALLBACK}
           alt=""
           fill
           priority
@@ -465,20 +479,48 @@ export default async function HomePage() {
 
       {/* FAQs */}
       {faqs.length > 0 && (
-        <section className="container-page py-20" aria-labelledby="faq-heading">
-          <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
-            <div>
-              <h2 id="faq-heading" className="text-[1.75rem] leading-tight sm:text-[2.15rem]">
+        <section className="bg-surface py-16 sm:py-20" aria-labelledby="faq-heading">
+          <div className="container-page grid gap-10 lg:grid-cols-[1fr_1.7fr]">
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-700">
+                <ChatIcon size={16} /> FAQs
+              </p>
+              <h2 id="faq-heading" className="mt-2 text-[1.9rem] leading-tight sm:text-[2.3rem]">
                 Questions, answered
               </h2>
-              <p className="mt-3 text-ink-soft">
-                More about buying, renting and posting on NEXUS Estate.
+              <p className="mt-3 max-w-sm text-ink-soft">
+                Everything about buying, renting and posting property on NEXUS Estate.
               </p>
+              <div className="mt-8 rounded-2xl bg-gradient-to-br from-brand to-brand-900 p-6 text-white shadow-[var(--shadow-lift)]">
+                <p className="font-semibold">Still have a question?</p>
+                <p className="mt-1 text-sm text-white/75">
+                  Our Jaipur team is happy to help, on call or WhatsApp.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <a
+                    href={`tel:${settings.phone}`}
+                    className="btn btn-sm bg-white text-brand-900 hover:bg-brand-50"
+                  >
+                    <PhoneIcon size={16} /> Call us
+                  </a>
+                  <a
+                    href={whatsappLink(
+                      settings.whatsapp,
+                      'Hello NEXUS Estate, I have a question about a property.',
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-sm bg-[#25D366] text-white hover:bg-[#1ebe5a]"
+                  >
+                    <WhatsAppIcon size={16} /> WhatsApp
+                  </a>
+                </div>
+              </div>
               <Link
                 href="/faq"
-                className="mt-5 inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+                className="mt-6 inline-flex items-center gap-1 font-semibold text-brand hover:underline"
               >
-                All FAQs <ArrowRight size={16} />
+                See all FAQs <ArrowRight size={16} />
               </Link>
             </div>
             <FaqList faqs={faqs} />
@@ -487,18 +529,45 @@ export default async function HomePage() {
       )}
 
       {/* Callback */}
-      <section className="container-page pb-8" aria-labelledby="cta-heading">
-        <div className="grid gap-10 rounded-[1.5rem] bg-surface p-8 sm:p-12 lg:grid-cols-2">
-          <div>
-            <h2 id="cta-heading" className="text-[2rem] leading-tight">
-              Not finding the right fit?
-            </h2>
-            <p className="mt-3 text-lg text-ink-soft">
-              Tell us your budget, preferred area and timeline. Our team will call you back with
-              options.
-            </p>
+      <section className="container-page pb-4 pt-6" aria-labelledby="cta-heading">
+        <div className="relative isolate overflow-hidden rounded-[1.75rem] bg-brand-900 text-white">
+          <div className="nx-aurora opacity-80" aria-hidden />
+          <div className="nx-grid" aria-hidden />
+          <div className="grid gap-10 p-6 sm:p-10 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:p-14">
+            <div>
+              <p className="nx-glass inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium">
+                <SparklesIcon size={14} className="text-accent" /> Free property assistance
+              </p>
+              <h2 id="cta-heading" className="mt-4 text-[2rem] leading-tight sm:text-[2.6rem]">
+                Not finding the right fit?{' '}
+                <span className="nx-ai-text">We&apos;ll find it for you.</span>
+              </h2>
+              <p className="mt-4 max-w-md text-white/75">
+                Share your budget, preferred area and timeline. A NEXUS property expert will call
+                you back with handpicked options.
+              </p>
+              <ul className="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                {ASSIST.map(({ Icon, title, text }) => (
+                  <li key={title} className="flex gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent ring-1 ring-white/15">
+                      <Icon size={20} />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-semibold">{title}</span>
+                      <span className="block text-xs leading-relaxed text-white/65">{text}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl bg-white p-5 text-ink shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)] sm:p-7">
+              <h3 className="text-lg font-semibold">Request a free callback</h3>
+              <p className="mb-5 mt-1 text-sm text-ink-muted">
+                Usually within one working day. No spam, ever.
+              </p>
+              <EnquiryForm type="general" sourcePage="/" submitLabel="Request a callback" compact />
+            </div>
           </div>
-          <EnquiryForm type="general" sourcePage="/" submitLabel="Request a callback" compact />
         </div>
       </section>
     </>
