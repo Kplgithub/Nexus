@@ -163,7 +163,7 @@ jobs:
         run: |
           git config user.email ci@example.com && git config user.name ci
           scripts/ci-run.sh "Production build" bash -c "./deploy/scripts/nexus.sh build 2>&1 | tail -n 80; exit \${PIPESTATUS[0]}"
-          ./deploy/scripts/nexus.sh up -d
+          ./deploy/scripts/nexus.sh up -d || scripts/ci-run.sh "Production up" bash -c "./deploy/scripts/nexus.sh ps -a; ./deploy/scripts/nexus.sh logs --tail=60 api mongo; exit 1"
           for i in $(seq 1 60); do
             curl -fsS http://127.0.0.1:4000/api/v1/health | grep -q '"db":"up"' && curl -fsS -o /dev/null http://127.0.0.1:3000/robots.txt && exit 0
             sleep 3
