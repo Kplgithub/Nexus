@@ -34,7 +34,8 @@ function readDraft(): ListingFormState | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY);
-    return raw ? (JSON.parse(raw) as ListingFormState) : null;
+    // Merge over defaults so drafts saved before new fields existed still load.
+    return raw ? { ...formFromListing(), ...(JSON.parse(raw) as Partial<ListingFormState>) } : null;
   } catch {
     return null;
   }

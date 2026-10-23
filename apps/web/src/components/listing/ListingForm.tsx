@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AMENITIES,
   AMENITY_LABELS,
@@ -10,6 +10,12 @@ import {
   FURNISHING_LABELS,
   FURNISHING_STATUSES,
   OWNERSHIP_LABELS,
+  PG_GENDERS,
+  PG_GENDER_LABELS,
+  PG_SHARING,
+  PG_SHARING_LABELS,
+  PLOT_APPROVALS,
+  PLOT_APPROVAL_LABELS,
   OWNERSHIP_TYPES,
   PARKING_LABELS,
   PARKING_OPTIONS,
@@ -27,11 +33,17 @@ import {
   toSqft,
   type AdminProperty,
   type City,
+  type GeoPointValue,
   type ListingType,
   type OwnListing,
   type PropertyImage,
+  type PgGender,
+  type PgSharing,
+  type PlotApproval,
   type PropertyType,
 } from '@nexus/shared';
+import { apiFetch } from '@/lib/client-api';
+import { PinPicker } from '../map/Map';
 import { ImageManager } from '../admin/ImageManager';
 import { PropertyCard } from '../property/PropertyCard';
 import { BuildingIcon, CheckIcon, HomeIcon } from '../icons';
@@ -85,6 +97,17 @@ export type ListingFormState = {
   suitableFor: string;
   images: PropertyImage[];
   coverImageIndex: number;
+  location: GeoPointValue | null;
+  videoUrl: string;
+  projectId: string;
+  plotApproval: PlotApproval | '';
+  cornerPlot: boolean;
+  roadWidthFt: string;
+  openSides: string;
+  boundaryWall: boolean;
+  pgSharing: PgSharing[];
+  pgGender: PgGender | '';
+  pgFoodIncluded: boolean;
   // Staff only
   slug: string;
   status: AdminProperty['status'];
@@ -145,6 +168,17 @@ export function formFromListing(p?: OwnListing | AdminProperty): ListingFormStat
     suitableFor: p?.suitableFor.join(', ') ?? '',
     images: p?.images ?? [],
     coverImageIndex: p?.coverImageIndex ?? 0,
+    location: p?.location ?? null,
+    videoUrl: p?.videoUrl ?? '',
+    projectId: p?.projectId ?? '',
+    plotApproval: p?.plotApproval ?? '',
+    cornerPlot: p?.cornerPlot ?? false,
+    roadWidthFt: str(p?.roadWidthFt),
+    openSides: str(p?.openSides),
+    boundaryWall: p?.boundaryWall ?? false,
+    pgSharing: p?.pgSharing ?? [],
+    pgGender: p?.pgGender ?? '',
+    pgFoodIncluded: p?.pgFoodIncluded ?? false,
     slug: p?.slug ?? '',
     status: p?.status ?? 'draft',
     listingVisibility: a?.listingVisibility ?? 'public',
@@ -169,6 +203,8 @@ const lines = (s: string, sep: string | RegExp) =>
 export function userPayload(f: ListingFormState) {
   const sale = f.listingType === 'sale';
   const residential = f.category === 'residential';
+  const plot = f.propertyType === 'plot';
+  const pg = f.propertyType === 'pg';
   return {
     listingType: f.listingType,
     title: f.title,
@@ -214,6 +250,17 @@ export function userPayload(f: ListingFormState) {
     suitableFor: residential ? [] : lines(f.suitableFor, ','),
     images: f.images,
     coverImageIndex: f.coverImageIndex,
+    location: f.location,
+    videoUrl: f.videoUrl.trim(),
+    projectId: f.projectId || null,
+    plotApproval: plot ? f.plotApproval || null : null,
+    cornerPlot: plot ? f.cornerPlot : false,
+    roadWidthFt: plot ? num(f.roadWidthFt) : null,
+    openSides: plot ? num(f.openSides) : null,
+    boundaryWall: plot ? f.boundaryWall : false,
+    pgSharing: pg ? f.pgSharing : [],
+    pgGender: pg ? f.pgGender || null : null,
+    pgFoodIncluded: pg ? f.pgFoodIncluded : false,
   };
 }
 
@@ -259,6 +306,9 @@ const FIELD_STEP: Record<string, StepId> = {
   approvedAddress: 'location',
   pincode: 'location',
   projectName: 'location',
+  projectId: 'location',
+  location: 'location',
+  videoUrl: 'photos',
   price: 'price',
   priceNegotiable: 'price',
   securityDeposit: 'price',
@@ -308,8 +358,13 @@ export function ListingFields({
 }) {
   const set = <K extends keyof ListingFormState>(k: K, v: ListingFormState[K]) =>
     setF((s) => ({ ...s, [k]: v }));
-  const toggle = (k: 'amenities' | 'preferredTenants', v: string) =>
-    setF((s) => ({ ...s, [k]: s[k].includes(v) ? s[k].filter((x) => x !== v) : [...s[k], v] }));
+  const toggle = (k: 'amenities' | 'preferredTenants' | 'pgSharing', v: string) =>
+    setF((s) => ({
+      ...s,
+      [k]: (s[k] as string[]).includes(v)
+        ? (s[k] as string[]).filter((x) => x !== v)
+        : [...s[k], v],
+    }));
   const err = (k: string) => errors[k]?.[0];
   const show = (id: StepId) => !step || step === id;
 
@@ -317,7 +372,10 @@ export function ListingFields({
   const sale = f.listingType === 'sale';
   const residential = f.category === 'residential';
   const isPlot = f.propertyType === 'plot';
+  const isPg = f.propertyType === 'pg';
   const needsRooms = TYPES_REQUIRING_ROOMS.includes(f.propertyType);
+  const locality = city?.localities.find((l) => l.slug === f.localitySlug);
+  const projects = useProjectOptions(f.citySlug);
   const priceNum = num(f.price);
   const areaNum = num(f.areaValue);
   const perSqft =
@@ -476,7 +534,50 @@ export function ListingFields({
                 onChange={(e) => set('projectName', e.target.value)}
               />
             </Field>
+            {projects.length > 0 && (
+              <Field
+                error={err('projectId')}
+                id="projectId"
+                label="Part of a NEXUS project page? (optional)"
+                hint="Links this listing to the project, so buyers see it there too."
+              >
+                <select
+                  id="projectId"
+                  className="field"
+                  value={f.projectId}
+                  onChange={(e) => {
+                    const pr = projects.find((x) => x.id === e.target.value);
+                    setF((s) => ({
+                      ...s,
+                      projectId: e.target.value,
+                      projectName: pr ? pr.name : s.projectName,
+                      localitySlug: pr ? pr.localitySlug : s.localitySlug,
+                    }));
+                  }}
+                >
+                  <option value="">Not linked</option>
+                  {projects.map((pr) => (
+                    <option key={pr.id} value={pr.id}>
+                      {pr.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
           </div>
+          <fieldset className="mt-6">
+            <legend className="field-label">Location on map (optional, recommended)</legend>
+            <p className="field-hint mb-2 mt-0">
+              Listings with a pin show up on map search. Put it on your street or building; we only
+              show an approximate circle for owner listings.
+            </p>
+            <PinPicker
+              value={f.location}
+              onChange={(v) => set('location', v)}
+              fallbackCenter={locality?.center ?? null}
+            />
+            {err('location') && <p className="field-error">{err('location')}</p>}
+          </fieldset>
         </Group>
       )}
 
@@ -848,6 +949,106 @@ export function ListingFields({
               </div>
             )}
           </div>
+          {isPlot && (
+            <div className="mt-6 grid gap-4 md:grid-cols-4">
+              <Field error={err('plotApproval')} id="plotApproval" label="Approved by">
+                <select
+                  id="plotApproval"
+                  className="field"
+                  value={f.plotApproval}
+                  onChange={(e) => set('plotApproval', e.target.value as PlotApproval | '')}
+                >
+                  <option value="">Select</option>
+                  {PLOT_APPROVALS.map((a) => (
+                    <option key={a} value={a}>
+                      {PLOT_APPROVAL_LABELS[a]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                error={err('roadWidthFt')}
+                id="roadWidthFt"
+                label="Road in front (ft)"
+                hint="e.g. 30, 40, 60"
+              >
+                <input
+                  id="roadWidthFt"
+                  className="field tabular"
+                  inputMode="numeric"
+                  value={f.roadWidthFt}
+                  onChange={(e) => set('roadWidthFt', e.target.value.replace(/[^\d]/g, ''))}
+                />
+              </Field>
+              <Field error={err('openSides')} id="openSides" label="Open sides">
+                <select
+                  id="openSides"
+                  className="field"
+                  value={f.openSides}
+                  onChange={(e) => set('openSides', e.target.value)}
+                >
+                  <option value="">Select</option>
+                  {[1, 2, 3, 4].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <div className="flex flex-col justify-end">
+                <Check
+                  checked={f.cornerPlot}
+                  onChange={(v) => set('cornerPlot', v)}
+                  label="Corner plot"
+                />
+                <Check
+                  checked={f.boundaryWall}
+                  onChange={(v) => set('boundaryWall', v)}
+                  label="Boundary wall built"
+                />
+              </div>
+            </div>
+          )}
+          {isPg && (
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <fieldset className="md:col-span-3">
+                <legend className="field-label">Room sharing offered</legend>
+                <div className="flex flex-wrap gap-2">
+                  {PG_SHARING.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      aria-pressed={f.pgSharing.includes(t)}
+                      onClick={() => toggle('pgSharing', t)}
+                      className={`chip ${f.pgSharing.includes(t) ? 'chip-active' : ''}`}
+                    >
+                      {PG_SHARING_LABELS[t]}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <Field error={err('pgGender')} id="pgGender" label="For">
+                <select
+                  id="pgGender"
+                  className="field"
+                  value={f.pgGender}
+                  onChange={(e) => set('pgGender', e.target.value as PgGender | '')}
+                >
+                  <option value="">Select</option>
+                  {PG_GENDERS.map((g) => (
+                    <option key={g} value={g}>
+                      {PG_GENDER_LABELS[g]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Check
+                checked={f.pgFoodIncluded}
+                onChange={(v) => set('pgFoodIncluded', v)}
+                label="Meals included"
+              />
+            </div>
+          )}
           <fieldset className="mt-6">
             <legend className="field-label">Amenities</legend>
             <div className="flex flex-wrap gap-2">
@@ -921,6 +1122,22 @@ export function ListingFields({
                 onChange={(e) => set('highlights', e.target.value)}
               />
             </Field>
+            <Field
+              error={err('videoUrl')}
+              id="videoUrl"
+              label="Video tour (optional)"
+              hint="A YouTube link, e.g. https://youtu.be/… Upload the walkthrough to YouTube first."
+            >
+              <input
+                id="videoUrl"
+                className="field"
+                type="url"
+                inputMode="url"
+                maxLength={200}
+                value={f.videoUrl}
+                onChange={(e) => set('videoUrl', e.target.value)}
+              />
+            </Field>
           </div>
         </Group>
       )}
@@ -972,10 +1189,35 @@ export function ListingPreview({
       publishedAt: null,
       posterType: 'owner' as const,
       imageCount: f.images.length,
+      areaSqft: num(f.areaValue) ? Math.round(toSqft(num(f.areaValue)!, f.areaUnit)) : 0,
+      location: f.location,
+      plotApproval: f.propertyType === 'plot' ? f.plotApproval || null : null,
+      pgGender: f.propertyType === 'pg' ? f.pgGender || null : null,
     }),
     [f, city, id, isDemo],
   );
   return <PropertyCard p={card} preview />;
+}
+
+type ProjectOption = { id: string; name: string; slug: string; localitySlug: string };
+
+/** Live projects in the chosen city, for the "part of a project" picker. */
+function useProjectOptions(citySlug: string) {
+  const [items, setItems] = useState<ProjectOption[]>([]);
+  useEffect(() => {
+    if (!citySlug) {
+      setItems([]);
+      return;
+    }
+    const ctl = new AbortController();
+    apiFetch<ProjectOption[]>(`/projects/options?city=${encodeURIComponent(citySlug)}`, {
+      signal: ctl.signal,
+    })
+      .then(({ data }) => setItems(data))
+      .catch(() => setItems([]));
+    return () => ctl.abort();
+  }, [citySlug]);
+  return items;
 }
 
 /* ------------------------------------------------------------------ */

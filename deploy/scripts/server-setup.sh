@@ -66,7 +66,7 @@ else
   [ -n "$CLD_NAME" ] && [ -n "$CLD_KEY" ] && [ -n "$CLD_SECRET" ] ||
     die "Cloudinary details are required for photo uploads in production."
 
-  SEED_LOCATIONS="$(ask 'Add Jaipur with 15 sample localities now? You can edit them in Admin → Locations (y/n) [y]')"
+  SEED_LOCATIONS="$(ask 'Add Jaipur with 18 sample localities now? You can edit them in Admin → Locations (y/n) [y]')"
 fi
 SEED_LOCATIONS="${SEED_LOCATIONS:-y}"
 

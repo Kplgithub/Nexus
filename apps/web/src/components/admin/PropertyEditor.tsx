@@ -325,9 +325,12 @@ export function PropertyEditor({ property }: { property?: AdminProperty }) {
 export function ModerationBar({
   property,
   onDone,
+  basePath = '/admin/properties',
 }: {
   property: Pick<AdminProperty, 'id' | 'title'>;
   onDone?: () => void;
+  /** Same review flow for projects: '/admin/projects'. */
+  basePath?: string;
 }) {
   const { toast } = useAdmin();
   const [rejecting, setRejecting] = useState(false);
@@ -341,7 +344,7 @@ export function ModerationBar({
     }
     setBusy(true);
     try {
-      await apiFetch(`/admin/properties/${property.id}/status`, {
+      await apiFetch(`${basePath}/${property.id}/status`, {
         method: 'POST',
         body: { status, note: status === 'rejected' ? note.trim() : undefined },
       });

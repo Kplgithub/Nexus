@@ -2,11 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Category, City, ListingType, Locality } from '@nexus/shared';
-import { getCity, getLocations, getSettings } from '@/lib/api';
+import { getCity, getLocalityInsights, getLocations, getSettings } from '@/lib/api';
 import { hasUserFilters, parseSearch, type RawSearchParams } from '@/lib/search-params';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { ListingResults } from './ListingResults';
 import { Breadcrumbs, JsonLd } from '../ui';
+import { LocalityInsights } from '../locality/LocalityInsights';
 
 /**
  * One page component for every browse URL:
@@ -90,10 +91,11 @@ export async function ListingPage({
   intro?: string;
   after?: React.ReactNode;
 }) {
-  const [found, cities, settings] = await Promise.all([
+  const [found, cities, settings, insights] = await Promise.all([
     resolve(scope),
     getLocations(),
     getSettings(),
+    scope.city && scope.locality ? getLocalityInsights(scope.city, scope.locality) : null,
   ]);
   if (!found) notFound();
   const { city, locality } = found!;
@@ -193,7 +195,10 @@ export async function ListingPage({
           locality: scope.locality,
         }}
         phone={settings.phone}
+        view={raw.view === 'map' ? 'map' : 'list'}
       />
+
+      {insights && search.page === 1 && <LocalityInsights data={insights} deal={scope.deal} />}
 
       {after}
     </div>

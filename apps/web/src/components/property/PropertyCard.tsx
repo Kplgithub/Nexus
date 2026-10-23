@@ -2,6 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   FURNISHING_LABELS,
+  PG_GENDER_LABELS,
+  PLOT_APPROVAL_LABELS,
   POSSESSION_LABELS,
   POSTER_LABELS,
   PROPERTY_TYPE_LABELS,
@@ -33,10 +35,16 @@ export function PropertyCard({
   const facts = [
     p.bedrooms ? `${p.bedrooms} BHK` : PROPERTY_TYPE_LABELS[p.propertyType],
     formatArea(p.areaValue, p.areaUnit),
-    p.listingType === 'sale' && p.possessionStatus
-      ? POSSESSION_LABELS[p.possessionStatus]
-      : FURNISHING_LABELS[p.furnishingStatus],
-  ];
+    p.plotApproval && p.plotApproval !== 'none'
+      ? PLOT_APPROVAL_LABELS[p.plotApproval]
+      : p.pgGender
+        ? PG_GENDER_LABELS[p.pgGender]
+        : p.listingType === 'sale' && p.possessionStatus
+          ? POSSESSION_LABELS[p.possessionStatus]
+          : p.propertyType === 'plot'
+            ? null
+            : FURNISHING_LABELS[p.furnishingStatus],
+  ].filter((x): x is string => Boolean(x));
 
   return (
     <article className="group relative flex h-full flex-col">

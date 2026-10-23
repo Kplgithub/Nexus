@@ -4,8 +4,13 @@ import type {
   AuthConfig,
   City,
   Faq,
+  LocalityInsights,
   PaginationMeta,
+  ProfileCard,
+  ProjectCard,
   PropertyCard,
+  PublicProfile,
+  PublicProject,
   PublicProperty,
   SiteSettings,
 } from '@nexus/shared';
@@ -81,13 +86,20 @@ export type HomeSections = {
   recentSale: PropertyCard[];
   recentRent: PropertyCard[];
   counts: { sale: number; rent: number };
+  projects: ProjectCard[];
 };
 
 export async function getHome(): Promise<HomeSections> {
   try {
     return (await get<HomeSections>('/home', { tags: ['properties'] })).data;
   } catch {
-    return { featured: [], recentSale: [], recentRent: [], counts: { sale: 0, rent: 0 } };
+    return {
+      featured: [],
+      recentSale: [],
+      recentRent: [],
+      counts: { sale: 0, rent: 0 },
+      projects: [],
+    };
   }
 }
 
@@ -135,5 +147,76 @@ export async function getAuthConfig(): Promise<AuthConfig> {
     return (await get<AuthConfig>('/auth/config', { revalidate: 300 })).data;
   } catch {
     return { otpEnabled: false, emailResetEnabled: false };
+  }
+}
+
+/** GET that returns null on 404 (and rethrows other failures). */
+async function getOrNull<T>(path: string, opts: FetchOpts): Promise<T | null> {
+  try {
+    return (await get<T>(path, opts)).data;
+  } catch (err) {
+    if (err instanceof ApiNotFoundError) return null;
+    throw err;
+  }
+}
+
+export async function searchProjects(qs: string) {
+  const { data, meta } = await get<ProjectCard[]>(`/projects${qs ? `?${qs}` : ''}`, {
+    tags: ['projects'],
+  });
+  return { items: data, meta: meta! };
+}
+
+export function getProject(slug: string) {
+  return getOrNull<PublicProject>(`/projects/${encodeURIComponent(slug)}`, {
+    tags: ['projects', `project:${slug}`],
+  });
+}
+
+export type ProfileRole = 'agent' | 'builder';
+const profileRoot = (role: ProfileRole) => (role === 'agent' ? 'agents' : 'builders');
+
+export async function listProfiles(role: ProfileRole, qs: string) {
+  const { data, meta } = await get<ProfileCard[]>(`/${profileRoot(role)}${qs ? `?${qs}` : ''}`, {
+    tags: ['profiles'],
+  });
+  return { items: data, meta: meta! };
+}
+
+export function getProfile(role: ProfileRole, slug: string) {
+  return getOrNull<PublicProfile>(`/${profileRoot(role)}/${encodeURIComponent(slug)}`, {
+    tags: ['profiles'],
+  });
+}
+
+export async function getLocalityInsights(city: string, locality: string) {
+  try {
+    return await getOrNull<LocalityInsights>(
+      `/locations/${encodeURIComponent(city)}/${encodeURIComponent(locality)}/insights`,
+      { tags: ['properties', 'locations'] },
+    );
+  } catch {
+    // Insights are a bonus on the page; never fail the listing page over them.
+    return null;
+  }
+}
+
+export async function getSitemapProjects(): Promise<{ slug: string; updatedAt: string }[]> {
+  try {
+    return (
+      await get<{ slug: string; updatedAt: string }[]>('/sitemap/projects', { revalidate: 300 })
+    ).data;
+  } catch {
+    return [];
+  }
+}
+
+export async function getSitemapProfiles(): Promise<{ path: string; updatedAt: string }[]> {
+  try {
+    return (
+      await get<{ path: string; updatedAt: string }[]>('/sitemap/profiles', { revalidate: 300 })
+    ).data;
+  } catch {
+    return [];
   }
 }

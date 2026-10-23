@@ -6,6 +6,7 @@ import { getFaqs, getHome, getLocations, getSettings } from '@/lib/api';
 import { pageMetadata, websiteJsonLd } from '@/lib/seo';
 import { HeroSearch } from '@/components/search/HeroSearch';
 import { PropertyGrid } from '@/components/property/PropertyCard';
+import { ProjectGrid } from '@/components/project/ProjectCard';
 import { FaqList, JsonLd, faqJsonLd } from '@/components/ui';
 import { JaipurFacade } from '@/components/art/JaipurFacade';
 import { EnquiryForm } from '@/components/forms/EnquiryForm';
@@ -142,6 +143,30 @@ export default async function HomePage() {
           linkLabel="All properties"
           items={home.featured.slice(0, 6)}
         />
+      )}
+
+      {home.projects.length > 0 && (
+        <section className="py-20" aria-labelledby="projects-heading">
+          <div className="container-page">
+            <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 id="projects-heading" className="text-[2rem] leading-tight sm:text-[2.4rem]">
+                  New projects{singleCity ? ` in ${singleCity.name}` : ''}
+                </h2>
+                <p className="mt-2 text-ink-soft">
+                  Builder projects with RERA details, floor plans and price lists.
+                </p>
+              </div>
+              <Link
+                href="/projects"
+                className="inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+              >
+                All new projects <ArrowRight size={16} />
+              </Link>
+            </div>
+            <ProjectGrid items={home.projects.slice(0, 6)} />
+          </div>
+        </section>
       )}
 
       {settings.home.showRecent && home.recentSale.length > 0 && (

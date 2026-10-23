@@ -8,6 +8,7 @@ import { POST_PROPERTY_PATH } from '@/lib/site';
 import { useSession } from '../session/SessionProvider';
 import {
   BadgeCheckIcon,
+  CraneIcon,
   GridIcon,
   HeartIcon,
   HomeIcon,
@@ -20,6 +21,7 @@ import {
 const NAV = [
   { href: '/dashboard', label: 'Overview', Icon: GridIcon },
   { href: '/dashboard/listings', label: 'My listings', Icon: HomeIcon },
+  { href: '/dashboard/projects', label: 'My projects', Icon: CraneIcon, builderOnly: true },
   { href: '/dashboard/leads', label: 'Leads', Icon: InboxIcon },
   { href: '/dashboard/saved', label: 'Saved', Icon: HeartIcon },
   { href: '/dashboard/enquiries', label: 'My enquiries', Icon: SendIcon },
@@ -70,19 +72,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:overflow-visible lg:px-0"
         >
           <ul className="flex gap-1 lg:sticky lg:top-24 lg:flex-col">
-            {NAV.map(({ href, label, Icon }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  aria-current={active(href) ? 'page' : undefined}
-                  className={`flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    active(href) ? 'bg-brand-900 text-white' : 'text-ink-soft hover:bg-surface'
-                  }`}
-                >
-                  <Icon size={18} /> {label}
-                </Link>
-              </li>
-            ))}
+            {NAV.filter((n) => !('builderOnly' in n) || user.role === 'builder').map(
+              ({ href, label, Icon }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    aria-current={active(href) ? 'page' : undefined}
+                    className={`flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      active(href) ? 'bg-brand-900 text-white' : 'text-ink-soft hover:bg-surface'
+                    }`}
+                  >
+                    <Icon size={18} /> {label}
+                  </Link>
+                </li>
+              ),
+            )}
           </ul>
         </nav>
         <div className="min-w-0">{children}</div>

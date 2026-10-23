@@ -7,6 +7,11 @@ import {
   AMENITY_LABELS,
   FURNISHING_LABELS,
   FURNISHING_STATUSES,
+  PG_GENDERS,
+  PG_GENDER_LABELS,
+  PLOT_APPROVALS,
+  PLOT_APPROVAL_LABELS,
+  POSTED_WITHIN_DAYS,
   POSSESSION_LABELS,
   POSSESSION_STATUSES,
   PROPERTY_TYPES,
@@ -51,9 +56,18 @@ type Props = {
   /** Scope fixed by the page (category page or location page) — not editable here. */
   fixed?: { listingType?: ListingType; category?: Category; city?: string; locality?: string };
   resultCount: number;
+  /** Current results view; kept when filters change. */
+  view?: 'list' | 'map';
 };
 
-export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount }: Props) {
+export function FiltersPanel({
+  search,
+  cities,
+  basePath,
+  fixed = {},
+  resultCount,
+  view = 'list',
+}: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
@@ -93,6 +107,12 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
     search.amenities?.length,
     search.parking,
     search.availableNow,
+    search.withPhotos,
+    search.rera,
+    search.plotApproval?.length,
+    search.pgGender,
+    search.pgFood,
+    search.postedWithin,
   ].filter(Boolean).length;
 
   function apply(e: React.FormEvent<HTMLFormElement>) {
@@ -125,6 +145,19 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
       amenities: all('amenities') as PropertySearch['amenities'],
       parking: fd.get('parking') === 'true' || undefined,
       availableNow: deal !== 'sale' && fd.get('availableNow') === 'true' ? true : undefined,
+      withPhotos: fd.get('withPhotos') === 'true' || undefined,
+      rera: deal !== 'rent' && fd.get('rera') === 'true' ? true : undefined,
+      plotApproval:
+        deal !== 'rent' && category !== 'commercial' && fd.get('plotApproval')
+          ? ([fd.get('plotApproval')] as PropertySearch['plotApproval'])
+          : undefined,
+      pgGender:
+        deal !== 'sale' && category !== 'commercial'
+          ? (fd.get('pgGender') as PropertySearch['pgGender']) || undefined
+          : undefined,
+      pgFood: deal !== 'sale' && fd.get('pgFood') === 'true' ? true : undefined,
+      postedWithin: n('postedWithin') as PropertySearch['postedWithin'],
+      project: search.project,
       q: search.q,
       sort: search.sort,
     };
@@ -133,7 +166,9 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
     if (fixed.category) omit.push('category');
     if (fixed.city) omit.push('city');
     if (fixed.locality) omit.push('locality');
-    const qs = toQueryString(next, omit);
+    const params = new URLSearchParams(toQueryString(next, omit));
+    if (view === 'map') params.set('view', 'map');
+    const qs = params.toString();
     setOpen(false);
     start(() => router.push(`${basePath}${qs ? `?${qs}` : ''}`, { scroll: false }));
   }
@@ -349,6 +384,25 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
             </select>
           </div>
 
+          <div>
+            <label htmlFor="f-within" className="field-label">
+              Posted within
+            </label>
+            <select
+              id="f-within"
+              name="postedWithin"
+              className="field"
+              defaultValue={search.postedWithin ?? ''}
+            >
+              <option value="">Any time</option>
+              {POSTED_WITHIN_DAYS.map((d) => (
+                <option key={d} value={d}>
+                  {d === 1 ? 'Last 24 hours' : `Last ${d} days`}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <fieldset>
             <legend className="field-label">Property type</legend>
             <div className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
@@ -408,6 +462,48 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
                   ))}
                 </select>
               </div>
+            </div>
+          )}
+
+          {deal !== 'rent' && category !== 'commercial' && (
+            <div>
+              <label htmlFor="f-plot" className="field-label">
+                Plot approved by
+              </label>
+              <select
+                id="f-plot"
+                name="plotApproval"
+                className="field"
+                defaultValue={search.plotApproval?.[0] ?? ''}
+              >
+                <option value="">Any</option>
+                {PLOT_APPROVALS.filter((a) => a !== 'none').map((a) => (
+                  <option key={a} value={a}>
+                    {PLOT_APPROVAL_LABELS[a]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {deal !== 'sale' && category !== 'commercial' && (
+            <div>
+              <label htmlFor="f-pg" className="field-label">
+                PG / hostel for
+              </label>
+              <select
+                id="f-pg"
+                name="pgGender"
+                className="field"
+                defaultValue={search.pgGender ?? ''}
+              >
+                <option value="">Any</option>
+                {PG_GENDERS.map((g) => (
+                  <option key={g} value={g}>
+                    {PG_GENDER_LABELS[g]}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -519,6 +615,40 @@ export function FiltersPanel({ search, cities, basePath, fixed = {}, resultCount
               />
               Verified listings only
             </label>
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft">
+              <input
+                type="checkbox"
+                name="withPhotos"
+                value="true"
+                defaultChecked={search.withPhotos}
+                className="size-4 accent-[var(--color-brand)]"
+              />
+              With photos only
+            </label>
+            {deal !== 'rent' && (
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  name="rera"
+                  value="true"
+                  defaultChecked={search.rera}
+                  className="size-4 accent-[var(--color-brand)]"
+                />
+                RERA registered
+              </label>
+            )}
+            {deal !== 'sale' && category !== 'commercial' && (
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  name="pgFood"
+                  value="true"
+                  defaultChecked={search.pgFood}
+                  className="size-4 accent-[var(--color-brand)]"
+                />
+                PG with meals
+              </label>
+            )}
           </fieldset>
         </div>
 

@@ -28,6 +28,8 @@ const NAV = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/review', label: 'Review queue' },
   { href: '/admin/properties', label: 'Properties' },
+  { href: '/admin/projects', label: 'Projects' },
+  { href: '/admin/reports', label: 'Reports' },
   { href: '/admin/enquiries', label: 'Enquiries' },
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/locations', label: 'Locations' },
@@ -190,6 +192,9 @@ const STATUS_STYLES: Record<string, string> = {
   qualified: 'bg-success-50 text-success',
   closed: 'bg-surface text-ink-muted',
   spam: 'bg-danger-50 text-danger',
+  open: 'bg-warn-50 text-warn',
+  resolved: 'bg-success-50 text-success',
+  dismissed: 'bg-surface text-ink-muted',
 };
 
 export function StatusPill({ status }: { status: string }) {
