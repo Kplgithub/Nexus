@@ -1,17 +1,9 @@
-name: Deploy
-
-# Manual, gated deploy to the production server over SSH.
-# Required repository secrets (Settings → Secrets and variables → Actions):
-#   DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY (private key of a deploy-only user), DEPLOY_PATH (e.g. /srv/nexus)
-# Optional: DEPLOY_KNOWN_HOSTS (output of `ssh-keyscan <host>`). App secrets live on the server in deploy/.env.production.
+name: Deploy Web
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Git ref to deploy (branch, tag or SHA)
-        default: main
-        required: true
 
 permissions:
   contents: read
@@ -19,23 +11,42 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Configure SSH
         env:
           KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          KNOWN: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
-          if [ -n "$KNOWN" ]; then printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts; else ssh-keyscan -H "$HOST" > ~/.ssh/known_hosts; fi
-      - name: Deploy
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy to Server via SSH
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          REF: ${{ inputs.ref }}
         run: |
-          ssh -i ~/.ssh/id_deploy "$USER@$HOST" "cd '$DEPLOY_PATH' && ./deploy/scripts/deploy.sh '$REF'"
+          ssh -i ~/.ssh/id_deploy "$USER@$HOST" "
+            export PATH=\$PATH:/usr/bin:/usr/local/bin
+            set -euo pipefail
+            cd '$DEPLOY_PATH'
+            echo 'Fetching latest code...'
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo 'Installing dependencies...'
+            pnpm install
+
+            echo 'Building frontend...'
+            pnpm build
+
+            echo 'Restarting nexus-web process...'
+            pm2 restart nexus-web
+
+            echo 'Waiting for service to be healthy...'
+            sleep 3
+            curl -fsS -o /dev/null http://127.0.0.1:3000
+            echo 'Deployment successful!'
+          "
