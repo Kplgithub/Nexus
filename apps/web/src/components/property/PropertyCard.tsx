@@ -47,8 +47,8 @@ export function PropertyCard({
   ].filter((x): x is string => Boolean(x));
 
   return (
-    <article className="group relative flex h-full flex-col">
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-surface">
+    <article className="nx-lift group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white">
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface">
         {p.coverImage ? (
           <Image
             src={p.coverImage.url}
@@ -66,11 +66,11 @@ export function PropertyCard({
         )}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
           <div className="flex flex-wrap gap-1.5">
-            <span className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-brand-800 shadow-sm">
+            <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-brand-800 shadow-sm backdrop-blur">
               {p.listingType === 'rent' ? 'For rent' : 'For sale'}
             </span>
             {p.featured && !closed && (
-              <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-brand-900 shadow-sm">
+              <span className="rounded-full bg-gradient-to-r from-amber-400 to-amber-300 px-2.5 py-1 text-xs font-semibold text-amber-950 shadow-sm">
                 Featured
               </span>
             )}
@@ -86,17 +86,21 @@ export function PropertyCard({
             </div>
           )}
         </div>
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 to-transparent"
+          aria-hidden
+        />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
           {p.isDemo ? <DemoBadge /> : <span />}
           {p.imageCount > 1 && (
-            <span className="rounded-md bg-black/55 px-2 py-0.5 text-xs font-medium text-white">
+            <span className="rounded-md bg-black/50 px-2 py-0.5 text-xs font-medium text-white backdrop-blur">
               {p.imageCount} photos
             </span>
           )}
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col pt-4">
+      <div className="flex flex-1 flex-col p-4">
         <div className="flex items-baseline justify-between gap-3">
           <p className="tabular text-[1.375rem] font-bold leading-none tracking-tight text-ink">
             {formatPrice(p.price, p.listingType)}
@@ -113,7 +117,7 @@ export function PropertyCard({
           ) : (
             <Link
               href={href}
-              className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none group-focus-within:underline"
+              className="after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none group-focus-within:underline group-hover:text-brand"
             >
               {p.title}
             </Link>
@@ -126,14 +130,14 @@ export function PropertyCard({
             {p.locality.name}, {p.city.name}
           </span>
         </p>
-        <ul className="mt-3 flex flex-wrap gap-1.5 text-[0.8125rem] text-ink-soft">
+        <ul className="mb-3 mt-3 flex flex-wrap gap-1.5 text-[0.8125rem] text-ink-soft">
           {facts.map((f) => (
-            <li key={f} className="rounded-md bg-surface px-2 py-1">
+            <li key={f} className="rounded-md bg-brand-50/70 px-2 py-1">
               {f}
             </li>
           ))}
         </ul>
-        <p className="mt-auto flex items-center gap-1 pt-3 text-xs text-ink-muted">
+        <p className="mt-auto flex items-center gap-1 border-t border-line pt-3 text-xs text-ink-muted">
           {p.verified && (
             <span className="inline-flex items-center gap-1 font-semibold text-accent-700">
               <BadgeCheckIcon size={14} /> Verified
@@ -168,7 +172,7 @@ export function PropertyGrid({
         ? 'sm:grid-cols-2'
         : 'sm:grid-cols-2 xl:grid-cols-3';
   return (
-    <ul className={`grid gap-x-6 gap-y-10 ${cols}`}>
+    <ul className={`grid gap-5 ${cols}`}>
       {items.map((p, i) => (
         <li key={p.id}>
           <PropertyCard p={p} priority={i < priorityCount} headingLevel={headingLevel} />
@@ -180,11 +184,11 @@ export function PropertyGrid({
 
 export function PropertyGridSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3" aria-hidden>
+    <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-hidden>
       {Array.from({ length: count }, (_, i) => (
-        <li key={i}>
-          <div className="skeleton aspect-[4/3] rounded-xl" />
-          <div className="space-y-3 pt-4">
+        <li key={i} className="overflow-hidden rounded-2xl border border-line">
+          <div className="skeleton aspect-[4/3] rounded-none" />
+          <div className="space-y-3 p-4">
             <div className="skeleton h-6 w-1/3" />
             <div className="skeleton h-5 w-4/5" />
             <div className="skeleton h-4 w-1/2" />

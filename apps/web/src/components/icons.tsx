@@ -284,3 +284,32 @@ export const SparkIcon = (p: P) => (
     <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" />
   </svg>
 );
+export const SparklesIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M10 3.5 11.6 8a2 2 0 0 0 1.3 1.3l4.6 1.6-4.6 1.6a2 2 0 0 0-1.3 1.3L10 18.4l-1.6-4.6a2 2 0 0 0-1.3-1.3L2.5 10.9l4.6-1.6A2 2 0 0 0 8.4 8Z" />
+    <path d="M18.5 2.5v4M16.5 4.5h4M19 16v3M17.5 17.5h3" />
+  </svg>
+);
+export const TrendingUpIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="m3 17 6-6 4 4 8-8" />
+    <path d="M15 7h6v6" />
+  </svg>
+);
+export const PlotIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3 7.5 12 3l9 4.5-9 4.5Z" />
+    <path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5" />
+  </svg>
+);
+export const BedDoubleIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 15h18M5 10V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3M3 18v2M21 18v2" />
+  </svg>
+);
+export const CalculatorIcon = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="5" y="2.5" width="14" height="19" rx="2" />
+    <path d="M8 6.5h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5V18M8.5 18h.01M12 18h.01" />
+  </svg>
+);

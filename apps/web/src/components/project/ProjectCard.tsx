@@ -19,8 +19,8 @@ export function ProjectCard({
       ? `Possession ${new Date(p.possessionDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`
       : null;
   return (
-    <article className="group relative flex h-full flex-col">
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-surface">
+    <article className="nx-lift group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white">
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface">
         {p.coverImage ? (
           <Image
             src={p.coverImage.url}
@@ -52,14 +52,14 @@ export function ProjectCard({
           )}
         </div>
       </div>
-      <div className="flex flex-1 flex-col pt-4">
+      <div className="flex flex-1 flex-col p-4">
         <p className="tabular text-[1.375rem] font-bold leading-none tracking-tight text-ink">
           {formatPriceRange(p.priceRange.min, p.priceRange.max)}
         </p>
         <H className="mt-2 line-clamp-2 text-[1.0625rem] font-semibold leading-snug text-ink">
           <Link
             href={`/projects/${p.slug}`}
-            className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none group-focus-within:underline"
+            className="after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none group-focus-within:underline group-hover:text-brand"
           >
             {p.name}
           </Link>
@@ -70,14 +70,16 @@ export function ProjectCard({
             {p.locality.name}, {p.city.name}
           </span>
         </p>
-        <ul className="mt-3 flex flex-wrap gap-1.5 text-[0.8125rem] text-ink-soft">
+        <ul className="mb-3 mt-3 flex flex-wrap gap-1.5 text-[0.8125rem] text-ink-soft">
           {[p.unitSummary, possession].filter(Boolean).map((f) => (
-            <li key={f} className="rounded-md bg-surface px-2 py-1">
+            <li key={f} className="rounded-md bg-brand-50/70 px-2 py-1">
               {f}
             </li>
           ))}
         </ul>
-        <p className="mt-auto pt-3 text-xs text-ink-muted">By {p.builderName}</p>
+        <p className="mt-auto border-t border-line pt-3 text-xs text-ink-muted">
+          By {p.builderName}
+        </p>
       </div>
     </article>
   );
@@ -93,7 +95,7 @@ export function ProjectGrid({
   priorityCount?: number;
 }) {
   return (
-    <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((p, i) => (
         <li key={p.id}>
           <ProjectCard p={p} priority={i < priorityCount} headingLevel={headingLevel} />

@@ -360,3 +360,129 @@
 .leaflet-container {
   font: inherit;
 }
+
+/* ---------------- Premium + "AI" effects ---------------- */
+@property --nx-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Slow-moving aurora behind the hero. */
+.nx-aurora {
+  position: absolute;
+  inset: -20%;
+  z-index: -10;
+  background:
+    radial-gradient(40% 50% at 20% 30%, rgb(47 174 166 / 0.45), transparent 70%),
+    radial-gradient(35% 45% at 80% 20%, rgb(2 102 123 / 0.7), transparent 70%),
+    radial-gradient(45% 55% at 60% 90%, rgb(110 231 216 / 0.25), transparent 70%),
+    radial-gradient(30% 40% at 95% 75%, rgb(245 158 11 / 0.12), transparent 70%);
+  filter: blur(20px);
+  animation: nx-drift 18s ease-in-out infinite alternate;
+}
+@keyframes nx-drift {
+  0% {
+    transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    transform: translate3d(3%, 2%, 0) rotate(6deg) scale(1.08);
+  }
+}
+
+/* Faint dotted grid that fades out towards the edges. */
+.nx-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -5;
+  background-image: radial-gradient(rgb(255 255 255 / 0.14) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(70% 70% at 50% 40%, #000 30%, transparent 100%);
+}
+
+/* Rotating gradient ring around the smart-search box. */
+.nx-ai-ring {
+  position: relative;
+  border-radius: 1.125rem;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--nx-angle),
+    #2faea6,
+    #6ee7d8,
+    #02667b,
+    #f59e0b,
+    #2faea6
+  );
+  animation: nx-spin 6s linear infinite;
+}
+.nx-ai-ring::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: inherit;
+  background: inherit;
+  filter: blur(14px);
+  opacity: 0.55;
+}
+@keyframes nx-spin {
+  to {
+    --nx-angle: 360deg;
+  }
+}
+
+/* Gradient text with a slow shine. */
+.nx-ai-text {
+  background: linear-gradient(90deg, #6ee7d8, #2faea6 30%, #fcd34d 50%, #2faea6 70%, #6ee7d8);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: nx-shine 5s linear infinite;
+}
+@keyframes nx-shine {
+  to {
+    background-position: -200% center;
+  }
+}
+
+.nx-glass {
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  backdrop-filter: blur(12px);
+}
+
+/* Cards that lift on hover. */
+.nx-lift {
+  transition:
+    transform 250ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 250ms;
+}
+.nx-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+}
+
+/* Blinking caret for the typed placeholder. */
+.nx-caret::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--color-accent);
+  animation: nx-blink 1s steps(1) infinite;
+}
+@keyframes nx-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.nx-scroll-x {
+  scrollbar-width: none;
+}
+.nx-scroll-x::-webkit-scrollbar {
+  display: none;
+}
