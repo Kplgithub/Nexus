@@ -176,7 +176,9 @@ export function PinPicker({
   const mapRef = useRef<import('leaflet').Map | null>(null);
   const markerRef = useRef<import('leaflet').Marker | null>(null);
   const changeRef = useRef(onChange);
-  changeRef.current = onChange;
+  useEffect(() => {
+    changeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     if (!leaflet || !el.current) return;

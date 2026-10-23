@@ -1203,21 +1203,22 @@ type ProjectOption = { id: string; name: string; slug: string; localitySlug: str
 
 /** Live projects in the chosen city, for the "part of a project" picker. */
 function useProjectOptions(citySlug: string) {
-  const [items, setItems] = useState<ProjectOption[]>([]);
+  // Keyed by city so a stale list never shows after the city changes.
+  const [state, setState] = useState<{ city: string; items: ProjectOption[] }>({
+    city: '',
+    items: [],
+  });
   useEffect(() => {
-    if (!citySlug) {
-      setItems([]);
-      return;
-    }
+    if (!citySlug) return;
     const ctl = new AbortController();
     apiFetch<ProjectOption[]>(`/projects/options?city=${encodeURIComponent(citySlug)}`, {
       signal: ctl.signal,
     })
-      .then(({ data }) => setItems(data))
-      .catch(() => setItems([]));
+      .then(({ data }) => setState({ city: citySlug, items: data }))
+      .catch(() => setState({ city: citySlug, items: [] }));
     return () => ctl.abort();
   }, [citySlug]);
-  return items;
+  return citySlug && state.city === citySlug ? state.items : [];
 }
 
 /* ------------------------------------------------------------------ */

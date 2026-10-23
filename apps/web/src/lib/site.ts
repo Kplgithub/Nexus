@@ -32,9 +32,10 @@ export const absoluteUrl = (path = '/') => `${SITE_URL}${path.startsWith('/') ? 
 export const NAV_LINKS = [
   { href: '/buy', label: 'Buy' },
   { href: '/rent', label: 'Rent' },
+  { href: '/projects', label: 'New projects' },
   { href: '/commercial', label: 'Commercial' },
+  { href: '/agents', label: 'Agents' },
   { href: '/locations', label: 'Locations' },
-  { href: '/about', label: 'About' },
 ] as const;
 
 /** Where the "Post property" button leads: sign-up for visitors, the form for members. */

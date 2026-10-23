@@ -72,6 +72,9 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
               ['/buy', 'Property for sale'],
               ['/rent', 'Property for rent'],
               ['/commercial', 'Commercial property'],
+              ['/projects', 'New projects'],
+              ['/rent?propertyType=pg', 'PG and hostels'],
+              ['/buy?propertyType=plot', 'Plots'],
               ['/properties', 'All properties'],
               ['/locations', 'Browse by location'],
             ].map(([href, label]) => (
@@ -89,6 +92,16 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
             <li>
               <Link className="text-ink-soft hover:text-brand" href="/post-property">
                 Post property free
+              </Link>
+            </li>
+            <li>
+              <Link className="text-ink-soft hover:text-brand" href="/agents">
+                Find an agent
+              </Link>
+            </li>
+            <li>
+              <Link className="text-ink-soft hover:text-brand" href="/builders">
+                Builders
               </Link>
             </li>
             <li>

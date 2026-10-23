@@ -91,7 +91,9 @@ export type HomeSections = {
 
 export async function getHome(): Promise<HomeSections> {
   try {
-    return (await get<HomeSections>('/home', { tags: ['properties'] })).data;
+    const data = (await get<HomeSections>('/home', { tags: ['properties'] })).data;
+    // An older API (or a cached response from one) has no projects row.
+    return { ...data, projects: data.projects ?? [] };
   } catch {
     return {
       featured: [],
