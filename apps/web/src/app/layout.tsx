@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Manrope, Newsreader } from 'next/font/google';
 import { SITE_NOINDEX, SITE_URL } from '@/lib/site';
+import { THEME_BOOT_SCRIPT } from '@/lib/theme';
+import { ThemePicker } from '@/components/layout/ThemePicker';
 import './globals.css';
 
 /** Editorial serif for headlines; geometric sans (close to the logo's lettering) for everything else. */
@@ -43,8 +45,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${heading.variable} ${body.variable}`}>
-      <body className="min-h-dvh bg-bg text-ink">{children}</body>
+    <html lang="en-IN" className={`${heading.variable} ${body.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
+      <body className="min-h-dvh bg-bg text-ink">
+        {children}
+        <ThemePicker />
+      </body>
     </html>
   );
 }

@@ -547,3 +547,61 @@
     filter: blur(4px);
   }
 }
+
+/* Colour theme previews (?theme=saffron|blue|pink). Teal is the default brand. */
+html[data-theme='saffron'] {
+  --color-accent: #f59e0b;
+  --color-accent-50: #fef3c7;
+  --color-accent-100: #fde68a;
+  --color-accent-700: #b45309;
+}
+html[data-theme='saffron'] .btn-primary {
+  background: #f59e0b;
+  color: #1f1300;
+}
+html[data-theme='saffron'] .btn-primary:hover:not(:disabled) {
+  background: #d97706;
+}
+html[data-theme='blue'] {
+  --color-brand: #1e40af;
+  --color-brand-700: #1e3a8a;
+  --color-brand-800: #172554;
+  --color-brand-900: #0b1a3f;
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-accent: #f97316;
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-700: #c2410c;
+}
+html[data-theme='pink'] {
+  --color-brand: #9d174d;
+  --color-brand-700: #831843;
+  --color-brand-800: #6b0f38;
+  --color-brand-900: #4a0a27;
+  --color-brand-50: #fdf2f8;
+  --color-brand-100: #fce7f3;
+  --color-accent: #d4a017;
+  --color-accent-50: #fef9e7;
+  --color-accent-100: #fbf0c4;
+  --color-accent-700: #8a6508;
+}
+html[data-theme='blue'] .nx-aurora,
+html[data-theme='pink'] .nx-aurora {
+  background:
+    radial-gradient(
+      40% 50% at 20% 30%,
+      color-mix(in srgb, var(--color-accent) 40%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      35% 45% at 80% 20%,
+      color-mix(in srgb, var(--color-brand) 70%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      45% 55% at 60% 90%,
+      color-mix(in srgb, var(--color-brand-100) 25%, transparent),
+      transparent 70%
+    );
+}
