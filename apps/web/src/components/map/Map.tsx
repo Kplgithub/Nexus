@@ -118,9 +118,9 @@ export function MapView({
         leaflet
           .circle([m.lat, m.lng], {
             radius: 250,
-            color: '#02667b',
+            color: '#9d174d',
             weight: 1.5,
-            fillColor: '#02667b',
+            fillColor: '#9d174d',
             fillOpacity: 0.15,
           })
           .addTo(map);
