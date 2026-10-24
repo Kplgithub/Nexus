@@ -72,6 +72,14 @@ export function ContactPanel({
             <BadgeCheckIcon size={18} className="text-accent-700" aria-label="Verified" />
           )}
         </p>
+        {poster.profilePath && (
+          <Link
+            href={poster.profilePath}
+            className="mt-1 inline-block text-sm font-semibold text-brand hover:underline"
+          >
+            View profile and all listings
+          </Link>
+        )}
         {poster.memberSince && !isNexus && (
           <p className="text-xs text-ink-muted">
             On NEXUS Estate since{' '}

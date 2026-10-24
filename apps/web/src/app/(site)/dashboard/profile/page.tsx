@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatIndianPhone, type City, type SessionUser } from '@nexus/shared';
@@ -49,6 +50,13 @@ function ProfileForm({ user }: { user: SessionUser }) {
   const [note, setNote] = useState<Note>(null);
   const [busy, setBusy] = useState(false);
   const business = user.role !== 'individual';
+  const [citySlug, setCitySlug] = useState(user.citySlug ?? '');
+  const [areas, setAreas] = useState<string[]>(user.localities ?? []);
+  const city = cities?.find((c) => c.slug === citySlug);
+  const profilePath =
+    business && user.profileSlug
+      ? `/${user.role === 'agent' ? 'agents' : 'builders'}/${user.profileSlug}`
+      : null;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -68,6 +76,11 @@ function ProfileForm({ user }: { user: SessionUser }) {
     if (business) {
       body.companyName = fd.get('companyName');
       body.reraNumber = fd.get('reraNumber') ?? '';
+      const years = String(fd.get('experienceYears') ?? '').trim();
+      body.experienceYears = years ? Number(years) : null;
+      body.website = String(fd.get('website') ?? '').trim();
+      body.logoUrl = String(fd.get('logoUrl') ?? '').trim();
+      body.localities = city ? areas.filter((a) => city.localities.some((l) => l.slug === a)) : [];
     }
     try {
       const { data } = await apiFetch<SessionUser>('/me', { method: 'PATCH', body });
@@ -91,7 +104,13 @@ function ProfileForm({ user }: { user: SessionUser }) {
 
   return (
     <section>
-      <SectionTitle title="Profile" text="How you appear on your listings." />
+      <SectionTitle title="Profile" text="How you appear on your listings.">
+        {profilePath && (
+          <Link href={profilePath} className="btn btn-outline btn-sm">
+            View public profile
+          </Link>
+        )}
+      </SectionTitle>
       <form
         onSubmit={onSubmit}
         noValidate
@@ -143,7 +162,8 @@ function ProfileForm({ user }: { user: SessionUser }) {
             id="citySlug"
             name="citySlug"
             className="field"
-            defaultValue={user.citySlug ?? ''}
+            value={citySlug}
+            onChange={(e) => setCitySlug(e.target.value)}
           >
             <option value="">Not set</option>
             {cities?.map((c) => (
@@ -153,6 +173,60 @@ function ProfileForm({ user }: { user: SessionUser }) {
             ))}
           </select>
         </div>
+        {business && (
+          <>
+            <TextField
+              id="experienceYears"
+              label="Years in real estate"
+              inputMode="numeric"
+              defaultValue={user.experienceYears === null ? '' : String(user.experienceYears)}
+              error={errors.experienceYears?.[0]}
+            />
+            <TextField
+              id="website"
+              label="Website (optional)"
+              type="url"
+              defaultValue={user.website ?? ''}
+              hint="Must start with https://"
+              error={errors.website?.[0]}
+            />
+            <div className="md:col-span-2">
+              <TextField
+                id="logoUrl"
+                label="Logo image link (optional)"
+                type="url"
+                defaultValue={user.logoUrl ?? ''}
+                hint="An https:// link to a square logo. Shown on your public profile."
+                error={errors.logoUrl?.[0]}
+              />
+            </div>
+            {city && city.localities.length > 0 && (
+              <fieldset className="md:col-span-2">
+                <legend className="field-label">Localities you work in</legend>
+                <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto">
+                  {[...city.localities]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((l) => {
+                      const on = areas.includes(l.slug);
+                      return (
+                        <button
+                          key={l.slug}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() =>
+                            setAreas((a) => (on ? a.filter((x) => x !== l.slug) : [...a, l.slug]))
+                          }
+                          className={`chip ${on ? 'chip-active' : ''}`}
+                        >
+                          {l.name}
+                        </button>
+                      );
+                    })}
+                </div>
+              </fieldset>
+            )}
+          </>
+        )}
         {business && (
           <div className="md:col-span-2">
             <label htmlFor="about" className="field-label">

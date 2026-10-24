@@ -1,8 +1,8 @@
 # Environment variables
 
-Never commit real values. Development: `apps/api/.env`, `apps/web/.env.local`. Production: `deploy/.env.production` on the server (`chmod 600`), read by Docker Compose. CI-only values go in GitHub Actions secrets.
+Never commit real values. Development: `apps/web/.env.local` here, `apps/api/.env` in the backend repo (Kplgithub/Nexus_Backend). Production: `deploy/.env.production` on the server (`chmod 600`), read by Docker Compose. CI-only values go in GitHub Actions secrets.
 
-## API (`apps/api`)
+## API (`apps/api` in Kplgithub/Nexus_Backend)
 
 | Variable                                                                       | Required        | Purpose                                                                                                                                                    |
 | ------------------------------------------------------------------------------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,6 +40,10 @@ Seed-script-only (pass on the command line, never store): `ADMIN_EMAIL`, `ADMIN_
 | `REVALIDATE_SECONDS`   | no       | How long public pages may cache listing data (default 60)                    |
 | `NEXT_PUBLIC_NOINDEX`  | no       | `true` on staging to block indexing (build-time)                             |
 
-## GitHub Actions secrets (deploy workflow)
+## GitHub Actions secrets
+
+`BACKEND_REPO_TOKEN` (CI, this repo): a fine-grained personal access token limited to **Kplgithub/Nexus_Backend** with **Contents: Read-only**. CI uses it to check out the API for the end-to-end tests, the production-stack test and the shared-package check. Create it at GitHub → Settings → Developer settings → Fine-grained tokens, then add it under this repo's Settings → Secrets and variables → Actions.
+
+Deploy workflow (in each repo you deploy from):
 
 `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` (private key of a deploy-only user whose public key is in the server's `authorized_keys`), `DEPLOY_PATH`, optional `DEPLOY_KNOWN_HOSTS`. Create a GitHub _Environment_ named `production` with required reviewers to gate deploys.

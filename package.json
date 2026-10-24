@@ -2,25 +2,21 @@
   "name": "nexus-estate",
   "private": true,
   "version": "0.1.0",
-  "description": "NEXUS Estate | Rentals | Properties — real estate rental platform",
+  "description": "NEXUS Estate — website (Next.js) and production deployment. The API lives in Kplgithub/Nexus_Backend.",
   "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=22.0.0"
   },
   "scripts": {
-    "build": "pnpm -r --filter @nexus/shared build && pnpm -r --filter @nexus/api --filter @nexus/web build",
-    "dev": "pnpm --filter @nexus/shared build && pnpm -r --parallel --filter @nexus/api --filter @nexus/web dev",
+    "build": "pnpm --filter @nexus/shared build && pnpm --filter @nexus/web build",
+    "dev": "pnpm --filter @nexus/shared build && pnpm --filter @nexus/web dev",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm --filter @nexus/shared build && pnpm -r typecheck",
     "test": "pnpm --filter @nexus/shared build && pnpm -r test",
     "test:e2e": "pnpm --filter @nexus/web test:e2e",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "seed:admin": "pnpm --filter @nexus/api seed:admin",
-    "seed:base": "pnpm --filter @nexus/api seed:base",
-    "seed:locations": "pnpm --filter @nexus/api seed:locations",
-    "seed:demo": "pnpm --filter @nexus/api seed:demo",
-    "demo:remove": "pnpm --filter @nexus/api demo:remove"
+    "check:shared": "scripts/check-shared.sh"
   },
   "devDependencies": {
     "prettier": "3.8.1",

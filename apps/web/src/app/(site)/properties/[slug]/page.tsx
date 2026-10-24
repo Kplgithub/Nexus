@@ -16,9 +16,12 @@ import {
   POSSESSION_LABELS,
   PREFERRED_TENANT_LABELS,
   TRANSACTION_LABELS,
+  PG_GENDER_LABELS,
+  PG_SHARING_LABELS,
+  PLOT_APPROVAL_LABELS,
   type PublicProperty,
 } from '@nexus/shared';
-import { getProperty, getSettings } from '@/lib/api';
+import { getLocalityInsights, getProperty, getSettings } from '@/lib/api';
 import { absoluteUrl } from '@/lib/site';
 import {
   breadcrumbJsonLd,
@@ -27,10 +30,17 @@ import {
   propertyDescription,
   propertyHeadline,
 } from '@/lib/seo';
+import { AiSummary } from '@/components/property/AiSummary';
 import { Gallery } from '@/components/property/Gallery';
+import { StickyBar } from '@/components/property/StickyBar';
 import { PropertyGrid } from '@/components/property/PropertyCard';
 import { ContactPanel } from '@/components/property/ContactPanel';
 import { SaveButton } from '@/components/property/SaveButton';
+import { EmiCalculator } from '@/components/property/EmiCalculator';
+import { ReportListing } from '@/components/property/ReportListing';
+import { VideoTour } from '@/components/property/VideoTour';
+import { ViewBeacon } from '@/components/property/ViewBeacon';
+import { MapView } from '@/components/map/Map';
 import { Breadcrumbs, DemoBadge, JsonLd } from '@/components/ui';
 import {
   AreaIcon,
@@ -73,6 +83,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PropertyPage({ params }: Props) {
   const { slug } = await params;
   const [{ property: p, similar }, settings] = await Promise.all([load(slug), getSettings()]);
+  const insights = await getLocalityInsights(p.city.slug, p.locality.slug);
   const isSale = p.listingType === 'sale';
   const dealRoot = isSale ? '/buy' : '/rent';
   const closed = p.status !== 'published';
@@ -192,6 +203,20 @@ export default async function PropertyPage({ params }: Props) {
           : `${p.ageOfPropertyYears} years`
         : null,
     ),
+    ...row('Approved by', p.plotApproval ? PLOT_APPROVAL_LABELS[p.plotApproval] : null),
+    ...row('Road in front', p.roadWidthFt ? `${p.roadWidthFt} ft` : null),
+    ...row('Open sides', p.openSides ? String(p.openSides) : null),
+    ...row('Corner plot', p.propertyType === 'plot' && p.cornerPlot ? 'Yes' : null),
+    ...row('Boundary wall', p.propertyType === 'plot' && p.boundaryWall ? 'Yes' : null),
+    ...row('For', p.pgGender ? PG_GENDER_LABELS[p.pgGender] : null),
+    ...row(
+      'Room sharing',
+      p.pgSharing.length ? p.pgSharing.map((x) => PG_SHARING_LABELS[x]).join(', ') : null,
+    ),
+    ...row(
+      'Meals',
+      p.propertyType === 'pg' ? (p.pgFoodIncluded ? 'Included' : 'Not included') : null,
+    ),
     ...row(
       'Area in sq ft',
       p.areaUnit !== 'sqft'
@@ -209,6 +234,20 @@ export default async function PropertyPage({ params }: Props) {
         ]}
       />
       <Breadcrumbs items={crumbs} />
+      <StickyBar
+        title={p.title}
+        price={formatPrice(p.price, p.listingType)}
+        watchId="price-card"
+        sections={[
+          { id: 'facts', label: 'Overview' },
+          { id: 'about', label: 'Details' },
+          { id: 'terms', label: isSale ? 'Price and legal' : 'Rent and terms' },
+          ...(p.amenities.length ? [{ id: 'amenities', label: 'Amenities' }] : []),
+          { id: 'location', label: 'Location' },
+          ...(isSale && !closed && p.price > 0 ? [{ id: 'emi', label: 'EMI' }] : []),
+        ]}
+      />
+      {!closed && !p.isDemo && <ViewBeacon path={`/properties/${p.id}/view`} />}
 
       {p.isDemo && (
         <div
@@ -256,46 +295,81 @@ export default async function PropertyPage({ params }: Props) {
           <h1 className="mt-4 text-[2rem] leading-[1.15] sm:text-[2.6rem]">{p.title}</h1>
           <p className="mt-3 flex items-start gap-1.5 text-ink-soft">
             <MapPinIcon size={18} className="mt-0.5 shrink-0 text-brand" />
-            {[p.projectName, p.approvedAddress, `${p.locality.name}, ${p.city.name}`]
-              .filter(Boolean)
-              .join(', ')}
+            <span>
+              {p.project ? (
+                <>
+                  <Link
+                    href={`/projects/${p.project.slug}`}
+                    className="font-medium text-brand hover:underline"
+                  >
+                    {p.project.name}
+                  </Link>
+                  {', '}
+                </>
+              ) : null}
+              {[
+                p.project ? null : p.projectName,
+                p.approvedAddress,
+                `${p.locality.name}, ${p.city.name}`,
+              ]
+                .filter(Boolean)
+                .join(', ')}
+            </span>
           </p>
 
-          <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border-y border-line py-5">
-            <div>
-              <p className="tabular font-display text-[2.4rem] leading-none text-brand-900">
+          <div
+            id="price-card"
+            className="relative isolate mt-6 flex flex-wrap items-end justify-between gap-4 overflow-hidden rounded-2xl bg-brand-900 p-5 text-white sm:p-6"
+          >
+            <div className="nx-aurora" aria-hidden />
+            <div className="relative">
+              <p className="text-xs font-semibold uppercase tracking-wider text-accent">
+                {isSale ? 'Asking price' : 'Monthly rent'}
+              </p>
+              <p className="tabular mt-1 font-display text-[2.4rem] leading-none text-white">
                 {formatPrice(p.price, p.listingType)}
               </p>
-              <p className="mt-2 text-sm text-ink-muted">
+              <p className="mt-2 text-sm text-white/70">
                 {isSale
                   ? [
                       p.pricePerSqft ? `${formatINRShort(p.pricePerSqft)} per sq ft` : null,
                       p.priceNegotiable ? 'Negotiable' : null,
                     ]
                       .filter(Boolean)
-                      .join(' · ') || 'Asking price'
+                      .join(' · ') || 'Price as listed by the poster'
                   : [
                       p.securityDeposit ? `Deposit ${formatINRShort(p.securityDeposit)}` : null,
                       p.priceNegotiable ? 'Negotiable' : null,
                     ]
                       .filter(Boolean)
-                      .join(' · ') || 'Monthly rent'}
+                      .join(' · ') || 'Per month'}
               </p>
             </div>
-            <SaveButton propertyId={p.id} title={p.title} variant="button" />
+            <div className="relative rounded-xl bg-white p-1">
+              <SaveButton propertyId={p.id} title={p.title} variant="button" />
+            </div>
           </div>
 
+          <AiSummary p={p} insights={insights} />
+
           <section aria-labelledby="facts" className="mt-8">
-            <h2 id="facts" className="sr-only">
-              Key facts
+            <h2 id="facts" className="mb-4 text-2xl">
+              Overview
             </h2>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
-              {facts.map(({ Icon, label, value }) => (
-                <div key={label}>
-                  <dt className="flex items-center gap-1.5 text-sm text-ink-muted">
-                    <Icon size={16} /> {label}
-                  </dt>
-                  <dd className="mt-1 font-semibold">{value}</dd>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {facts.map(({ Icon, label, value }, i) => (
+                <div
+                  key={label}
+                  className="nx-rise nx-lift flex items-start gap-3 rounded-2xl border border-line bg-white p-3.5"
+                  style={{ '--i': i } as React.CSSProperties}
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand">
+                    <Icon size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <dt className="text-xs text-ink-muted">{label}</dt>
+                    <dd className="mt-0.5 font-semibold leading-snug">{value}</dd>
+                  </div>
                 </div>
               ))}
             </dl>
@@ -308,7 +382,10 @@ export default async function PropertyPage({ params }: Props) {
               </h2>
               <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
                 {p.highlights.map((h) => (
-                  <li key={h} className="flex items-start gap-2 text-ink-soft">
+                  <li
+                    key={h}
+                    className="flex items-start gap-2 rounded-xl bg-surface px-3 py-2.5 text-ink-soft"
+                  >
                     <CheckIcon size={18} className="mt-0.5 shrink-0 text-accent-700" /> {h}
                   </li>
                 ))}
@@ -362,6 +439,64 @@ export default async function PropertyPage({ params }: Props) {
             </section>
           )}
 
+          {p.videoUrl && (
+            <section aria-labelledby="video" className="mt-12">
+              <h2 id="video" className="text-2xl">
+                Video tour
+              </h2>
+              <div className="mt-4">
+                <VideoTour url={p.videoUrl} title={p.title} />
+              </div>
+            </section>
+          )}
+
+          <section aria-labelledby="location" className="mt-12">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <h2 id="location" className="text-2xl">
+                Location
+              </h2>
+              <Link
+                href={`${dealRoot}/${p.city.slug}/${p.locality.slug}`}
+                className="text-sm font-semibold text-brand hover:underline"
+              >
+                About {p.locality.name}: prices and nearby places
+              </Link>
+            </div>
+            {p.location ? (
+              <div className="mt-4">
+                <MapView
+                  markers={[{ ...p.location, title: p.title }]}
+                  zoom={15}
+                  approximate={p.poster.type === 'owner'}
+                  label={`Map showing ${p.locality.name}`}
+                  className="h-80"
+                />
+                {p.poster.type === 'owner' && (
+                  <p className="mt-2 text-xs text-ink-muted">
+                    The circle shows the approximate area. The owner shares the exact address when
+                    you contact them.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="mt-3 text-ink-soft">
+                {[p.approvedAddress, p.locality.name, p.city.name].filter(Boolean).join(', ')}. The
+                poster has not added a map pin yet.
+              </p>
+            )}
+          </section>
+
+          {isSale && !closed && p.price > 0 && (
+            <section aria-labelledby="emi" className="mt-12">
+              <h2 id="emi" className="text-2xl">
+                Home loan EMI
+              </h2>
+              <div className="mt-4">
+                <EmiCalculator price={p.price} />
+              </div>
+            </section>
+          )}
+
           {p.suitableFor.length > 0 && (
             <section aria-labelledby="suitable" className="mt-12">
               <h2 id="suitable" className="text-2xl">
@@ -373,8 +508,9 @@ export default async function PropertyPage({ params }: Props) {
         </div>
 
         <aside
+          id="contact"
           aria-label="Contact about this property"
-          className="lg:sticky lg:top-24 lg:self-start"
+          className="scroll-mt-36 lg:sticky lg:top-36 lg:self-start"
         >
           <ContactPanel
             propertyId={p.id}
@@ -385,6 +521,12 @@ export default async function PropertyPage({ params }: Props) {
             office={{ phone: settings.phone, whatsapp: settings.whatsapp }}
             shareUrl={absoluteUrl(`/properties/${p.slug}`)}
           />
+          <div className="mt-4 flex items-center justify-between gap-3 px-1 text-sm text-ink-muted">
+            <span>
+              {p.views > 0 ? `${p.views.toLocaleString('en-IN')} views` : 'Recently listed'}
+            </span>
+            {!p.isDemo && <ReportListing propertyId={p.id} />}
+          </div>
         </aside>
       </div>
 

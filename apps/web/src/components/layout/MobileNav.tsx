@@ -103,6 +103,7 @@ export function MobileNav({ phone }: { phone: string }) {
                   {[
                     ['/dashboard', 'Dashboard'],
                     ['/dashboard/listings', 'My listings'],
+                    ...(user.role === 'builder' ? [['/dashboard/projects', 'My projects']] : []),
                     ['/dashboard/leads', 'Leads'],
                     ['/dashboard/saved', 'Saved'],
                     ['/dashboard/profile', 'Profile and settings'],

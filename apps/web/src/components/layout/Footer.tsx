@@ -8,6 +8,7 @@ import {
   MailIcon,
   MapPinIcon,
   PhoneIcon,
+  PlusIcon,
   WhatsAppIcon,
   XIcon,
   YoutubeIcon,
@@ -31,148 +32,118 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
   );
   const socials = SOCIAL.filter((s) => settings.social[s.key]);
 
+  const explore = [
+    ['/buy', 'Property for sale'],
+    ['/rent', 'Property for rent'],
+    ['/projects', 'New projects'],
+    ['/commercial', 'Commercial property'],
+    ['/rent?propertyType=pg', 'PG and hostels'],
+    ['/buy?propertyType=plot', 'Plots'],
+    ['/buy?view=map', 'Map search'],
+    ['/locations', 'Browse by location'],
+  ];
+  const partners = [
+    ['/post-property', 'Post property free'],
+    ['/agents', 'Find an agent'],
+    ['/builders', 'Builders'],
+    ['/dashboard', 'My dashboard'],
+  ];
+  const company = [
+    ['/about', 'About NEXUS'],
+    ['/contact', 'Contact'],
+    ['/faq', 'FAQs'],
+    ['/privacy-policy', 'Privacy policy'],
+    ['/terms-and-conditions', 'Terms & conditions'],
+    ['/cookie-policy', 'Cookie policy'],
+  ];
+
   return (
-    <footer className="mt-24 border-t border-line bg-surface">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+    <footer className="relative isolate mt-12 overflow-hidden bg-brand-900 text-white">
+      <div className="nx-aurora opacity-40" aria-hidden />
+      <div className="nx-grid opacity-60" aria-hidden />
+
+      {/* CTA band */}
+      <div className="container-page pt-12">
+        <div className="nx-glass flex flex-col gap-6 rounded-2xl p-6 sm:p-8 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-display text-[1.6rem] leading-tight sm:text-[1.9rem]">
+              Have a property in {cities[0]?.name ?? 'your city'}?{' '}
+              <span className="nx-ai-text">List it free.</span>
+            </p>
+            <p className="mt-1.5 text-sm text-white/70">
+              Owners, agents and builders reach serious buyers and tenants. Every listing is
+              reviewed before it goes live.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link href="/post-property" className="btn btn-accent">
+              <PlusIcon size={18} /> Post property
+            </Link>
+            <a
+              href={whatsappLink(
+                settings.whatsapp,
+                'Hello NEXUS Estate, I would like to know more about a property.',
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn border border-white/25 text-white hover:bg-white/10"
+            >
+              <WhatsAppIcon size={18} /> Talk to an expert
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div className="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div>
-          <Image
-            src="/brand/nexus-logo.png"
-            alt="NEXUS Estate | Rentals | Properties"
-            width={130}
-            height={108}
-          />
-          <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-soft">
+          <Link
+            href="/"
+            className="inline-block rounded-xl bg-white px-3 py-2 shadow-sm"
+            aria-label={`${settings.businessName} home`}
+          >
+            <Image
+              src="/brand/nexus-logo.png"
+              alt="NEXUS Estate | Rentals | Properties"
+              width={96}
+              height={80}
+            />
+          </Link>
+          <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/70">
             Homes and commercial spaces to buy and rent
             {cities.length ? ` in ${cities.map((c) => c.name).join(', ')}` : ''}. Every listing is
             reviewed before it goes live.
           </p>
-          {socials.length > 0 && (
-            <ul className="mt-5 flex gap-2" aria-label="Social media">
-              {socials.map(({ key, label, Icon }) => (
-                <li key={key}>
-                  <a
-                    href={settings.social[key]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className="grid size-10 place-items-center rounded-full border border-line bg-white text-brand hover:border-brand"
-                  >
-                    <Icon size={18} />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <nav aria-label="Explore">
-          <h2 className="font-sans text-sm font-semibold text-ink">Explore</h2>
-          <ul className="mt-4 space-y-2.5 text-sm">
-            {[
-              ['/buy', 'Property for sale'],
-              ['/rent', 'Property for rent'],
-              ['/commercial', 'Commercial property'],
-              ['/properties', 'All properties'],
-              ['/locations', 'Browse by location'],
-            ].map(([href, label]) => (
-              <li key={href}>
-                <Link className="text-ink-soft hover:text-brand" href={href!}>
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <h2 className="mt-8 font-sans text-sm font-semibold text-ink">
-            Owners, agents &amp; builders
-          </h2>
-          <ul className="mt-4 space-y-2.5 text-sm">
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/post-property">
-                Post property free
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/dashboard">
-                My dashboard
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        <nav aria-label="Company">
-          <h2 className="font-sans text-sm font-semibold text-ink">Company</h2>
-          <ul className="mt-4 space-y-2.5 text-sm">
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/about">
-                About NEXUS
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/contact">
-                Contact
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/faq">
-                FAQs
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/privacy-policy">
-                Privacy policy
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/terms-and-conditions">
-                Terms &amp; conditions
-              </Link>
-            </li>
-            <li>
-              <Link className="text-ink-soft hover:text-brand" href="/cookie-policy">
-                Cookie policy
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        <div>
-          <h2 className="font-sans text-sm font-semibold text-ink">Talk to us</h2>
-          <ul className="mt-4 space-y-3 text-sm">
+          <ul className="mt-6 space-y-3 text-sm">
             <li>
               <a
                 href={`tel:${settings.phone}`}
-                className="inline-flex items-center gap-2 font-semibold text-brand-800 hover:text-brand"
+                className="group inline-flex items-center gap-3 font-semibold text-white"
               >
-                <PhoneIcon size={18} /> {formatIndianPhone(settings.phone)}
-              </a>
-            </li>
-            <li>
-              <a
-                href={whatsappLink(
-                  settings.whatsapp,
-                  'Hello NEXUS Estate, I would like to know more about a property.',
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-ink-soft hover:text-brand"
-              >
-                <WhatsAppIcon size={18} /> WhatsApp us
+                <span className="grid size-9 place-items-center rounded-full bg-white/10 text-accent ring-1 ring-white/15 group-hover:bg-accent group-hover:text-brand-900">
+                  <PhoneIcon size={16} />
+                </span>
+                {formatIndianPhone(settings.phone)}
               </a>
             </li>
             {settings.email && (
               <li>
                 <a
                   href={`mailto:${settings.email}`}
-                  className="inline-flex items-center gap-2 text-ink-soft hover:text-brand"
+                  className="group inline-flex items-center gap-3 text-white/80 hover:text-white"
                 >
-                  <MailIcon size={18} /> {settings.email}
+                  <span className="grid size-9 place-items-center rounded-full bg-white/10 text-accent ring-1 ring-white/15 group-hover:bg-accent group-hover:text-brand-900">
+                    <MailIcon size={16} />
+                  </span>
+                  {settings.email}
                 </a>
               </li>
             )}
             {settings.showAddress && settings.address.line1 && (
-              <li className="flex gap-2 text-ink-soft">
-                <MapPinIcon size={18} className="mt-0.5 shrink-0" />
-                <address className="not-italic">
+              <li className="flex items-start gap-3 text-white/70">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-accent ring-1 ring-white/15">
+                  <MapPinIcon size={16} />
+                </span>
+                <address className="pt-1.5 not-italic">
                   {[
                     settings.address.line1,
                     settings.address.line2,
@@ -184,20 +155,45 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
                 </address>
               </li>
             )}
-            {settings.businessHours && <li className="text-ink-muted">{settings.businessHours}</li>}
+            {settings.businessHours && (
+              <li className="pl-12 text-xs text-white/55">{settings.businessHours}</li>
+            )}
           </ul>
+          {socials.length > 0 && (
+            <ul className="mt-6 flex gap-2" aria-label="Social media">
+              {socials.map(({ key, label, Icon }) => (
+                <li key={key}>
+                  <a
+                    href={settings.social[key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="grid size-10 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/15 transition-colors hover:bg-accent hover:text-brand-900"
+                  >
+                    <Icon size={18} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+
+        <FooterLinks title="Explore" links={explore} />
+        <FooterLinks title="Owners, agents & builders" links={partners} />
+        <FooterLinks title="Company" links={company} />
       </div>
 
       {localities.length > 0 && (
-        <div className="border-t border-line">
-          <nav aria-label="Popular locations" className="container-page py-6">
-            <h2 className="sr-only">Popular locations</h2>
-            <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+        <div className="border-t border-white/10">
+          <nav aria-label="Popular locations" className="container-page py-7">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
+              Popular locations
+            </h2>
+            <ul className="mt-4 flex flex-wrap gap-2 text-sm">
               {localities.map((l) => (
                 <li key={`${l.city.slug}-${l.slug}`}>
                   <Link
-                    className="text-ink-muted hover:text-brand"
+                    className="inline-block rounded-full bg-white/[0.06] px-3 py-1.5 text-white/75 ring-1 ring-white/10 transition-colors hover:bg-white/15 hover:text-white"
                     href={`/buy/${l.city.slug}/${l.slug}`}
                   >
                     Property in {l.name}
@@ -209,8 +205,8 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
         </div>
       )}
 
-      <div className="border-t border-line">
-        <div className="container-page flex flex-col gap-2 py-5 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between">
+      <div className="border-t border-white/10 bg-black/20">
+        <div className="container-page flex flex-col gap-2 py-5 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {year} {settings.businessName}. All rights reserved.
           </p>
@@ -221,5 +217,28 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
         </div>
       </div>
     </footer>
+  );
+}
+
+function FooterLinks({ title, links }: { title: string; links: string[][] }) {
+  return (
+    <nav aria-label={title}>
+      <h2 className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
+        {title}
+      </h2>
+      <ul className="mt-5 space-y-3 text-sm">
+        {links.map(([href, label]) => (
+          <li key={href}>
+            <Link
+              className="group inline-flex items-center gap-1.5 text-white/75 transition-colors hover:text-white"
+              href={href!}
+            >
+              <span className="h-px w-0 bg-accent transition-all group-hover:w-3" aria-hidden />
+              {label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }

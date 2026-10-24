@@ -46,3 +46,6 @@ deploy/.env.production
 deploy/.releases
 e2e-results.json
 apps/web/screens/
+
+# backend repo checkout (Kplgithub/Nexus_Backend) used by CI and the server
+/backend/

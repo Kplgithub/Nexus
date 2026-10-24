@@ -1,7 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { INDIAN_STATES, slugify, type City, type Locality } from '@nexus/shared';
+import {
+  INDIAN_STATES,
+  LANDMARK_KINDS,
+  LANDMARK_KIND_LABELS,
+  slugify,
+  type City,
+  type LandmarkKind,
+  type Locality,
+} from '@nexus/shared';
+import { PinPicker } from '@/components/map/Map';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
@@ -144,6 +153,11 @@ function CityEditor({
             intro: l.intro,
             seoTitle: l.seoTitle ?? '',
             seoDescription: l.seoDescription ?? '',
+            center: l.center ?? null,
+            highlights: (l.highlights ?? []).map((h) => h.trim()).filter((h) => h.length >= 2),
+            landmarks: (l.landmarks ?? [])
+              .map((m) => ({ ...m, name: m.name.trim() }))
+              .filter((m) => m.name.length >= 2),
           })),
         },
       });
@@ -282,6 +296,93 @@ function CityEditor({
                   disabled={!canEdit}
                   value={l.seoDescription ?? ''}
                   onChange={(e) => setLoc(l.slug, { seoDescription: e.target.value })}
+                />
+                <label className="mt-2 text-sm font-medium" htmlFor={`lh-${l.slug}`}>
+                  Highlights for the locality guide (one per line, up to 10)
+                </label>
+                <textarea
+                  id={`lh-${l.slug}`}
+                  className="field"
+                  disabled={!canEdit}
+                  placeholder={'e.g. 10 minutes to Ajmer Road\nWide roads and parks'}
+                  value={(l.highlights ?? []).join('\n')}
+                  onChange={(e) =>
+                    setLoc(l.slug, { highlights: e.target.value.split('\n').slice(0, 10) })
+                  }
+                />
+                <p className="mt-2 text-sm font-medium">Nearby places</p>
+                <ul className="space-y-2">
+                  {(l.landmarks ?? []).map((m, i) => (
+                    <li key={i} className="flex flex-wrap gap-2">
+                      <select
+                        aria-label="Kind"
+                        className="field w-40 text-sm"
+                        disabled={!canEdit}
+                        value={m.kind}
+                        onChange={(e) =>
+                          setLoc(l.slug, {
+                            landmarks: (l.landmarks ?? []).map((x, j) =>
+                              j === i ? { ...x, kind: e.target.value as LandmarkKind } : x,
+                            ),
+                          })
+                        }
+                      >
+                        {LANDMARK_KINDS.map((k) => (
+                          <option key={k} value={k}>
+                            {LANDMARK_KIND_LABELS[k]}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        aria-label="Name"
+                        className="field min-w-48 flex-1 text-sm"
+                        maxLength={80}
+                        disabled={!canEdit}
+                        value={m.name}
+                        onChange={(e) =>
+                          setLoc(l.slug, {
+                            landmarks: (l.landmarks ?? []).map((x, j) =>
+                              j === i ? { ...x, name: e.target.value } : x,
+                            ),
+                          })
+                        }
+                      />
+                      {canEdit && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() =>
+                            setLoc(l.slug, {
+                              landmarks: (l.landmarks ?? []).filter((_, j) => j !== i),
+                            })
+                          }
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {canEdit && (l.landmarks ?? []).length < 30 && (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm w-fit"
+                    onClick={() =>
+                      setLoc(l.slug, {
+                        landmarks: [...(l.landmarks ?? []), { kind: 'school', name: '' }],
+                      })
+                    }
+                  >
+                    Add nearby place
+                  </button>
+                )}
+                <p className="mt-2 text-sm font-medium">Map centre of {l.name}</p>
+                <PinPicker
+                  value={l.center ?? null}
+                  onChange={(v) => canEdit && setLoc(l.slug, { center: v })}
+                  fallbackCenter={c.localities.find((x) => x.center)?.center ?? null}
+                  className="h-64"
+                  label={`Map centre of ${l.name}`}
                 />
               </div>
             )}

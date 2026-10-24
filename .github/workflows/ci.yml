@@ -18,7 +18,7 @@ env:
 
 jobs:
   checks:
-    name: Lint, typecheck, unit & API tests, build
+    name: Lint, typecheck, unit tests, build
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -57,14 +57,25 @@ jobs:
       - name: Typecheck
         if: ${{ !cancelled() }}
         run: scripts/ci-run.sh "Typecheck" pnpm -r --no-bail typecheck
-      - name: Unit and API tests (in-memory MongoDB)
+      - name: Unit tests
         if: ${{ !cancelled() }}
         run: scripts/ci-run.sh "Tests" pnpm -r --no-bail test
       - name: Production build
         if: ${{ !cancelled() }}
         env:
           NEXT_PUBLIC_SITE_URL: https://example.com
-        run: scripts/ci-run.sh "Build" bash -c "pnpm --filter @nexus/api build && pnpm --filter @nexus/web build"
+        run: scripts/ci-run.sh "Build" pnpm --filter @nexus/web build
+
+  shared:
+    name: Shared package matches the backend repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/backend
+        with:
+          token: ${{ secrets.BACKEND_REPO_TOKEN }}
+      - run: scripts/ci-run.sh "Shared package drift" scripts/check-shared.sh
 
   e2e:
     name: End-to-end (Playwright)
@@ -92,7 +103,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - run: if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install --no-frozen-lockfile; fi
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/backend
+        with:
+          token: ${{ secrets.BACKEND_REPO_TOKEN }}
+          build: 'true'
       - name: Start MongoDB
         run: |
           docker run -d --name mongo -p 27017:27017 mongo:7
@@ -102,17 +117,17 @@ jobs:
           done
           scripts/ci-run.sh "MongoDB start" bash -c "docker ps -a; docker logs --tail 60 mongo; exit 1"
       - name: Build
-        run: scripts/ci-run.sh "E2E build" bash -c "pnpm --filter @nexus/shared build && pnpm --filter @nexus/api build && pnpm --filter @nexus/web build"
+        run: scripts/ci-run.sh "E2E build" bash -c "pnpm --filter @nexus/shared build && pnpm --filter @nexus/web build"
       - name: Seed database
         timeout-minutes: 5
         run: |
-          scripts/ci-run.sh "Seed base" pnpm --filter @nexus/api seed:base
-          scripts/ci-run.sh "Seed locations" pnpm --filter @nexus/api seed:locations
-          ADMIN_EMAIL=$E2E_ADMIN_EMAIL ADMIN_PASSWORD=$E2E_ADMIN_PASSWORD ADMIN_NAME="CI Admin" scripts/ci-run.sh "Seed admin" pnpm --filter @nexus/api seed:admin
+          scripts/ci-run.sh "Seed base" pnpm -C backend seed:base
+          scripts/ci-run.sh "Seed locations" pnpm -C backend seed:locations
+          ADMIN_EMAIL=$E2E_ADMIN_EMAIL ADMIN_PASSWORD=$E2E_ADMIN_PASSWORD ADMIN_NAME="CI Admin" scripts/ci-run.sh "Seed admin" pnpm -C backend seed:admin
       - name: Start API and web
         timeout-minutes: 5
         run: |
-          (cd apps/api && NODE_ENV=development node dist/server.js > ../../api.log 2>&1 &)
+          (cd backend/apps/api && NODE_ENV=development node dist/server.js > ../../../api.log 2>&1 &)
           (cd apps/web && pnpm start > ../../web.log 2>&1 &)
           npx --yes wait-on -t 90000 http://localhost:4000/api/v1/health http://localhost:3000/robots.txt || { scripts/ci-run.sh "Server start" bash -c "tail -n 60 api.log web.log; exit 1"; }
       - run: pnpm --filter @nexus/web exec playwright install --with-deps chromium
@@ -136,6 +151,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/backend
+        with:
+          token: ${{ secrets.BACKEND_REPO_TOKEN }}
       - name: Write a throwaway production env file
         run: |
           umask 077

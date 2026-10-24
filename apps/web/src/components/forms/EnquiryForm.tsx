@@ -9,6 +9,8 @@ import { useOptionalSession } from '../session/SessionProvider';
 type Props = {
   type?: 'property' | 'general' | 'callback';
   propertyId?: string;
+  /** New-project enquiries go to the builder. */
+  projectId?: string;
   propertyTitle?: string;
   sourcePage: string;
   submitLabel?: string;
@@ -23,6 +25,7 @@ type Errors = Record<string, string[] | undefined>;
 export function EnquiryForm({
   type = 'general',
   propertyId,
+  projectId,
   propertyTitle,
   sourcePage,
   submitLabel = 'Send enquiry',
@@ -70,6 +73,7 @@ export function EnquiryForm({
           email: String(fd.get('email') ?? ''),
           message: String(fd.get('message') ?? ''),
           propertyId,
+          projectId,
           sourcePage,
           consent: true,
           website: String(fd.get('website') ?? ''),

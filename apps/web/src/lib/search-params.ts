@@ -26,6 +26,13 @@ const KEYS = [
   'possession',
   'postedBy',
   'verified',
+  'withPhotos',
+  'rera',
+  'plotApproval',
+  'pgGender',
+  'pgFood',
+  'postedWithin',
+  'project',
   'q',
   'sort',
   'page',
@@ -41,7 +48,7 @@ export function parseSearch(
     const v = raw[k];
     if (v === undefined) continue;
     input[k] = Array.isArray(v)
-      ? k === 'propertyType' || k === 'furnishing' || k === 'amenities'
+      ? k === 'propertyType' || k === 'furnishing' || k === 'amenities' || k === 'plotApproval'
         ? v.join(',')
         : v[0]
       : v;
@@ -88,6 +95,13 @@ export function toQueryString(
   put('possession', s.possession);
   put('postedBy', s.postedBy);
   put('verified', s.verified);
+  put('withPhotos', s.withPhotos);
+  put('rera', s.rera);
+  put('plotApproval', s.plotApproval);
+  put('pgGender', s.pgGender);
+  put('pgFood', s.pgFood);
+  put('postedWithin', s.postedWithin);
+  put('project', s.project);
   put('q', s.q);
   if (s.sort && s.sort !== 'newest') put('sort', s.sort);
   if (s.page && s.page > 1) put('page', s.page);
@@ -104,6 +118,7 @@ export function toApiQuery(s: PropertySearch, limit = 12): string {
 
 /** True when the visitor applied anything beyond the page's own fixed scope. */
 export function hasUserFilters(raw: RawSearchParams): boolean {
+  if (raw.view === 'map') return true;
   return Object.keys(raw).some(
     (k) => (KEYS as readonly string[]).includes(k) && raw[k] !== undefined && raw[k] !== '',
   );

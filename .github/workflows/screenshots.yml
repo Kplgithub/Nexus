@@ -45,6 +45,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/backend
+        with:
+          token: ${{ secrets.BACKEND_REPO_TOKEN }}
+          build: 'true'
       - name: Start MongoDB
         run: |
           docker run -d --name mongo -p 27017:27017 mongo:7
@@ -54,18 +58,18 @@ jobs:
           done
           exit 1
       - name: Build
-        run: scripts/ci-run.sh "Build" bash -c "pnpm --filter @nexus/shared build && pnpm --filter @nexus/api build && pnpm --filter @nexus/web build"
+        run: scripts/ci-run.sh "Build" bash -c "pnpm --filter @nexus/shared build && pnpm --filter @nexus/web build"
       - name: Seed base, demo listings and admin
         timeout-minutes: 5
         run: |
-          scripts/ci-run.sh "Seed base" pnpm --filter @nexus/api seed:base
-          scripts/ci-run.sh "Seed locations" pnpm --filter @nexus/api seed:locations
-          scripts/ci-run.sh "Seed demo" pnpm --filter @nexus/api seed:demo
-          ADMIN_EMAIL=$E2E_ADMIN_EMAIL ADMIN_PASSWORD=$E2E_ADMIN_PASSWORD ADMIN_NAME="Kapil (Demo Admin)" scripts/ci-run.sh "Seed admin" pnpm --filter @nexus/api seed:admin
+          scripts/ci-run.sh "Seed base" pnpm -C backend seed:base
+          scripts/ci-run.sh "Seed locations" pnpm -C backend seed:locations
+          scripts/ci-run.sh "Seed demo" pnpm -C backend seed:demo
+          ADMIN_EMAIL=$E2E_ADMIN_EMAIL ADMIN_PASSWORD=$E2E_ADMIN_PASSWORD ADMIN_NAME="Kapil (Demo Admin)" scripts/ci-run.sh "Seed admin" pnpm -C backend seed:admin
       - name: Start API and web
         timeout-minutes: 5
         run: |
-          (cd apps/api && NODE_ENV=development LOG_LEVEL=warn node dist/server.js > ../../api.log 2>&1 &)
+          (cd backend/apps/api && NODE_ENV=development LOG_LEVEL=warn node dist/server.js > ../../../api.log 2>&1 &)
           (cd apps/web && pnpm start > ../../web.log 2>&1 &)
           npx --yes wait-on -t 90000 http://localhost:4000/api/v1/health http://localhost:3000/robots.txt
       - run: pnpm --filter @nexus/web exec playwright install --with-deps chromium

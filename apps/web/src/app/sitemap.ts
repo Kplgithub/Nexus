@@ -1,5 +1,10 @@
 import type { MetadataRoute } from 'next';
-import { getLocations, getSitemapProperties } from '@/lib/api';
+import {
+  getLocations,
+  getSitemapProfiles,
+  getSitemapProjects,
+  getSitemapProperties,
+} from '@/lib/api';
 import { SITE_URL } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +14,12 @@ export const dynamic = 'force-dynamic';
  * location pages that have live listings or written local content.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [properties, cities] = await Promise.all([getSitemapProperties(), getLocations()]);
+  const [properties, cities, projects, profiles] = await Promise.all([
+    getSitemapProperties(),
+    getLocations(),
+    getSitemapProjects(),
+    getSitemapProfiles(),
+  ]);
   const now = new Date();
   const url = (p: string) => `${SITE_URL}${p}`;
 
@@ -19,6 +29,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/buy'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: url('/rent'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: url('/commercial'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: url('/projects'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    { url: url('/agents'), changeFrequency: 'weekly', priority: 0.5 },
+    { url: url('/builders'), changeFrequency: 'weekly', priority: 0.5 },
     { url: url('/locations'), changeFrequency: 'weekly', priority: 0.6 },
     { url: url('/post-property'), changeFrequency: 'monthly', priority: 0.6 },
     { url: url('/about'), changeFrequency: 'monthly', priority: 0.4 },
@@ -51,5 +64,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...locationPages, ...listingPages];
+  const projectPages: MetadataRoute.Sitemap = projects.map((p) => ({
+    url: url(`/projects/${p.slug}`),
+    lastModified: new Date(p.updatedAt),
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  }));
+
+  const profilePages: MetadataRoute.Sitemap = profiles.map((p) => ({
+    url: url(p.path),
+    lastModified: new Date(p.updatedAt),
+    changeFrequency: 'weekly',
+    priority: 0.5,
+  }));
+
+  return [...staticPages, ...locationPages, ...projectPages, ...listingPages, ...profilePages];
 }

@@ -30,6 +30,8 @@ const config: NextConfig = {
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1600],
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
+      // Free sample photos used by demo listings and the default hero.
+      { protocol: 'https', hostname: 'images.unsplash.com' },
       ...(process.env.NODE_ENV !== 'production'
         ? [{ protocol: 'http' as const, hostname: 'localhost', port: '4000' }]
         : []),

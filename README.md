@@ -28,28 +28,35 @@ Package versions are caret ranges in each `package.json`; the exact resolved ver
 
 ```
 apps/web/          Next.js site + admin UI
-apps/api/          Express API, models, services, seed scripts, tests
-packages/shared/   Zod schemas, types, constants and helpers shared by both
+packages/shared/   Zod schemas, types, constants and helpers (identical copy in the backend repo)
 deploy/            Docker Compose, Nginx, deploy and backup scripts
 docs/              Architecture, API, environment, deployment, launch checklist
 .github/workflows/ CI and deploy
 ```
 
+## Two repositories
+
+- **This repo (Kplgithub/Nexus)** — the website (`apps/web`), the production deployment (`deploy/`) and CI.
+- **[Kplgithub/Nexus_Backend](https://github.com/Kplgithub/Nexus_Backend)** — the REST API (`apps/api`): models, seed scripts, API tests.
+
+`packages/shared` is kept identical in both. CI (`scripts/check-shared.sh`) and every deploy fail
+if the two copies differ, so change it in both repos together.
+
 ## Local development
 
-Prerequisites: Node.js 22, pnpm 10 (`corepack enable`), MongoDB 7+ running locally (or a free Atlas cluster).
+Prerequisites: Node.js 22, pnpm 10 (`corepack enable`), MongoDB 7 running locally (or a free Atlas cluster).
 
 ```bash
-pnpm install                       # first time: also creates pnpm-lock.yaml — commit it
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env.local
-# edit apps/api/.env: set JWT_SECRET (openssl rand -base64 48) and MONGODB_URI
+git clone git@github.com:Kplgithub/Nexus_Backend.git backend   # gitignored; the API
+(cd backend && pnpm install && cp apps/api/.env.example apps/api/.env)
+# edit backend/apps/api/.env: set JWT_SECRET (openssl rand -base64 48) and MONGODB_URI
+(cd backend && pnpm seed:base && pnpm seed:locations && pnpm seed:demo)
+(cd backend && ADMIN_EMAIL=you@example.com ADMIN_NAME="Your Name" pnpm seed:admin)   # prompts for a password
+(cd backend && pnpm dev)                                         # API on :4000
 
-pnpm seed:base                     # starter FAQs and default settings
-pnpm seed:locations                # optional: Jaipur with sample localities (or add them in Admin → Locations)
-ADMIN_EMAIL=you@example.com ADMIN_NAME="Your Name" pnpm seed:admin   # prompts for a password
-pnpm seed:demo                     # optional: clearly-labelled demo listings
-pnpm dev                           # web on :3000, API on :4000 (/api/v1 is proxied by Next)
+pnpm install
+cp apps/web/.env.example apps/web/.env.local
+pnpm dev                                                         # web on :3000 (/api/v1 is proxied to the API)
 ```
 
 Open http://localhost:3000 and http://localhost:3000/admin. API docs: http://localhost:4000/api/docs.
@@ -58,11 +65,11 @@ Open http://localhost:3000 and http://localhost:3000/admin. API docs: http://loc
 
 | Command                                      | What it does                                                                      |
 | -------------------------------------------- | --------------------------------------------------------------------------------- |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` | Static checks and unit/API tests                                                  |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` | Static checks and unit tests for the website and shared package                   |
 | `pnpm test:e2e`                              | Playwright against a running stack (needs `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD`) |
-| `pnpm build`                                 | Production build of all packages                                                  |
-| `pnpm demo:remove`                           | Delete all demo listings (and their enquiries) — **run before launch**            |
-| `pnpm --filter @nexus/api db:indexes`        | Create/update MongoDB indexes (run on each production deploy)                     |
+| `pnpm build`                                 | Production build of the website                                                   |
+| `pnpm check:shared`                          | Compare `packages/shared` with the copy in `./backend`                            |
+| `pnpm demo:remove` (in `backend/`)           | Delete all demo listings (and their enquiries) — **run before launch**            |
 
 ## Managing the site (admin quick guide)
 
@@ -77,7 +84,7 @@ Open http://localhost:3000 and http://localhost:3000/admin. API docs: http://loc
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
-- [API](docs/API.md)
+- [API](https://github.com/Kplgithub/Nexus_Backend/blob/main/docs/API.md) (backend repo)
 - [Environment variables](docs/ENVIRONMENT.md)
 - [Deployment, SSL, DNS, backups, rollback](docs/DEPLOYMENT.md)
 - [Launch checklist & pending information](docs/LAUNCH_CHECKLIST.md)
