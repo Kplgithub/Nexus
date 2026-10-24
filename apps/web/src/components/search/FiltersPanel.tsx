@@ -57,7 +57,7 @@ type Props = {
   fixed?: { listingType?: ListingType; category?: Category; city?: string; locality?: string };
   resultCount: number;
   /** Current results view; kept when filters change. */
-  view?: 'list' | 'map';
+  view?: 'list' | 'grid' | 'map';
 };
 
 export function FiltersPanel({
@@ -167,7 +167,7 @@ export function FiltersPanel({
     if (fixed.city) omit.push('city');
     if (fixed.locality) omit.push('locality');
     const params = new URLSearchParams(toQueryString(next, omit));
-    if (view === 'map') params.set('view', 'map');
+    if (view !== 'list') params.set('view', view);
     const qs = params.toString();
     setOpen(false);
     start(() => router.push(`${basePath}${qs ? `?${qs}` : ''}`, { scroll: false }));

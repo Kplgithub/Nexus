@@ -32,6 +32,7 @@ import {
 } from '@/lib/seo';
 import { AiSummary } from '@/components/property/AiSummary';
 import { Gallery } from '@/components/property/Gallery';
+import { StickyBar } from '@/components/property/StickyBar';
 import { PropertyGrid } from '@/components/property/PropertyCard';
 import { ContactPanel } from '@/components/property/ContactPanel';
 import { SaveButton } from '@/components/property/SaveButton';
@@ -233,6 +234,19 @@ export default async function PropertyPage({ params }: Props) {
         ]}
       />
       <Breadcrumbs items={crumbs} />
+      <StickyBar
+        title={p.title}
+        price={formatPrice(p.price, p.listingType)}
+        watchId="price-card"
+        sections={[
+          { id: 'facts', label: 'Overview' },
+          { id: 'about', label: 'Details' },
+          { id: 'terms', label: isSale ? 'Price and legal' : 'Rent and terms' },
+          ...(p.amenities.length ? [{ id: 'amenities', label: 'Amenities' }] : []),
+          { id: 'location', label: 'Location' },
+          ...(isSale && !closed && p.price > 0 ? [{ id: 'emi', label: 'EMI' }] : []),
+        ]}
+      />
       {!closed && !p.isDemo && <ViewBeacon path={`/properties/${p.id}/view`} />}
 
       {p.isDemo && (
@@ -303,7 +317,10 @@ export default async function PropertyPage({ params }: Props) {
             </span>
           </p>
 
-          <div className="relative isolate mt-6 flex flex-wrap items-end justify-between gap-4 overflow-hidden rounded-2xl bg-brand-900 p-5 text-white sm:p-6">
+          <div
+            id="price-card"
+            className="relative isolate mt-6 flex flex-wrap items-end justify-between gap-4 overflow-hidden rounded-2xl bg-brand-900 p-5 text-white sm:p-6"
+          >
             <div className="nx-aurora" aria-hidden />
             <div className="relative">
               <p className="text-xs font-semibold uppercase tracking-wider text-accent">
@@ -336,8 +353,8 @@ export default async function PropertyPage({ params }: Props) {
           <AiSummary p={p} insights={insights} />
 
           <section aria-labelledby="facts" className="mt-8">
-            <h2 id="facts" className="sr-only">
-              Key facts
+            <h2 id="facts" className="mb-4 text-2xl">
+              Overview
             </h2>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {facts.map(({ Icon, label, value }, i) => (
@@ -491,8 +508,9 @@ export default async function PropertyPage({ params }: Props) {
         </div>
 
         <aside
+          id="contact"
           aria-label="Contact about this property"
-          className="lg:sticky lg:top-24 lg:self-start"
+          className="scroll-mt-36 lg:sticky lg:top-36 lg:self-start"
         >
           <ContactPanel
             propertyId={p.id}

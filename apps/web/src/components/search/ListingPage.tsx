@@ -231,7 +231,8 @@ export async function ListingPage({
             locality: scope.locality,
           }}
           phone={settings.phone}
-          view={raw.view === 'map' ? 'map' : 'list'}
+          view={raw.view === 'map' || raw.view === 'grid' ? raw.view : 'list'}
+          whatsapp={settings.whatsapp}
         />
 
         {insights && search.page === 1 && <LocalityInsights data={insights} deal={scope.deal} />}

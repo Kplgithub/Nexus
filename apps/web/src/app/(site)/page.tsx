@@ -1,11 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { Carousel } from '@/components/Carousel';
+import { Collections } from '@/components/home/Collections';
+import { PriceTable } from '@/components/home/PriceTable';
+import { WhyNexus } from '@/components/home/WhyNexus';
 import type { Metadata } from 'next';
 import { USER_ROLE_LABELS, whatsappLink, type PropertyCard as Card } from '@nexus/shared';
 import { getFaqs, getHome, getLocations, getSettings } from '@/lib/api';
 import { pageMetadata, websiteJsonLd } from '@/lib/seo';
 import { HeroSearch } from '@/components/search/HeroSearch';
-import { PropertyGrid } from '@/components/property/PropertyCard';
+import { PropertyCard } from '@/components/property/PropertyCard';
 import { ProjectGrid } from '@/components/project/ProjectCard';
 import { FaqList, JsonLd, faqJsonLd } from '@/components/ui';
 import { JaipurFacade } from '@/components/art/JaipurFacade';
@@ -265,6 +269,8 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <Collections city={singleCity?.slug} />
+
       {/* Featured */}
       {settings.home.showFeatured && home.featured.length > 0 && (
         <Rail
@@ -273,7 +279,7 @@ export default async function HomePage() {
           text="Selected by our team for location, condition and value."
           href="/properties"
           linkLabel="All properties"
-          items={home.featured.slice(0, 6)}
+          items={home.featured.slice(0, 12)}
         />
       )}
 
@@ -311,7 +317,7 @@ export default async function HomePage() {
           text="The latest homes and spaces listed for sale."
           href="/buy"
           linkLabel="Browse all for sale"
-          items={home.recentSale.slice(0, 6)}
+          items={home.recentSale.slice(0, 12)}
           tinted
         />
       )}
@@ -323,7 +329,7 @@ export default async function HomePage() {
           text="Fresh rentals, from furnished studios to ready offices."
           href="/rent"
           linkLabel="Browse all rentals"
-          items={home.recentRent.slice(0, 6)}
+          items={home.recentRent.slice(0, 12)}
         />
       )}
 
@@ -369,6 +375,8 @@ export default async function HomePage() {
           </ul>
         </div>
       </section>
+
+      {singleCity && <PriceTable city={singleCity} />}
 
       {/* Localities */}
       {singleCity && localityList.length > 0 && (
@@ -477,7 +485,10 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <WhyNexus />
+
       {/* FAQs */}
+
       {faqs.length > 0 && (
         <section className="bg-surface py-16 sm:py-20" aria-labelledby="faq-heading">
           <div className="container-page grid gap-10 lg:grid-cols-[1fr_1.7fr]">
@@ -611,7 +622,11 @@ function Rail({
             {linkLabel} <ArrowRight size={16} />
           </Link>
         </div>
-        <PropertyGrid items={items} />
+        <Carousel label={title}>
+          {items.map((p, i) => (
+            <PropertyCard key={p.id} p={p} index={i} />
+          ))}
+        </Carousel>
       </div>
     </section>
   );

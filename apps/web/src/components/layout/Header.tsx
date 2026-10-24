@@ -1,8 +1,7 @@
 import type { City, SiteSettings } from '@nexus/shared';
-import { NAV_LINKS } from '@/lib/site';
 import { Logo } from './Logo';
 import { MobileNav } from './MobileNav';
-import { NavLink } from './NavLink';
+import { MegaMenu } from './MegaMenu';
 import { UserMenu } from './UserMenu';
 import { CityMenu } from './CityMenu';
 
@@ -25,15 +24,7 @@ export function Header({ settings, cities }: { settings: SiteSettings; cities: C
           </div>
         )}
 
-        <nav aria-label="Main" className="ml-4 hidden lg:block">
-          <ul className="flex items-center gap-0.5">
-            {NAV_LINKS.map((l) => (
-              <li key={l.href}>
-                <NavLink href={l.href}>{l.label}</NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <MegaMenu cities={cities} />
 
         <div className="ml-auto flex items-center gap-2">
           <UserMenu />

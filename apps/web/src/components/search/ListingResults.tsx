@@ -11,11 +11,12 @@ import { searchProperties } from '@/lib/api';
 import { toApiQuery, toQueryString } from '@/lib/search-params';
 import { EmptyState, Pagination } from '../ui';
 import { PropertyGrid } from '../property/PropertyCard';
+import { PropertyList } from '../property/PropertyRow';
 import { FiltersPanel } from './FiltersPanel';
 import { QuickInsights } from './QuickInsights';
 import { SortSelect } from './SortSelect';
 import { MapView } from '../map/Map';
-import { GridIcon, MapPinIcon } from '../icons';
+import { CheckIcon, GridIcon, ListIcon, MapPinIcon } from '../icons';
 
 const PAGE_SIZE = 12;
 const MAP_PAGE_SIZE = 24;
@@ -26,7 +27,8 @@ type Props = {
   basePath: string;
   fixed?: { listingType?: ListingType; category?: Category; city?: string; locality?: string };
   phone: string;
-  view?: 'list' | 'map';
+  view?: 'list' | 'grid' | 'map';
+  whatsapp?: string;
 };
 
 /** Server-rendered results + filters. Every filter round-trips through the URL and the API. */
@@ -37,6 +39,7 @@ export async function ListingResults({
   fixed = {},
   phone,
   view = 'list',
+  whatsapp,
 }: Props) {
   const pageSize = view === 'map' ? MAP_PAGE_SIZE : PAGE_SIZE;
   let result: Awaited<ReturnType<typeof searchProperties>> | null = null;
@@ -50,9 +53,13 @@ export async function ListingResults({
   const omit = (Object.keys(fixed) as (keyof PropertySearch)[]).filter(
     (k) => fixed[k as keyof typeof fixed],
   );
-  const hrefWith = (page: number, v: 'list' | 'map') => {
-    const qs = new URLSearchParams(toQueryString({ ...search, page }, omit));
-    if (v === 'map') qs.set('view', 'map');
+  const hrefWith = (
+    page: number,
+    v: 'list' | 'grid' | 'map',
+    patch: Partial<PropertySearch> = {},
+  ) => {
+    const qs = new URLSearchParams(toQueryString({ ...search, ...patch, page }, omit));
+    if (v !== 'list') qs.set('view', v);
     const str = qs.toString();
     return `${basePath}${str ? `?${str}` : ''}`;
   };
@@ -68,6 +75,46 @@ export async function ListingResults({
       title: p.title,
       href: `/properties/${p.slug}`,
     }));
+
+  // Quick filters above the results: one tap to add or remove a common filter.
+  const residential = fixed.category !== 'commercial';
+  const quick: { label: string; on: boolean; patch: Partial<PropertySearch> }[] = [
+    ...(residential
+      ? [1, 2, 3, 4].map((n) => ({
+          label: n === 4 ? '4+ BHK' : `${n} BHK`,
+          on: search.bedrooms === n,
+          patch: { bedrooms: search.bedrooms === n ? undefined : n },
+        }))
+      : []),
+    {
+      label: 'Verified',
+      on: !!search.verified,
+      patch: { verified: search.verified ? undefined : true },
+    },
+    {
+      label: 'Owner',
+      on: search.postedBy === 'owner',
+      patch: { postedBy: search.postedBy === 'owner' ? undefined : 'owner' },
+    },
+    fixed.listingType === 'rent'
+      ? {
+          label: 'Available now',
+          on: !!search.availableNow,
+          patch: { availableNow: search.availableNow ? undefined : true },
+        }
+      : {
+          label: 'Ready to move',
+          on: search.possession === 'ready',
+          patch: { possession: search.possession === 'ready' ? undefined : 'ready' },
+        },
+    {
+      label: 'With photos',
+      on: !!search.withPhotos,
+      patch: { withPhotos: search.withPhotos ? undefined : true },
+    },
+  ];
+  const viewTab = (v: 'list' | 'grid' | 'map') =>
+    `inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium ${view === v ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-muted hover:text-ink'}`;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
@@ -101,15 +148,23 @@ export async function ListingResults({
                 href={hrefWith(1, 'list')}
                 aria-current={view === 'list' ? 'page' : undefined}
                 scroll={false}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium ${view === 'list' ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-muted'}`}
+                className={viewTab('list')}
               >
-                <GridIcon size={15} /> List
+                <ListIcon size={15} /> List
+              </Link>
+              <Link
+                href={hrefWith(1, 'grid')}
+                aria-current={view === 'grid' ? 'page' : undefined}
+                scroll={false}
+                className={viewTab('grid')}
+              >
+                <GridIcon size={15} /> Grid
               </Link>
               <Link
                 href={hrefWith(1, 'map')}
                 aria-current={view === 'map' ? 'page' : undefined}
                 scroll={false}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium ${view === 'map' ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-muted'}`}
+                className={viewTab('map')}
               >
                 <MapPinIcon size={15} /> Map
               </Link>
@@ -119,6 +174,26 @@ export async function ListingResults({
             </Suspense>
           </div>
         </div>
+
+        {!failed && (
+          <nav aria-label="Quick filters" className="mb-5">
+            <ul className="nx-scroll-x -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              {quick.map((q) => (
+                <li key={q.label} className="shrink-0">
+                  <Link
+                    href={hrefWith(1, view, q.patch)}
+                    scroll={false}
+                    aria-pressed={q.on}
+                    className={`chip ${q.on ? 'chip-active' : ''}`}
+                  >
+                    {q.on && <CheckIcon size={14} />}
+                    {q.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
 
         {view === 'map' && !failed && (
           <div className="mb-8">
@@ -150,8 +225,12 @@ export async function ListingResults({
           </EmptyState>
         ) : result && result.items.length > 0 ? (
           <>
-            {view === 'list' && <QuickInsights items={result.items} total={total} />}
-            <PropertyGrid items={result.items} priorityCount={2} />
+            {view !== 'map' && <QuickInsights items={result.items} total={total} />}
+            {view === 'list' ? (
+              <PropertyList items={result.items} priorityCount={2} whatsapp={whatsapp} />
+            ) : (
+              <PropertyGrid items={result.items} priorityCount={2} />
+            )}
             <Pagination page={search.page} totalPages={result.meta.totalPages} hrefFor={hrefFor} />
           </>
         ) : (

@@ -313,3 +313,8 @@ export const CalculatorIcon = (p: P) => (
     <path d="M8 6.5h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5V18M8.5 18h.01M12 18h.01" />
   </svg>
 );
+export const ListIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
+  </svg>
+);
