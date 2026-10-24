@@ -2,20 +2,20 @@
 
 /*
  * NEXUS design tokens. Brand colours are fixed by the brand owner:
- *   primary #9D174D (Jaipur pink) · accent #D4A017 (gold) · background #FFFFFF · surface #F8F9FA · text #000000
+ *   primary #1E40AF (royal blue) · accent #F97316 (orange) · background #FFFFFF · surface #F8F9FA · text #000000
  * Every other shade below is derived from them for borders, hovers and tints.
  */
 @theme {
-  --color-brand: #9d174d;
-  --color-brand-700: #831843;
-  --color-brand-800: #6b0f38;
-  --color-brand-900: #4a0a27;
-  --color-brand-50: #fdf2f8;
-  --color-brand-100: #fce7f3;
-  --color-accent: #d4a017;
-  --color-accent-50: #fef9e7;
-  --color-accent-100: #fbf0c4;
-  --color-accent-700: #8a6508;
+  --color-brand: #1e40af;
+  --color-brand-700: #1e3a8a;
+  --color-brand-800: #172554;
+  --color-brand-900: #0b1a3f;
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-accent: #f97316;
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-700: #c2410c;
   --color-bg: #ffffff;
   --color-surface: #f8f9fa;
   --color-ink: #000000;
@@ -34,8 +34,8 @@
   --font-display: var(--font-heading), ui-serif, Georgia, serif;
 
   --radius-card: 0.875rem;
-  --shadow-card: 0 1px 2px rgb(1 59 71 / 0.06), 0 4px 16px -6px rgb(1 59 71 / 0.1);
-  --shadow-lift: 0 2px 4px rgb(1 59 71 / 0.06), 0 16px 32px -12px rgb(1 59 71 / 0.18);
+  --shadow-card: 0 1px 2px rgb(15 30 80 / 0.06), 0 4px 16px -6px rgb(15 30 80 / 0.1);
+  --shadow-lift: 0 2px 4px rgb(15 30 80 / 0.06), 0 16px 32px -12px rgb(15 30 80 / 0.18);
 }
 
 @layer base {
@@ -140,7 +140,7 @@
     color: var(--color-ink);
   }
   .btn-accent:hover:not(:disabled) {
-    background: #29a098;
+    background: #ea580c;
   }
   .btn-outline {
     border: 1px solid var(--color-line-strong);
@@ -194,7 +194,7 @@
   .field:focus {
     outline: none;
     border-color: var(--color-brand);
-    box-shadow: 0 0 0 3px rgb(212 160 23 / 0.35);
+    box-shadow: 0 0 0 3px rgb(249 115 22 / 0.35);
   }
   .field[aria-invalid='true'] {
     border-color: var(--color-danger);
@@ -206,7 +206,7 @@
   select.field {
     appearance: none;
     padding-right: 2.25rem;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239d174d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%231e40af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
   }
@@ -374,10 +374,10 @@
   inset: -20%;
   z-index: -10;
   background:
-    radial-gradient(40% 50% at 20% 30%, rgb(212 160 23 / 0.35), transparent 70%),
-    radial-gradient(35% 45% at 80% 20%, rgb(157 23 77 / 0.7), transparent 70%),
-    radial-gradient(45% 55% at 60% 90%, rgb(244 114 182 / 0.22), transparent 70%),
-    radial-gradient(30% 40% at 95% 75%, rgb(245 158 11 / 0.12), transparent 70%);
+    radial-gradient(40% 50% at 20% 30%, rgb(249 115 22 / 0.35), transparent 70%),
+    radial-gradient(35% 45% at 80% 20%, rgb(30 64 175 / 0.75), transparent 70%),
+    radial-gradient(45% 55% at 60% 90%, rgb(96 165 250 / 0.25), transparent 70%),
+    radial-gradient(30% 40% at 95% 75%, rgb(251 146 60 / 0.14), transparent 70%);
   filter: blur(20px);
   animation: nx-drift 18s ease-in-out infinite alternate;
 }
@@ -405,7 +405,7 @@
   position: relative;
   border-radius: 1.125rem;
   padding: 2px;
-  background: conic-gradient(from var(--nx-angle), #d4a017, #f9a8d4, #9d174d, #f59e0b, #d4a017);
+  background: conic-gradient(from var(--nx-angle), #f97316, #93c5fd, #1e40af, #fb923c, #f97316);
   animation: nx-spin 6s linear infinite;
 }
 .nx-ai-ring::before {
@@ -426,7 +426,7 @@
 
 /* Gradient text with a slow shine. */
 .nx-ai-text {
-  background: linear-gradient(90deg, #fbcfe8, #d4a017 30%, #fde68a 50%, #d4a017 70%, #fbcfe8);
+  background: linear-gradient(90deg, #bfdbfe, #f97316 30%, #fed7aa 50%, #f97316 70%, #bfdbfe);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -506,7 +506,7 @@
     115deg,
     transparent 30%,
     rgb(255 255 255 / 0.28) 45%,
-    rgb(244 114 182 / 0.18) 52%,
+    rgb(147 197 253 / 0.18) 52%,
     transparent 65%
   );
   transform: translateX(-120%);

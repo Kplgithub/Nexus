@@ -167,7 +167,7 @@ export function HeroSearch({ cities }: { cities: City[] }) {
       onSubmit={onSubmit}
       role="search"
       aria-label="Search properties"
-      className="relative rounded-2xl bg-white text-ink shadow-[0_30px_80px_-30px_rgba(1,42,51,0.6)]"
+      className="relative rounded-2xl bg-white text-ink shadow-[0_30px_80px_-30px_rgba(11,26,63,0.6)]"
     >
       <div className="flex items-center gap-2 border-b border-line px-2 sm:px-4">
         <div

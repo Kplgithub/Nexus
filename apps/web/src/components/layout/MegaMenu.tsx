@@ -200,7 +200,7 @@ export function MegaMenu({ cities }: { cities: City[] }) {
               </div>
               {/* The padding bridges the gap so the panel stays open while the pointer moves. */}
               <div className="invisible absolute left-0 top-full z-50 pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                <div className="flex translate-y-1 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_24px_60px_-20px_rgb(2_102_123/0.35)] transition-transform duration-200 group-hover:translate-y-0">
+                <div className="flex translate-y-1 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_24px_60px_-20px_rgb(30_64_175/0.35)] transition-transform duration-200 group-hover:translate-y-0">
                   <div className="flex gap-6 p-6 xl:gap-8">
                     {item.cols.map((col) => (
                       <div key={col.title} className="w-40 xl:w-44">
