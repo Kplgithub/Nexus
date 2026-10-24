@@ -12,7 +12,7 @@ import {
   formatPrice,
   type PropertyCard as Card,
 } from '@nexus/shared';
-import { BadgeCheckIcon, ImageIcon, MapPinIcon } from '../icons';
+import { BadgeCheckIcon, ChevronRight, ImageIcon, MapPinIcon } from '../icons';
 import { DemoBadge } from '../ui';
 import { SaveButton } from './SaveButton';
 
@@ -22,8 +22,11 @@ export function PropertyCard({
   priority = false,
   headingLevel = 'h3',
   preview = false,
+  index,
 }: {
   p: Card;
+  /** Position in a grid; staggers the entrance animation. */
+  index?: number;
   priority?: boolean;
   headingLevel?: 'h2' | 'h3';
   /** Editor preview: no link, no save button. */
@@ -47,8 +50,11 @@ export function PropertyCard({
   ].filter((x): x is string => Boolean(x));
 
   return (
-    <article className="nx-lift group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white">
-      <div className="relative aspect-[4/3] overflow-hidden bg-surface">
+    <article
+      className={`nx-lift group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white ${index === undefined ? '' : 'nx-rise'}`}
+      style={index === undefined ? undefined : ({ '--i': index } as React.CSSProperties)}
+    >
+      <div className="nx-shine relative aspect-[4/3] overflow-hidden bg-surface">
         {p.coverImage ? (
           <Image
             src={p.coverImage.url}
@@ -56,7 +62,7 @@ export function PropertyCard({
             fill
             priority={priority}
             sizes="(min-width: 1280px) 400px, (min-width: 640px) 50vw, 100vw"
-            className={`object-cover transition-transform duration-700 group-hover:scale-[1.04] ${closed ? 'grayscale' : ''}`}
+            className={`object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.08] ${closed ? 'grayscale' : ''}`}
           />
         ) : (
           <div className="grid h-full place-items-center text-ink-muted">
@@ -92,11 +98,18 @@ export function PropertyCard({
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
           {p.isDemo ? <DemoBadge /> : <span />}
-          {p.imageCount > 1 && (
-            <span className="rounded-md bg-black/50 px-2 py-0.5 text-xs font-medium text-white backdrop-blur">
-              {p.imageCount} photos
-            </span>
-          )}
+          <span className="flex items-center gap-1.5">
+            {p.imageCount > 1 && (
+              <span className="rounded-md bg-black/50 px-2 py-0.5 text-xs font-medium text-white backdrop-blur transition-opacity group-hover:opacity-0">
+                {p.imageCount} photos
+              </span>
+            )}
+            {!preview && (
+              <span className="absolute bottom-3 right-3 inline-flex translate-y-3 items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-800 opacity-0 shadow-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                View details <ChevronRight size={14} />
+              </span>
+            )}
+          </span>
         </div>
       </div>
 
@@ -175,7 +188,7 @@ export function PropertyGrid({
     <ul className={`grid gap-5 ${cols}`}>
       {items.map((p, i) => (
         <li key={p.id}>
-          <PropertyCard p={p} priority={i < priorityCount} headingLevel={headingLevel} />
+          <PropertyCard p={p} priority={i < priorityCount} headingLevel={headingLevel} index={i} />
         </li>
       ))}
     </ul>

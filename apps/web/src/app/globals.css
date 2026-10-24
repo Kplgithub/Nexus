@@ -479,3 +479,71 @@
 .nx-scroll-x::-webkit-scrollbar {
   display: none;
 }
+
+/* Cards rise in one after another (--i = position in the grid). */
+.nx-rise {
+  animation: nx-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(min(var(--i, 0), 8) * 70ms);
+}
+@keyframes nx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+}
+
+/* Diagonal light sweep across a photo on hover. */
+.nx-shine {
+  position: relative;
+}
+.nx-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.28) 45%,
+    rgb(110 231 216 / 0.18) 52%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+}
+.group:hover .nx-shine::after {
+  transition: transform 0.9s ease;
+  transform: translateX(120%);
+}
+
+/* Soft pulsing dot for "live" or AI states. */
+.nx-pulse {
+  position: relative;
+}
+.nx-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.35;
+  animation: nx-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes nx-ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Count-up style fade for numbers. */
+.nx-fade-in {
+  animation: nx-fade 0.8s ease both;
+}
+@keyframes nx-fade {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}

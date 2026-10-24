@@ -8,6 +8,8 @@ import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { ListingResults } from './ListingResults';
 import { Breadcrumbs, JsonLd } from '../ui';
 import { LocalityInsights } from '../locality/LocalityInsights';
+import { SmartSearchBar } from './SmartSearchBar';
+import { SparklesIcon } from '../icons';
 
 /**
  * One page component for every browse URL:
@@ -136,71 +138,106 @@ export async function ListingPage({
     ? [...chipCity.localities].sort((a, b) => (b.publishedCount ?? 0) - (a.publishedCount ?? 0))
     : [];
 
+  const glassChip =
+    'chip border-white/20 bg-white/10 text-white backdrop-blur hover:border-white hover:bg-white hover:text-brand-800';
+  const activeChip =
+    'chip border-accent bg-accent font-semibold text-brand-900 hover:text-brand-900';
+
   return (
-    <div className="container-page pt-8">
+    <div>
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
-      <Breadcrumbs items={crumbs} />
-      <header className="mb-8 mt-5">
-        <h1 className="text-[2rem] leading-tight sm:text-[2.6rem]">{words(scope, place)}</h1>
-        {lead && <p className="mt-3 max-w-3xl text-lg leading-relaxed text-ink-soft">{lead}</p>}
+      <header className="relative isolate overflow-hidden bg-brand-900 text-white">
+        <div className="nx-aurora" aria-hidden />
+        <div className="nx-grid" aria-hidden />
+        <div className="container-page relative pb-8 pt-6 sm:pb-10">
+          <Breadcrumbs items={crumbs} dark />
+          <p className="nx-rise mt-5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
+            <SparklesIcon size={14} className="text-accent" /> AI-assisted search
+          </p>
+          <h1
+            className="nx-rise mt-3 text-[1.9rem] leading-tight text-white sm:text-[2.4rem]"
+            style={{ '--i': 1 } as React.CSSProperties}
+          >
+            {words(scope, place)}
+          </h1>
+          {lead && (
+            <p
+              className="nx-rise mt-2 line-clamp-2 max-w-3xl leading-relaxed text-white/75 sm:line-clamp-none"
+              style={{ '--i': 2 } as React.CSSProperties}
+            >
+              {lead}
+            </p>
+          )}
 
-        {scope.deal && !scope.city && cities.length > 1 && (
-          <nav aria-label="Cities" className="mt-6">
-            <ul className="flex flex-wrap gap-2">
-              {cities.map((c) => (
-                <li key={c.slug}>
-                  <Link href={`${DEAL_PATH[scope.deal!]}/${c.slug}`} className="chip">
-                    {c.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
+          <div className="nx-rise mt-5" style={{ '--i': 3 } as React.CSSProperties}>
+            <SmartSearchBar
+              city={scope.city ?? (cities.length === 1 ? cities[0]!.slug : undefined)}
+              localities={(city ?? (cities.length === 1 ? cities[0] : undefined))?.localities ?? []}
+              deal={scope.deal}
+              commercial={scope.category === 'commercial'}
+            />
+          </div>
 
-        {scope.deal && chipCity && chips.length > 0 && (
-          <nav aria-label={`Localities in ${chipCity.name}`} className="mt-6">
-            <ul className="flex flex-wrap gap-2">
-              {chips.map((l) => {
-                const active = l.slug === locality?.slug;
-                return (
-                  <li key={l.slug}>
-                    <Link
-                      href={
-                        active
-                          ? `${DEAL_PATH[scope.deal!]}/${chipCity.slug}`
-                          : `${DEAL_PATH[scope.deal!]}/${chipCity.slug}/${l.slug}`
-                      }
-                      aria-current={active ? 'page' : undefined}
-                      className={`chip ${active ? 'chip-active' : ''}`}
-                    >
-                      {l.name}
+          {scope.deal && !scope.city && cities.length > 1 && (
+            <nav aria-label="Cities" className="mt-4">
+              <ul className="flex flex-wrap gap-2">
+                {cities.map((c) => (
+                  <li key={c.slug}>
+                    <Link href={`${DEAL_PATH[scope.deal!]}/${c.slug}`} className={glassChip}>
+                      {c.name}
                     </Link>
                   </li>
-                );
-              })}
-            </ul>
-          </nav>
-        )}
+                ))}
+              </ul>
+            </nav>
+          )}
+
+          {scope.deal && chipCity && chips.length > 0 && (
+            <nav aria-label={`Localities in ${chipCity.name}`} className="mt-4">
+              <ul className="nx-scroll-x -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+                {chips.map((l) => {
+                  const active = l.slug === locality?.slug;
+                  return (
+                    <li key={l.slug} className="shrink-0">
+                      <Link
+                        href={
+                          active
+                            ? `${DEAL_PATH[scope.deal!]}/${chipCity.slug}`
+                            : `${DEAL_PATH[scope.deal!]}/${chipCity.slug}/${l.slug}`
+                        }
+                        aria-current={active ? 'page' : undefined}
+                        className={active ? activeChip : glassChip}
+                      >
+                        {l.name}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          )}
+        </div>
       </header>
 
-      <ListingResults
-        search={search}
-        cities={cities}
-        basePath={path}
-        fixed={{
-          listingType: scope.deal,
-          category: scope.category,
-          city: scope.city,
-          locality: scope.locality,
-        }}
-        phone={settings.phone}
-        view={raw.view === 'map' ? 'map' : 'list'}
-      />
+      <div className="container-page pt-8">
+        <ListingResults
+          search={search}
+          cities={cities}
+          basePath={path}
+          fixed={{
+            listingType: scope.deal,
+            category: scope.category,
+            city: scope.city,
+            locality: scope.locality,
+          }}
+          phone={settings.phone}
+          view={raw.view === 'map' ? 'map' : 'list'}
+        />
 
-      {insights && search.page === 1 && <LocalityInsights data={insights} deal={scope.deal} />}
+        {insights && search.page === 1 && <LocalityInsights data={insights} deal={scope.deal} />}
 
-      {after}
+        {after}
+      </div>
     </div>
   );
 }

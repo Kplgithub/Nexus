@@ -32,8 +32,9 @@ export function Gallery({ images, title }: { images: PropertyImage[]; title: str
 
   if (!count) {
     return (
-      <div className="grid aspect-[16/9] place-items-center rounded-[var(--radius-card)] bg-surface text-ink-muted">
-        <div className="flex flex-col items-center gap-2">
+      <div className="relative isolate grid aspect-[16/9] place-items-center overflow-hidden rounded-[var(--radius-card)] bg-brand-900 text-white/80">
+        <div className="nx-aurora" aria-hidden />
+        <div className="relative flex flex-col items-center gap-2">
           <ImageIcon size={40} />
           <span>Photos coming soon</span>
         </div>
@@ -43,13 +44,27 @@ export function Gallery({ images, title }: { images: PropertyImage[]; title: str
 
   const main = images[0]!;
   const thumbs = images.slice(1, 5);
+  // Fewer photos: a simpler layout so there are no empty cells.
+  const layout =
+    thumbs.length >= 4
+      ? 'md:grid-cols-4 md:grid-rows-2'
+      : thumbs.length >= 2
+        ? 'md:grid-cols-3 md:grid-rows-2'
+        : thumbs.length === 1
+          ? 'md:grid-cols-3'
+          : '';
+  const tile = 'nx-shine group relative overflow-hidden bg-surface';
+  const zoom =
+    'object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]';
 
   return (
     <>
-      <div className="grid gap-2 overflow-hidden rounded-[var(--radius-card)] md:grid-cols-4 md:grid-rows-2">
+      <div
+        className={`nx-fade-in relative grid gap-2 overflow-hidden rounded-[var(--radius-card)] ${layout}`}
+      >
         <button
           type="button"
-          className="relative aspect-[4/3] md:col-span-2 md:row-span-2 md:aspect-auto md:min-h-[26rem]"
+          className={`${tile} aspect-[4/3] md:aspect-auto md:min-h-[26rem] ${thumbs.length >= 4 ? 'md:col-span-2 md:row-span-2' : thumbs.length >= 2 ? 'md:col-span-2 md:row-span-2' : thumbs.length === 1 ? 'md:col-span-2' : ''}`}
           onClick={() => {
             setIndex(0);
             setOpen(true);
@@ -62,34 +77,41 @@ export function Gallery({ images, title }: { images: PropertyImage[]; title: str
             fill
             priority
             sizes="(min-width: 768px) 50vw, 100vw"
-            className="object-cover"
+            className={zoom}
           />
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/45 to-transparent" />
         </button>
         {thumbs.map((img, i) => (
           <button
             key={img.url + i}
             type="button"
-            className="relative hidden aspect-[4/3] md:block"
+            className={`${tile} hidden aspect-[4/3] md:block ${thumbs.length === 1 ? 'md:aspect-auto' : ''}`}
             onClick={() => {
               setIndex(i + 1);
               setOpen(true);
             }}
             aria-label={`Open photo ${i + 2} of ${count}`}
           >
-            <Image
-              src={img.url}
-              alt={img.alt || title}
-              fill
-              sizes="25vw"
-              className="object-cover"
-            />
+            <Image src={img.url} alt={img.alt || title} fill sizes="25vw" className={zoom} />
             {i === thumbs.length - 1 && count > 5 && (
-              <span className="absolute inset-0 grid place-items-center bg-black/50 text-lg font-semibold text-white">
+              <span className="absolute inset-0 grid place-items-center bg-black/50 text-lg font-semibold text-white backdrop-blur-[2px]">
                 +{count - 5} photos
               </span>
             )}
           </button>
         ))}
+        {count > 1 && (
+          <button
+            type="button"
+            onClick={() => {
+              setIndex(0);
+              setOpen(true);
+            }}
+            className="absolute bottom-3 right-3 hidden items-center gap-1.5 rounded-full bg-black/45 px-3.5 py-1.5 text-sm font-semibold text-white ring-1 ring-white/25 backdrop-blur-md transition hover:bg-black/65 md:inline-flex"
+          >
+            <ImageIcon size={16} /> View all {count} photos
+          </button>
+        )}
       </div>
       {count > 1 && (
         <button

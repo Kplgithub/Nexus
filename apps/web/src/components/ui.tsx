@@ -8,21 +8,34 @@ export function JsonLd({ data }: { data: object | object[] }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} />;
 }
 
-export function Breadcrumbs({ items }: { items: { name: string; href: string }[] }) {
+export function Breadcrumbs({
+  items,
+  dark = false,
+}: {
+  items: { name: string; href: string }[];
+  dark?: boolean;
+}) {
   return (
     <nav aria-label="Breadcrumb" className="text-sm">
-      <ol className="flex flex-wrap items-center gap-1 text-ink-muted">
+      <ol
+        className={`flex flex-wrap items-center gap-1 ${dark ? 'text-white/60' : 'text-ink-muted'}`}
+      >
         {items.map((it, i) => {
           const last = i === items.length - 1;
           return (
             <li key={it.href} className="flex items-center gap-1">
               {last ? (
-                <span aria-current="page" className="text-ink-soft">
+                <span aria-current="page" className={dark ? 'text-white' : 'text-ink-soft'}>
                   {it.name}
                 </span>
               ) : (
                 <>
-                  <Link href={it.href} className="hover:text-brand hover:underline">
+                  <Link
+                    href={it.href}
+                    className={
+                      dark ? 'hover:text-white hover:underline' : 'hover:text-brand hover:underline'
+                    }
+                  >
                     {it.name}
                   </Link>
                   <ChevronRight size={14} />

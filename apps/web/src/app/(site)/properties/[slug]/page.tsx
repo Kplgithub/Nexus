@@ -21,7 +21,7 @@ import {
   PLOT_APPROVAL_LABELS,
   type PublicProperty,
 } from '@nexus/shared';
-import { getProperty, getSettings } from '@/lib/api';
+import { getLocalityInsights, getProperty, getSettings } from '@/lib/api';
 import { absoluteUrl } from '@/lib/site';
 import {
   breadcrumbJsonLd,
@@ -30,6 +30,7 @@ import {
   propertyDescription,
   propertyHeadline,
 } from '@/lib/seo';
+import { AiSummary } from '@/components/property/AiSummary';
 import { Gallery } from '@/components/property/Gallery';
 import { PropertyGrid } from '@/components/property/PropertyCard';
 import { ContactPanel } from '@/components/property/ContactPanel';
@@ -81,6 +82,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PropertyPage({ params }: Props) {
   const { slug } = await params;
   const [{ property: p, similar }, settings] = await Promise.all([load(slug), getSettings()]);
+  const insights = await getLocalityInsights(p.city.slug, p.locality.slug);
   const isSale = p.listingType === 'sale';
   const dealRoot = isSale ? '/buy' : '/rent';
   const closed = p.status !== 'published';
@@ -301,41 +303,56 @@ export default async function PropertyPage({ params }: Props) {
             </span>
           </p>
 
-          <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border-y border-line py-5">
-            <div>
-              <p className="tabular font-display text-[2.4rem] leading-none text-brand-900">
+          <div className="relative isolate mt-6 flex flex-wrap items-end justify-between gap-4 overflow-hidden rounded-2xl bg-brand-900 p-5 text-white sm:p-6">
+            <div className="nx-aurora" aria-hidden />
+            <div className="relative">
+              <p className="text-xs font-semibold uppercase tracking-wider text-accent">
+                {isSale ? 'Asking price' : 'Monthly rent'}
+              </p>
+              <p className="tabular mt-1 font-display text-[2.4rem] leading-none text-white">
                 {formatPrice(p.price, p.listingType)}
               </p>
-              <p className="mt-2 text-sm text-ink-muted">
+              <p className="mt-2 text-sm text-white/70">
                 {isSale
                   ? [
                       p.pricePerSqft ? `${formatINRShort(p.pricePerSqft)} per sq ft` : null,
                       p.priceNegotiable ? 'Negotiable' : null,
                     ]
                       .filter(Boolean)
-                      .join(' · ') || 'Asking price'
+                      .join(' · ') || 'Price as listed by the poster'
                   : [
                       p.securityDeposit ? `Deposit ${formatINRShort(p.securityDeposit)}` : null,
                       p.priceNegotiable ? 'Negotiable' : null,
                     ]
                       .filter(Boolean)
-                      .join(' · ') || 'Monthly rent'}
+                      .join(' · ') || 'Per month'}
               </p>
             </div>
-            <SaveButton propertyId={p.id} title={p.title} variant="button" />
+            <div className="relative rounded-xl bg-white p-1">
+              <SaveButton propertyId={p.id} title={p.title} variant="button" />
+            </div>
           </div>
+
+          <AiSummary p={p} insights={insights} />
 
           <section aria-labelledby="facts" className="mt-8">
             <h2 id="facts" className="sr-only">
               Key facts
             </h2>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
-              {facts.map(({ Icon, label, value }) => (
-                <div key={label}>
-                  <dt className="flex items-center gap-1.5 text-sm text-ink-muted">
-                    <Icon size={16} /> {label}
-                  </dt>
-                  <dd className="mt-1 font-semibold">{value}</dd>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {facts.map(({ Icon, label, value }, i) => (
+                <div
+                  key={label}
+                  className="nx-rise nx-lift flex items-start gap-3 rounded-2xl border border-line bg-white p-3.5"
+                  style={{ '--i': i } as React.CSSProperties}
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand">
+                    <Icon size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <dt className="text-xs text-ink-muted">{label}</dt>
+                    <dd className="mt-0.5 font-semibold leading-snug">{value}</dd>
+                  </div>
                 </div>
               ))}
             </dl>
@@ -348,7 +365,10 @@ export default async function PropertyPage({ params }: Props) {
               </h2>
               <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
                 {p.highlights.map((h) => (
-                  <li key={h} className="flex items-start gap-2 text-ink-soft">
+                  <li
+                    key={h}
+                    className="flex items-start gap-2 rounded-xl bg-surface px-3 py-2.5 text-ink-soft"
+                  >
                     <CheckIcon size={18} className="mt-0.5 shrink-0 text-accent-700" /> {h}
                   </li>
                 ))}

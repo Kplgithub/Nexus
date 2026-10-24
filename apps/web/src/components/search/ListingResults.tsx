@@ -12,6 +12,7 @@ import { toApiQuery, toQueryString } from '@/lib/search-params';
 import { EmptyState, Pagination } from '../ui';
 import { PropertyGrid } from '../property/PropertyCard';
 import { FiltersPanel } from './FiltersPanel';
+import { QuickInsights } from './QuickInsights';
 import { SortSelect } from './SortSelect';
 import { MapView } from '../map/Map';
 import { GridIcon, MapPinIcon } from '../icons';
@@ -149,6 +150,7 @@ export async function ListingResults({
           </EmptyState>
         ) : result && result.items.length > 0 ? (
           <>
+            {view === 'list' && <QuickInsights items={result.items} total={total} />}
             <PropertyGrid items={result.items} priorityCount={2} />
             <Pagination page={search.page} totalPages={result.meta.totalPages} hrefFor={hrefFor} />
           </>
