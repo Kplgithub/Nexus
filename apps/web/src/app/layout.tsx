@@ -33,6 +33,8 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   robots: SITE_NOINDEX ? { index: false, follow: false } : undefined,
   formatDetection: { telephone: false },
+  // Google Search Console ownership check (renders <meta name="google-site-verification">).
+  verification: { google: 'Mg0AcYYNVVWuMxFuGbzWE7ghhsZSy_HTIMlxlUyny2k' },
 };
 
 export const viewport: Viewport = {

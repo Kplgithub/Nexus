@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import {
   getLocations,
+  getSitemapBlog,
   getSitemapProfiles,
   getSitemapProjects,
   getSitemapProperties,
@@ -14,11 +15,12 @@ export const dynamic = 'force-dynamic';
  * location pages that have live listings or written local content.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [properties, cities, projects, profiles] = await Promise.all([
+  const [properties, cities, projects, profiles, posts] = await Promise.all([
     getSitemapProperties(),
     getLocations(),
     getSitemapProjects(),
     getSitemapProfiles(),
+    getSitemapBlog(),
   ]);
   const now = new Date();
   const url = (p: string) => `${SITE_URL}${p}`;
@@ -37,6 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/about'), changeFrequency: 'monthly', priority: 0.4 },
     { url: url('/contact'), changeFrequency: 'monthly', priority: 0.5 },
     { url: url('/faq'), changeFrequency: 'monthly', priority: 0.4 },
+    { url: url('/blog'), lastModified: now, changeFrequency: 'daily', priority: 0.6 },
     { url: url('/privacy-policy'), changeFrequency: 'yearly', priority: 0.1 },
     { url: url('/terms-and-conditions'), changeFrequency: 'yearly', priority: 0.1 },
     { url: url('/cookie-policy'), changeFrequency: 'yearly', priority: 0.1 },
@@ -78,5 +81,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticPages, ...locationPages, ...projectPages, ...listingPages, ...profilePages];
+  const blogPages: MetadataRoute.Sitemap = posts.map((p) => ({
+    url: url(`/blog/${p.slug}`),
+    lastModified: new Date(p.updatedAt),
+    changeFrequency: 'monthly',
+    priority: 0.6,
+  }));
+
+  return [
+    ...staticPages,
+    ...locationPages,
+    ...projectPages,
+    ...listingPages,
+    ...profilePages,
+    ...blogPages,
+  ];
 }

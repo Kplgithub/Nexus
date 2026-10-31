@@ -177,6 +177,7 @@ function menu(cities: City[]): Item[] {
     },
     { label: 'Agents', href: '/agents' },
     { label: 'Locations', href: '/locations' },
+    { label: 'Blog', href: '/blog' },
   ];
 }
 
