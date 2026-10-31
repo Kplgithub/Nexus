@@ -7,6 +7,7 @@ import {
   LANDMARK_KIND_LABELS,
   slugify,
   type City,
+  type DealSeo,
   type LandmarkKind,
   type Locality,
 } from '@nexus/shared';
@@ -146,6 +147,8 @@ function CityEditor({
           intro: c.intro,
           seoTitle: c.seoTitle ?? '',
           seoDescription: c.seoDescription ?? '',
+          buySeo: dealSeoBody(c.buySeo),
+          rentSeo: dealSeoBody(c.rentSeo),
           localities: c.localities.map((l) => ({
             name: l.name,
             slug: l.slug,
@@ -153,6 +156,8 @@ function CityEditor({
             intro: l.intro,
             seoTitle: l.seoTitle ?? '',
             seoDescription: l.seoDescription ?? '',
+            buySeo: dealSeoBody(l.buySeo),
+            rentSeo: dealSeoBody(l.rentSeo),
             center: l.center ?? null,
             highlights: (l.highlights ?? []).map((h) => h.trim()).filter((h) => h.length >= 2),
             landmarks: (l.landmarks ?? [])
@@ -227,6 +232,15 @@ function CityEditor({
           value={c.intro}
           onChange={(e) => setC((s) => ({ ...s, intro: e.target.value }))}
         />
+        <DealSeoFields
+          idPrefix={`c-${c.id}`}
+          place={c.name}
+          paths={{ buy: `/buy/${c.slug}`, rent: `/rent/${c.slug}` }}
+          buy={c.buySeo}
+          rent={c.rentSeo}
+          disabled={!canEdit}
+          onChange={(patch) => setC((s) => ({ ...s, ...patch }))}
+        />
       </div>
 
       <h3 className="mt-6 font-semibold">Localities ({c.localities.length})</h3>
@@ -283,7 +297,7 @@ function CityEditor({
                   aria-label="SEO title"
                   className="field text-sm"
                   maxLength={70}
-                  placeholder="SEO title (optional)"
+                  placeholder="Fallback SEO title for both pages (optional)"
                   disabled={!canEdit}
                   value={l.seoTitle ?? ''}
                   onChange={(e) => setLoc(l.slug, { seoTitle: e.target.value })}
@@ -292,10 +306,22 @@ function CityEditor({
                   aria-label="Meta description"
                   className="field text-sm"
                   maxLength={170}
-                  placeholder="Meta description (optional)"
+                  placeholder="Fallback meta description for both pages (optional)"
                   disabled={!canEdit}
                   value={l.seoDescription ?? ''}
                   onChange={(e) => setLoc(l.slug, { seoDescription: e.target.value })}
+                />
+                <DealSeoFields
+                  idPrefix={`l-${c.id}-${l.slug}`}
+                  place={`${l.name}, ${c.name}`}
+                  paths={{
+                    buy: `/buy/${c.slug}/${l.slug}`,
+                    rent: `/rent/${c.slug}/${l.slug}`,
+                  }}
+                  buy={l.buySeo}
+                  rent={l.rentSeo}
+                  disabled={!canEdit}
+                  onChange={(patch) => setLoc(l.slug, patch)}
                 />
                 <label className="mt-2 text-sm font-medium" htmlFor={`lh-${l.slug}`}>
                   Highlights for the locality guide (one per line, up to 10)
@@ -416,5 +442,113 @@ function CityEditor({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Trimmed Buy/Rent copy; undefined when the page never had any. Cleared fields are sent
+ * as empty strings so the database keeps the editor's choice instead of dropping it.
+ */
+function dealSeoBody(s?: DealSeo) {
+  if (!s) return undefined;
+  return {
+    title: s.title?.trim() ?? '',
+    description: s.description?.trim() ?? '',
+    h1: s.h1?.trim() ?? '',
+    intro: s.intro?.trim() ?? '',
+  };
+}
+
+/** Separate search copy for the Buy and the Rent page of a city or locality. */
+function DealSeoFields({
+  idPrefix,
+  place,
+  paths,
+  buy,
+  rent,
+  disabled,
+  onChange,
+}: {
+  idPrefix: string;
+  place: string;
+  paths: { buy: string; rent: string };
+  buy?: DealSeo;
+  rent?: DealSeo;
+  disabled: boolean;
+  onChange: (patch: { buySeo?: DealSeo; rentSeo?: DealSeo }) => void;
+}) {
+  const deals = [
+    {
+      key: 'buySeo',
+      label: 'Buy page',
+      path: paths.buy,
+      value: buy,
+      h1: `Flats & Property for Sale in ${place}`,
+    },
+    {
+      key: 'rentSeo',
+      label: 'Rent page',
+      path: paths.rent,
+      value: rent,
+      h1: `Flats & Houses for Rent in ${place}`,
+    },
+  ] as const;
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {deals.map((d) => {
+        const v = d.value ?? {};
+        const set = (patch: DealSeo) => onChange({ [d.key]: { ...v, ...patch } });
+        return (
+          <fieldset key={d.key} className="grid gap-2 rounded-lg border border-line p-3">
+            <legend className="px-1 text-sm font-medium">
+              {d.label} <span className="font-normal text-ink-muted">{d.path}</span>
+            </legend>
+            <span className="text-xs text-ink-muted">SEO title</span>
+            <input
+              aria-label={`${d.label} SEO title`}
+              className="field text-sm"
+              maxLength={70}
+              placeholder={`SEO title, e.g. ${d.h1}`}
+              disabled={disabled}
+              value={v.title ?? ''}
+              onChange={(e) => set({ title: e.target.value })}
+            />
+            <span className="text-xs text-ink-muted">Meta description</span>
+            <textarea
+              aria-label={`${d.label} meta description`}
+              className="field text-sm"
+              rows={2}
+              maxLength={170}
+              placeholder="Meta description (up to 160 characters)"
+              disabled={disabled}
+              value={v.description ?? ''}
+              onChange={(e) => set({ description: e.target.value })}
+            />
+            <span className="text-xs text-ink-muted">Page heading (H1)</span>
+            <input
+              aria-label={`${d.label} H1`}
+              className="field text-sm"
+              maxLength={90}
+              placeholder={`Page heading (H1), default: ${d.h1}`}
+              disabled={disabled}
+              value={v.h1 ?? ''}
+              onChange={(e) => set({ h1: e.target.value })}
+            />
+            <span className="text-xs text-ink-muted">Introduction for this page</span>
+            <textarea
+              id={`${idPrefix}-${d.key}-intro`}
+              aria-label={`${d.label} introduction`}
+              className="field text-sm"
+              rows={3}
+              maxLength={3000}
+              placeholder="Introduction for this page only (uses the main introduction when empty)"
+              disabled={disabled}
+              value={v.intro ?? ''}
+              onChange={(e) => set({ intro: e.target.value })}
+            />
+          </fieldset>
+        );
+      })}
+    </div>
   );
 }

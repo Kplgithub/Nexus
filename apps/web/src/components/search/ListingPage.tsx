@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { Category, City, ListingType, Locality } from '@nexus/shared';
+import type { Category, City, DealSeo, ListingType, Locality } from '@nexus/shared';
 import { getCity, getLocalityInsights, getLocations, getSettings } from '@/lib/api';
 import { hasUserFilters, parseSearch, type RawSearchParams } from '@/lib/search-params';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
@@ -53,30 +53,50 @@ function words(scope: Scope, place?: string) {
   return `${what} ${deal}${place ? ` in ${place}` : ''}`;
 }
 
-export async function listingMetadata(scope: Scope, raw: RawSearchParams): Promise<Metadata> {
-  const found = await resolve(scope);
-  if (!found) return { title: 'Location not found', robots: { index: false } };
-  const { city, locality } = found;
+/**
+ * Title, description, H1 and intro for a browse page. A city or locality can carry
+ * separate Buy and Rent copy (Admin → Locations); empty fields fall back to the
+ * shared SEO fields and then to keyword-friendly defaults.
+ */
+function pageCopy(scope: Scope, city?: City, locality?: Locality) {
   const place = locality && city ? `${locality.name}, ${city.name}` : city?.name;
-  const title =
-    (locality?.seoTitle && scope.deal ? `${locality.seoTitle}` : '') ||
-    (city && !locality && city.seoTitle && scope.deal ? city.seoTitle : '') ||
-    words(scope, place);
+  const target = locality ?? city;
+  const deal: DealSeo | undefined =
+    scope.deal === 'sale' ? target?.buySeo : scope.deal === 'rent' ? target?.rentSeo : undefined;
+  const residential = scope.category !== 'commercial';
+  const heading =
+    place && residential && scope.deal === 'sale'
+      ? `Flats & Property for Sale in ${place}`
+      : place && residential && scope.deal === 'rent'
+        ? `Flats & Houses for Rent in ${place}`
+        : words(scope, place);
   const fallbackDescription =
     scope.deal === 'sale'
       ? `Flats, houses, villas, plots and commercial spaces for sale${place ? ` in ${place}` : ''}. Verified details, photos and direct enquiries on NEXUS Estate.`
       : scope.deal === 'rent'
         ? `Flats, houses, offices and shops for rent${place ? ` in ${place}` : ''}. Compare rent, deposit and furnishing, then contact owners and agents on NEXUS Estate.`
         : `Offices, shops and showrooms for sale and rent${place ? ` in ${place}` : ''} on NEXUS Estate.`;
-  const description =
-    (locality?.seoDescription || (!locality ? city?.seoDescription : undefined)) ??
-    fallbackDescription;
+  const shared = scope.deal ? target : undefined;
+  return {
+    place,
+    title: deal?.title || shared?.seoTitle || heading,
+    description: deal?.description || shared?.seoDescription || fallbackDescription,
+    h1: deal?.h1 || heading,
+    intro: deal?.intro || target?.intro || '',
+  };
+}
+
+export async function listingMetadata(scope: Scope, raw: RawSearchParams): Promise<Metadata> {
+  const found = await resolve(scope);
+  if (!found) return { title: 'Location not found', robots: { index: false } };
+  const { city, locality } = found;
+  const copy = pageCopy(scope, city, locality);
   // Thin location pages (no listings and no written copy) stay out of the index.
   const target = locality ?? city;
-  const hasContent = !target || (target.publishedCount ?? 0) > 0 || target.intro.length > 0;
+  const hasContent = !target || (target.publishedCount ?? 0) > 0 || copy.intro.length > 0;
   return pageMetadata({
-    title,
-    description: description || fallbackDescription,
+    title: copy.title,
+    description: copy.description,
     path: basePathFor(scope),
     index: hasContent && !hasUserFilters(raw),
   });
@@ -129,8 +149,8 @@ export async function ListingPage({
       href: `${DEAL_PATH[scope.deal]}/${city.slug}/${locality.slug}`,
     });
 
-  const place = locality && city ? `${locality.name}, ${city.name}` : city?.name;
-  const lead = locality?.intro || (!locality ? city?.intro : '') || intro;
+  const copy = pageCopy(scope, city, locality);
+  const lead = copy.intro || intro;
 
   // Locality chips: within a city page, its localities; on a deal root with one city, that city's.
   const chipCity = city ?? (scope.deal && cities.length === 1 ? cities[0] : undefined);
@@ -158,7 +178,7 @@ export async function ListingPage({
             className="nx-rise mt-3 text-[1.9rem] leading-tight text-white sm:text-[2.4rem]"
             style={{ '--i': 1 } as React.CSSProperties}
           >
-            {words(scope, place)}
+            {copy.h1}
           </h1>
           {lead && (
             <p
