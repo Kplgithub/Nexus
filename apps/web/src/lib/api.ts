@@ -2,6 +2,7 @@ import 'server-only';
 import type {
   ApiResponse,
   AuthConfig,
+  BlogPostCard,
   City,
   Faq,
   LocalityInsights,
@@ -11,6 +12,7 @@ import type {
   PropertyCard,
   PublicProfile,
   PublicProject,
+  PublicBlogPost,
   PublicProperty,
   SiteSettings,
 } from '@nexus/shared';
@@ -227,6 +229,34 @@ export async function getSitemapProfiles(): Promise<{ path: string; updatedAt: s
     return (
       await get<{ path: string; updatedAt: string }[]>('/sitemap/profiles', { revalidate: 300 })
     ).data;
+  } catch {
+    return [];
+  }
+}
+
+/* ---------------- Blog ---------------- */
+
+export async function getBlogPosts(qs: string) {
+  const { data, meta } = await get<BlogPostCard[]>(`/blog${qs ? `?${qs}` : ''}`, {
+    tags: ['blog'],
+  });
+  return { items: data, meta: meta! };
+}
+
+export type BlogDetailResponse =
+  | { post: PublicBlogPost; related: BlogPostCard[]; redirectTo?: undefined }
+  | { redirectTo: string; post?: undefined; related?: undefined };
+
+export function getBlogPost(slug: string) {
+  return getOrNull<BlogDetailResponse>(`/blog/${encodeURIComponent(slug)}`, {
+    tags: ['blog', `blog:${slug}`],
+  });
+}
+
+export async function getSitemapBlog(): Promise<{ slug: string; updatedAt: string }[]> {
+  try {
+    return (await get<{ slug: string; updatedAt: string }[]>('/sitemap/blog', { revalidate: 300 }))
+      .data;
   } catch {
     return [];
   }

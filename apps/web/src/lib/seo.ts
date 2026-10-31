@@ -4,6 +4,7 @@ import {
   formatINR,
   formatINRShort,
   type PropertyCard,
+  type PublicBlogPost,
   type PublicProperty,
   type SiteSettings,
 } from '@nexus/shared';
@@ -157,5 +158,30 @@ export function listingJsonLd(p: PublicProperty) {
         addressCountry: 'IN',
       },
     },
+  };
+}
+
+const abs = (u: string) => (u.startsWith('http') ? u : absoluteUrl(u));
+
+/** schema.org BlogPosting for an article page. */
+export function blogPostingJsonLd(p: PublicBlogPost) {
+  const url = absoluteUrl(`/blog/${p.slug}`);
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    '@id': `${url}#article`,
+    mainEntityOfPage: url,
+    headline: p.title.slice(0, 110),
+    description: p.seoDescription || p.excerpt || undefined,
+    ...(p.coverImage ? { image: [abs(p.coverImage.url)] } : {}),
+    ...(p.publishedAt ? { datePublished: p.publishedAt } : {}),
+    dateModified: p.updatedAt,
+    author: p.authorName
+      ? { '@type': 'Person', name: p.authorName }
+      : { '@id': `${SITE_URL}/#organization` },
+    publisher: { '@id': `${SITE_URL}/#organization` },
+    articleSection: p.category,
+    ...(p.tags.length ? { keywords: p.tags.join(', ') } : {}),
+    inLanguage: 'en-IN',
   };
 }

@@ -51,6 +51,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
   const company = [
     ['/about', 'About NEXUS'],
     ['/contact', 'Contact'],
+    ['/blog', 'Blog'],
     ['/faq', 'FAQs'],
     ['/privacy-policy', 'Privacy policy'],
     ['/terms-and-conditions', 'Terms & conditions'],
