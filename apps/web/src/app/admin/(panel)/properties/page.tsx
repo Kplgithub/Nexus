@@ -84,6 +84,9 @@ function PropertiesList() {
   return (
     <>
       <PageTitle title="Properties">
+        <Link href="/admin/properties/import" className="btn btn-outline">
+          Import from sheet
+        </Link>
         <Link href="/admin/properties/new" className="btn btn-primary">
           Add property
         </Link>

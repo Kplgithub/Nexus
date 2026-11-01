@@ -80,6 +80,7 @@ export function Gallery({ images, title }: { images: PropertyImage[]; title: str
             className={zoom}
           />
           <span className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/45 to-transparent" />
+          {main.isDemo && <RepresentativeTag />}
         </button>
         {thumbs.map((img, i) => (
           <button
@@ -151,6 +152,7 @@ export function Gallery({ images, title }: { images: PropertyImage[]; title: str
               sizes="100vw"
               className="object-contain"
             />
+            {images[index]!.isDemo && <RepresentativeTag />}
             {count > 1 && (
               <>
                 <button
@@ -178,5 +180,14 @@ export function Gallery({ images, title }: { images: PropertyImage[]; title: str
         </div>
       </dialog>
     </>
+  );
+}
+
+/** Stock photos (demo data) are labelled so nobody mistakes them for the actual property. */
+function RepresentativeTag() {
+  return (
+    <span className="pointer-events-none absolute left-3 top-3 z-10 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white ring-1 ring-white/20 backdrop-blur">
+      Representative image
+    </span>
   );
 }
