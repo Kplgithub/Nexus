@@ -51,7 +51,7 @@ export function Carousel({
     <div className="relative" role="region" aria-roledescription="carousel" aria-label={label}>
       <ul
         ref={track}
-        className="nx-scroll-x -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-4 pb-3 sm:mx-0 sm:px-0"
+        className="nx-scroll-x -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth scroll-px-4 px-4 pb-3 sm:mx-0 sm:scroll-px-0 sm:px-0"
       >
         {children.map((child, i) => (
           <li key={i} className={`shrink-0 snap-start ${slideClass}`}>
