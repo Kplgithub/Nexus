@@ -11,6 +11,7 @@ import {
 } from '@nexus/shared';
 import { PageTitle, StatusPill, useAdmin } from '@/components/admin/AdminShell';
 import { errMsg, useApi } from '@/components/admin/useApi';
+import { formatDuration, formatNumber } from '@/components/admin/BlogAnalytics';
 import { canOptimise } from '@/components/blog/BlogCard';
 import { apiFetch } from '@/lib/client-api';
 
@@ -57,6 +58,9 @@ export default function AdminBlogPage() {
   return (
     <>
       <PageTitle title="Blog">
+        <Link href="/admin/blog/analytics" className="btn btn-outline">
+          Reader analytics
+        </Link>
         <Link href="/blog" target="_blank" className="btn btn-outline">
           View blog
         </Link>
@@ -179,11 +183,36 @@ export default function AdminBlogPage() {
                 {fmt(p.updatedAt)} · {p.readingMinutes} min read
                 {p.authorName ? ` · ${p.authorName}` : ''}
               </p>
+              {p.status === 'published' && p.stats && (
+                <Link
+                  href={`/admin/blog/${p.id}/analytics`}
+                  className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-soft hover:text-brand"
+                  title="Open reader analytics"
+                >
+                  <span>
+                    <b className="text-ink">{formatNumber(p.stats.views)}</b> views
+                  </span>
+                  <span>
+                    <b className="text-ink">{formatNumber(p.stats.readers)}</b> readers
+                  </span>
+                  <span>
+                    avg <b className="text-ink">{formatDuration(p.stats.avgSeconds)}</b> read
+                  </span>
+                  <span>
+                    <b className="text-ink">{p.stats.completionRate}%</b> read to end
+                  </span>
+                </Link>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {p.status === 'published' && (
                 <Link href={`/blog/${p.slug}`} target="_blank" className="btn btn-ghost btn-sm">
                   View
+                </Link>
+              )}
+              {p.status === 'published' && (
+                <Link href={`/admin/blog/${p.id}/analytics`} className="btn btn-ghost btn-sm">
+                  Stats
                 </Link>
               )}
               <Link href={`/admin/blog/${p.id}`} className="btn btn-outline btn-sm">
