@@ -291,6 +291,11 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
             View live
           </Link>
         )}
+        {current?.publishedAt && (
+          <Link href={`/admin/blog/${current.id}/analytics`} className="btn btn-outline">
+            Reader analytics
+          </Link>
+        )}
         <Link href="/admin/blog" className="btn btn-ghost">
           All articles
         </Link>

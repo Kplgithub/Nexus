@@ -8,6 +8,7 @@ import { absoluteUrl } from '@/lib/site';
 import { blogPostingJsonLd, breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { BlogCard, BlogMeta, canOptimise } from '@/components/blog/BlogCard';
 import { Markdown } from '@/components/blog/Markdown';
+import { ReadTracker } from '@/components/blog/ReadTracker';
 import { Breadcrumbs, JsonLd } from '@/components/ui';
 import {
   FacebookIcon,
@@ -137,7 +138,10 @@ export default async function BlogPostPage({ params }: Props) {
 
       <div className="container-page mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-14 xl:max-w-6xl">
         <div className="min-w-0">
-          <Markdown source={p.content} className="mx-auto max-w-[70ch] text-[1.0625rem]" />
+          <div id="article-body">
+            <Markdown source={p.content} className="mx-auto max-w-[70ch] text-[1.0625rem]" />
+          </div>
+          <ReadTracker postId={p.id} bodyId="article-body" />
 
           <footer className="mx-auto mt-10 max-w-[70ch] border-t border-line pt-6">
             {p.tags.length > 0 && (
