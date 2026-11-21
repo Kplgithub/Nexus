@@ -13,6 +13,7 @@ import {
   HeartIcon,
   HomeIcon,
   InboxIcon,
+  LayersIcon,
   PlusIcon,
   SendIcon,
   SettingsIcon,
@@ -25,6 +26,7 @@ const NAV = [
   { href: '/dashboard/leads', label: 'Leads', Icon: InboxIcon },
   { href: '/dashboard/saved', label: 'Saved', Icon: HeartIcon },
   { href: '/dashboard/enquiries', label: 'My enquiries', Icon: SendIcon },
+  { href: '/dashboard/plans', label: 'My plan', Icon: LayersIcon },
   { href: '/dashboard/profile', label: 'Profile & security', Icon: SettingsIcon },
 ];
 

@@ -254,6 +254,106 @@
   .chip-active:hover {
     color: #fff;
   }
+  /* ---------- Admin panel (navy sidebar) ---------- */
+  .adm-side {
+    background:
+      radial-gradient(circle at 0 0, rgb(249 115 22 / 0.16), transparent 40%),
+      radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px) 0 0 / 14px 14px,
+      linear-gradient(180deg, var(--color-brand-900), var(--color-brand-800));
+  }
+  .adm-mtop {
+    background: linear-gradient(90deg, var(--color-brand-900), var(--color-brand-800));
+  }
+  .adm-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    border-radius: 0.6rem;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.845rem;
+    font-weight: 600;
+    transition: background-color 0.15s;
+  }
+  .adm-link:hover {
+    background: rgb(255 255 255 / 0.07);
+    color: #fff;
+  }
+  .adm-link-on,
+  .adm-link-on:hover {
+    background: #fff;
+    color: var(--color-brand-800);
+  }
+  .adm-link-on::before {
+    content: '';
+    position: absolute;
+    left: -0.75rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--color-accent);
+  }
+  .adm-count {
+    margin-left: auto;
+    border-radius: 0.375rem;
+    background: var(--color-accent);
+    padding: 0 0.4rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.25rem;
+    color: #000;
+  }
+  .adm-link-on .adm-count {
+    background: var(--color-accent-50);
+    color: var(--color-accent-700);
+  }
+  .adm-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+  }
+  .adm-table th {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-line);
+    padding: 0.6rem 0.9rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-ink-muted);
+    white-space: nowrap;
+  }
+  .adm-table td {
+    border-bottom: 1px solid var(--color-line);
+    padding: 0.7rem 0.9rem;
+    vertical-align: middle;
+  }
+  .adm-table tr:last-child td {
+    border-bottom: 0;
+  }
+  .adm-seg {
+    display: inline-flex;
+    gap: 2px;
+    border: 1px solid var(--color-line);
+    border-radius: 0.65rem;
+    background: #fff;
+    padding: 3px;
+  }
+  .adm-seg > button,
+  .adm-seg > a {
+    border-radius: 0.45rem;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-ink-muted);
+    white-space: nowrap;
+  }
+  .adm-seg > [aria-selected='true'],
+  .adm-seg > [aria-current='page'] {
+    background: var(--color-brand-50);
+    color: var(--color-brand);
+  }
+
   .eyebrow {
     font-size: 0.875rem;
     font-weight: 600;
