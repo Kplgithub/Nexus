@@ -20,15 +20,18 @@ type UploadResult =
     }
   | { ok: false; name: string; error: string };
 
+/**
+ * The first photo is always the cover: cards, the property page and share
+ * previews all use it. "Set as cover" moves a photo to the front. The `cover`
+ * index passed to onChange is therefore always 0.
+ */
 export function ImageManager({
   images,
-  cover,
   onChange,
   title,
   uploadPath = '/admin/uploads',
 }: {
   images: PropertyImage[];
-  cover: number;
   onChange: (images: PropertyImage[], cover: number) => void;
   title: string;
   /** Staff upload to /admin/uploads; signed-in users to /me/uploads. */
@@ -92,7 +95,7 @@ export function ImageManager({
         batch.forEach((p) => failed.push({ ...p, error: errMsg(err) }));
       }
     }
-    onChange([...images, ...added], images.length === 0 && added.length ? 0 : cover);
+    onChange([...images, ...added], 0);
     setPending([...pending.filter((p) => p.error && !failed.includes(p)), ...failed]);
     setBusy(false);
     setMessage(
@@ -107,20 +110,24 @@ export function ImageManager({
     if (j < 0 || j >= images.length) return;
     const next = [...images];
     [next[i], next[j]] = [next[j]!, next[i]!];
-    const newCover = cover === i ? j : cover === j ? i : cover;
-    onChange(next, newCover);
+    onChange(next, 0);
   }
 
   function remove(i: number) {
-    const next = images.filter((_, k) => k !== i);
-    const newCover = cover === i ? 0 : cover > i ? cover - 1 : cover;
-    onChange(next, Math.min(newCover, Math.max(0, next.length - 1)));
+    onChange(
+      images.filter((_, k) => k !== i),
+      0,
+    );
+  }
+
+  function makeCover(i: number) {
+    onChange([images[i]!, ...images.filter((_, k) => k !== i)], 0);
   }
 
   function setAlt(i: number, alt: string) {
     onChange(
       images.map((img, k) => (k === i ? { ...img, alt } : img)),
-      cover,
+      0,
     );
   }
 
@@ -131,7 +138,7 @@ export function ImageManager({
           {images.map((img, i) => (
             <li
               key={img.url + i}
-              className={`rounded-lg border p-2 ${i === cover ? 'border-brand ring-2 ring-brand/30' : 'border-line'}`}
+              className={`rounded-lg border p-2 ${i === 0 ? 'border-brand ring-2 ring-brand/30' : 'border-line'}`}
             >
               <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-surface">
                 <Image
@@ -141,7 +148,7 @@ export function ImageManager({
                   sizes="300px"
                   className="object-cover"
                 />
-                {i === cover && (
+                {i === 0 && (
                   <span className="absolute left-2 top-2 rounded bg-brand px-2 py-0.5 text-xs font-semibold text-white">
                     Cover
                   </span>
@@ -177,11 +184,11 @@ export function ImageManager({
                 >
                   ↓
                 </button>
-                {i !== cover && (
+                {i !== 0 && (
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm"
-                    onClick={() => onChange(images, i)}
+                    onClick={() => makeCover(i)}
                   >
                     Set as cover
                   </button>
@@ -217,7 +224,8 @@ export function ImageManager({
           className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:font-semibold file:text-white"
         />
         <p className="field-hint">
-          JPEG, PNG, WebP or AVIF, up to 8 MB each. Location data (EXIF) is removed on upload.
+          JPEG, PNG, WebP or AVIF, up to 8 MB each. Location data (EXIF) is removed on upload. The
+          first photo is the cover shown on cards.
         </p>
 
         {pending.length > 0 && (
