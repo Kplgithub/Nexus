@@ -17,7 +17,7 @@ export function Header({ settings, cities }: { settings: SiteSettings; cities: C
       <div className="container-page flex h-[72px] items-center gap-3">
         <Logo height={54} priority />
         {cities.length > 0 && (
-          <div className="hidden md:block">
+          <div>
             <CityMenu
               cities={cities.map((c) => ({ name: c.name, slug: c.slug, state: c.state }))}
             />

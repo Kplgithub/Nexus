@@ -36,7 +36,10 @@ export default async function PrivacyPage() {
         </li>
         <li>
           <strong>Technical information:</strong> a one-way, non-reversible hash of your IP address
-          and your browser type, used only to prevent spam and abuse.
+          and your browser type, used only to prevent spam and abuse. When you open the home page,
+          your IP address is also used on our own server, without being stored, to guess your city
+          so we can show local properties (see the <Link href="/cookie-policy">cookie policy</Link>
+          ).
         </li>
       </ul>
       <p>

@@ -673,7 +673,7 @@ export function PropertyTypes({ city, cityName }: { city: string; cityName: stri
 
 /* ---------------- Post property strip ---------------- */
 
-export function PostStrip() {
+export function PostStrip({ cityName }: { cityName: string }) {
   return (
     <section className="container-page py-8 sm:py-10" aria-labelledby="post-strip-heading">
       <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 via-brand-900 to-[#0B1A3F] p-6 text-white sm:p-10">
@@ -691,7 +691,7 @@ export function PostStrip() {
               id="post-strip-heading"
               className="mt-2 text-[1.75rem] leading-tight sm:text-[2.25rem]"
             >
-              Have a property in Jaipur? Put it in front of serious buyers.
+              Have a property in {cityName}? Put it in front of serious buyers.
             </h2>
             <p className="mt-2 text-white/75">
               Post from your dashboard. Our team reviews it, and enquiries come straight to you.
