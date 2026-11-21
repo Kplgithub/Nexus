@@ -33,7 +33,13 @@ type Res = {
 };
 
 const period = (days: number) =>
-  days === 30 ? 'month' : days % 30 === 0 ? `${days / 30} months` : `${days} days`;
+  days === 30
+    ? 'month'
+    : days === 365 || days === 366
+      ? 'year'
+      : days % 30 === 0
+        ? `${days / 30} months`
+        : `${days} days`;
 
 function Tick({ on = true }: { on?: boolean }) {
   return (
@@ -111,8 +117,9 @@ function MyPlan() {
   const role = user?.role ?? 'individual';
   const freeListings = LISTING_LIMITS[role];
   const freeLeads = FREE_LEADS_PER_MONTH[role];
-  const premium = data?.plans[0];
-  const others = data?.plans.slice(1) ?? [];
+  const plans = data?.plans ?? [];
+  // The first plan (admin sort order, then price) is the one we recommend.
+  const recommendedId = plans[0]?.id;
   const savedListing = savedId ? usage && usage.awaitingPlan > 0 : false;
 
   return (
@@ -143,7 +150,7 @@ function MyPlan() {
       {error && <p className="rounded-lg bg-danger-50 p-3 text-danger">{error}</p>}
 
       <section>
-        {!data && !error && <div className="skeleton h-96 max-w-3xl rounded-2xl" />}
+        {!data && !error && <div className="skeleton h-96 rounded-2xl" />}
 
         {data && !data.onlineEnabled && (
           <p className="mb-5 max-w-3xl rounded-lg bg-warn-50 p-3 text-sm text-warn">
@@ -153,16 +160,82 @@ function MyPlan() {
         )}
 
         {data && (
-          <div className="grid max-w-3xl items-stretch gap-5 sm:grid-cols-2">
+          <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 pt-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-3">
+            {plans.map((p) => {
+              const isActive = sub?.plan.id === p.id;
+              const highlight = isActive || (!sub && p.id === recommendedId);
+              return (
+                <article
+                  key={p.id}
+                  className={`relative flex w-[82%] shrink-0 snap-center flex-col rounded-3xl p-6 sm:w-auto ${highlight ? 'border-2 border-brand bg-gradient-to-b from-brand-50 to-white to-40%' : 'border border-line bg-white'}`}
+                >
+                  {highlight && (
+                    <span className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-accent to-orange-400 px-3 py-1 text-xs font-bold text-white">
+                      ★ {isActive ? 'Active' : 'Recommended'}
+                    </span>
+                  )}
+                  <p className="pr-28 text-xs font-bold tracking-[0.08em] text-brand">
+                    {p.name.toUpperCase()}
+                  </p>
+                  <p className="mt-2 flex flex-wrap items-end gap-x-1.5">
+                    <span className="font-display text-5xl leading-none text-brand-900">
+                      {rupees(p.price)}
+                    </span>
+                    <span className="pb-1 font-semibold text-ink-muted">
+                      / {period(p.durationDays)}
+                    </span>
+                  </p>
+                  <p className="mt-1 min-h-[2.5rem] text-sm text-ink-muted">
+                    {p.description || 'Owners, agents and builders'}
+                  </p>
+                  <ul className="mb-6 mt-4 space-y-3 text-[0.95rem]">
+                    <Feature>
+                      <b>{p.listingLimit}</b> properties live at a time
+                    </Feature>
+                    <Feature>
+                      <b>{p.leadLimit > 0 ? p.leadLimit : 'Unlimited'}</b> leads with number
+                    </Feature>
+                    {p.featuredListings > 0 && (
+                      <Feature>
+                        <b>{p.featuredListings}</b> featured listings for {p.featuredDays} days
+                      </Feature>
+                    )}
+                    <Feature>Premium badge</Feature>
+                    <Feature>Email and WhatsApp lead alert</Feature>
+                    <Feature>Views and leads per listing</Feature>
+                  </ul>
+                  <button
+                    type="button"
+                    className={`btn mt-auto w-full py-3.5 ${highlight ? 'btn-accent' : 'btn-outline'}`}
+                    disabled={!data.onlineEnabled || busy !== null}
+                    onClick={() =>
+                      void pay(
+                        p.id,
+                        `/me/plans/${p.id}/checkout`,
+                        undefined,
+                        `Payment received. ${p.name} is now active.`,
+                      )
+                    }
+                  >
+                    {busy === p.id
+                      ? 'Opening…'
+                      : isActive
+                        ? `Renew for ${rupees(p.price)}`
+                        : `${sub ? 'Switch' : 'Upgrade'} for ${rupees(p.price)}`}
+                  </button>
+                </article>
+              );
+            })}
+
             <article
-              className={`order-2 flex flex-col rounded-3xl border border-line bg-white p-6 sm:order-1 ${sub ? 'opacity-70' : ''}`}
+              className={`flex w-[82%] shrink-0 snap-center flex-col rounded-3xl border border-line bg-white p-6 sm:w-auto ${sub ? 'opacity-70' : ''}`}
             >
               <p className="text-xs font-bold tracking-[0.08em] text-ink-muted">FREE</p>
               <p className="mt-2 font-display text-5xl leading-none text-brand-900">₹0</p>
-              <p className="mt-1 text-sm text-ink-muted">
+              <p className="mt-1 min-h-[2.5rem] text-sm text-ink-muted">
                 {freeListings > 0 ? 'Agents and builders' : 'Not for owners'}
               </p>
-              <ul className="mt-5 space-y-3 text-[0.95rem]">
+              <ul className="mb-6 mt-4 space-y-3 text-[0.95rem]">
                 <Feature on={freeListings > 0}>{freeListings} properties</Feature>
                 <Feature on={freeLeads > 0}>{freeLeads} leads a month with number</Feature>
                 <Feature on={false}>Premium badge</Feature>
@@ -174,105 +247,19 @@ function MyPlan() {
               </span>
             </article>
 
-            {premium ? (
-              <article className="relative order-1 flex flex-col rounded-3xl border-2 border-brand bg-gradient-to-b from-brand-50 to-white to-40% p-6 sm:order-2">
-                <span className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-accent to-orange-400 px-3 py-1 text-xs font-bold text-white">
-                  ★ {sub ? 'Active' : 'Recommended'}
-                </span>
-                <p className="text-xs font-bold tracking-[0.08em] text-brand">
-                  {premium.name.toUpperCase()}
-                </p>
-                <p className="mt-2 flex items-end gap-1.5">
-                  <span className="font-display text-5xl leading-none text-brand-900">
-                    {rupees(premium.price)}
-                  </span>
-                  <span className="pb-1 font-semibold text-ink-muted">
-                    / {period(premium.durationDays)}
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-ink-muted">
-                  {premium.description || 'Owners, agents and builders'}
-                </p>
-                <ul className="mt-5 space-y-3 text-[0.95rem]">
-                  <Feature>
-                    <b>{premium.listingLimit}</b> properties live at a time
-                  </Feature>
-                  <Feature>
-                    <b>{premium.leadLimit > 0 ? premium.leadLimit : 'Unlimited'}</b> leads with
-                    number
-                  </Feature>
-                  {premium.featuredListings > 0 && (
-                    <Feature>
-                      <b>{premium.featuredListings}</b> featured listings for {premium.featuredDays}{' '}
-                      days
-                    </Feature>
-                  )}
-                  <Feature>Premium badge</Feature>
-                  <Feature>Email and WhatsApp lead alert</Feature>
-                  <Feature>Views and leads per listing</Feature>
-                </ul>
-                <button
-                  type="button"
-                  className="btn btn-accent mt-6 w-full py-3.5"
-                  disabled={!data.onlineEnabled || busy !== null}
-                  onClick={() =>
-                    void pay(
-                      premium.id,
-                      `/me/plans/${premium.id}/checkout`,
-                      undefined,
-                      `Payment received. ${premium.name} is now active.`,
-                    )
-                  }
-                >
-                  {busy === premium.id
-                    ? 'Opening…'
-                    : sub
-                      ? `Renew for ${rupees(premium.price)}`
-                      : `Upgrade for ${rupees(premium.price)}`}
-                </button>
-              </article>
-            ) : (
-              <p className="order-1 rounded-3xl border border-dashed border-line-strong p-6 text-sm text-ink-muted">
+            {plans.length === 0 && (
+              <p className="rounded-3xl border border-dashed border-line-strong p-6 text-sm text-ink-muted">
                 Plans will show here soon.
               </p>
             )}
           </div>
         )}
-
-        {others.length > 0 && (
-          <div className="mt-5 grid max-w-3xl gap-3 sm:grid-cols-2">
-            {others.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-line p-4"
-              >
-                <div>
-                  <b>{p.name}</b>
-                  <p className="text-sm text-ink-muted">
-                    {p.listingLimit} live at a time ·{' '}
-                    {p.leadLimit > 0 ? `${p.leadLimit} leads` : 'unlimited leads'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-outline btn-sm"
-                  disabled={!data?.onlineEnabled || busy !== null}
-                  onClick={() =>
-                    void pay(
-                      p.id,
-                      `/me/plans/${p.id}/checkout`,
-                      undefined,
-                      `Payment received. ${p.name} is now active.`,
-                    )
-                  }
-                >
-                  {busy === p.id ? 'Opening…' : `${rupees(p.price)} / ${period(p.durationDays)}`}
-                </button>
-              </div>
-            ))}
-          </div>
+        {data && plans.length > 1 && (
+          <p className="mt-1 text-center text-xs text-ink-muted sm:hidden">
+            Swipe to see all {plans.length + 1} plans
+          </p>
         )}
-        <p className="mt-4 max-w-3xl text-center text-sm text-ink-muted">
+        <p className="mt-4 text-center text-sm text-ink-muted">
           Prices include GST. Secure payment by Razorpay.
         </p>
       </section>
