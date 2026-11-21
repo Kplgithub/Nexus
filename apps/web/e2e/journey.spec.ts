@@ -25,10 +25,12 @@ async function uploadPhoto(page: Page) {
 }
 
 async function typeOtp(page: Page) {
-  const code = (await page
-    .locator('p:has-text("Development mode") strong')
-    .first()
-    .textContent())!.trim();
+  // The API shows the code in development, except while its launch-test OTP
+  // (a fixed 123456 for every number) is on: then nothing is shown.
+  const dev = page.locator('p:has-text("Development mode") strong').first();
+  const code = (await dev.isVisible().catch(() => false))
+    ? (await dev.textContent())!.trim()
+    : '123456';
   await page.getByLabel('Digit 1').click();
   await page.keyboard.type(code);
 }

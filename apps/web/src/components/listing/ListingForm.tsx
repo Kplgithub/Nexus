@@ -41,6 +41,7 @@ import {
   type PgSharing,
   type PlotApproval,
   type PropertyType,
+  coverFirst,
 } from '@nexus/shared';
 import { apiFetch } from '@/lib/client-api';
 import { PinPicker } from '../map/Map';
@@ -166,8 +167,9 @@ export function formFromListing(p?: OwnListing | AdminProperty): ListingFormStat
     amenities: p?.amenities ?? [],
     parking: p?.parking ?? 'none',
     suitableFor: p?.suitableFor.join(', ') ?? '',
-    images: p?.images ?? [],
-    coverImageIndex: p?.coverImageIndex ?? 0,
+    // The first photo is the cover; older records may point at another one.
+    images: coverFirst(p?.images ?? [], p?.coverImageIndex),
+    coverImageIndex: 0,
     location: p?.location ?? null,
     videoUrl: p?.videoUrl ?? '',
     projectId: p?.projectId ?? '',
@@ -1072,7 +1074,6 @@ export function ListingFields({
         <Group title="Photos and description" bare={!!step}>
           <ImageManager
             images={f.images}
-            cover={f.coverImageIndex}
             title={f.title}
             uploadPath={uploadPath}
             onChange={(images, cover) => setF((s) => ({ ...s, images, coverImageIndex: cover }))}
@@ -1181,7 +1182,7 @@ export function ListingPreview({
       bathrooms: num(f.bathrooms),
       furnishingStatus: f.furnishingStatus,
       possessionStatus: (f.possessionStatus || null) as never,
-      coverImage: f.images[f.coverImageIndex] ?? f.images[0] ?? null,
+      coverImage: f.images[0] ?? null,
       featured: f.featured,
       verified: f.verified,
       isDemo: isDemo ?? false,

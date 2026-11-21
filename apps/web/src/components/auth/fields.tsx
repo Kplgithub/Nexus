@@ -50,14 +50,19 @@ export function PasswordField({
   error,
   hint,
   autoComplete = 'current-password',
+  meter = false,
 }: {
   id: string;
   label: string;
   error?: string;
   hint?: string;
   autoComplete?: string;
+  /** Show a simple strength bar under the field (for new passwords). */
+  meter?: boolean;
 }) {
   const [show, setShow] = useState(false);
+  const [value, setValue] = useState('');
+  const strength = passwordStrength(value);
   return (
     <div>
       <label htmlFor={id} className="field-label">
@@ -71,6 +76,7 @@ export function PasswordField({
           autoComplete={autoComplete}
           required
           className="field pr-12"
+          onChange={meter ? (e) => setValue(e.target.value) : undefined}
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined}
         />
@@ -84,6 +90,20 @@ export function PasswordField({
           <EyeIcon size={18} />
         </button>
       </div>
+      {meter && value && (
+        <div className="mt-2.5 flex items-center gap-1.5" aria-live="polite">
+          {[1, 2, 3, 4].map((n) => (
+            <span
+              key={n}
+              className="h-1 flex-1 rounded-full"
+              style={{ background: n <= strength.score ? strength.color : 'var(--color-line)' }}
+            />
+          ))}
+          <span className="ml-1.5 text-xs font-bold" style={{ color: strength.color }}>
+            {strength.label}
+          </span>
+        </div>
+      )}
       {error ? (
         <p id={`${id}-err`} className="field-error">
           {error}
@@ -95,6 +115,24 @@ export function PasswordField({
       ) : null}
     </div>
   );
+}
+
+/** Rough strength guide shown while typing a new password (the server does the real check). */
+export function passwordStrength(pw: string) {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[a-z]/i.test(pw) && /\d/.test(pw)) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (pw.length >= 12 || /[^a-z0-9]/i.test(pw)) score++;
+  if (pw.length > 0 && score === 0) score = 1;
+  const steps = [
+    { label: '', color: 'var(--color-line)' },
+    { label: 'Weak', color: '#dc2626' },
+    { label: 'Okay', color: '#d97706' },
+    { label: 'Good', color: '#16a34a' },
+    { label: 'Strong', color: '#15803d' },
+  ] as const;
+  return { score, ...steps[score]! };
 }
 
 /** Six-box one-time code input. Pastes a full code into all boxes. */
@@ -155,7 +193,8 @@ export function OtpInput({
                 refs.current[Math.min(text.length, length - 1)]?.focus();
               }
             }}
-            className="field tabular h-14 w-12 text-center text-xl font-bold"
+            placeholder=" "
+            className="field otp-box tabular h-14 w-12 text-center text-xl font-bold"
           />
         ))}
       </div>
