@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { SHOW_LOCALITY_LINKS } from '@/lib/site';
-import Image from 'next/image';
 import { formatIndianPhone, whatsappLink, type City, type SiteSettings } from '@nexus/shared';
 import {
   FacebookIcon,
@@ -9,7 +8,6 @@ import {
   MailIcon,
   MapPinIcon,
   PhoneIcon,
-  PlusIcon,
   WhatsAppIcon,
   XIcon,
   YoutubeIcon,
@@ -25,6 +23,9 @@ const SOCIAL = [
 
 export function Footer({ settings, cities }: { settings: SiteSettings; cities: City[] }) {
   const year = new Date().getFullYear();
+  const city = cities[0];
+  const cityName = city?.name ?? 'Jaipur';
+  const citySlug = city?.slug ?? 'jaipur';
   const localities = cities.flatMap((c) =>
     (SHOW_LOCALITY_LINKS ? c.localities : [])
       .filter((l) => (l.publishedCount ?? 0) > 0 || l.intro)
@@ -33,119 +34,92 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
   );
   const socials = SOCIAL.filter((s) => settings.social[s.key]);
 
-  const explore = [
-    ['/buy', 'Property for sale'],
-    ['/rent', 'Property for rent'],
-    ['/projects', 'New projects'],
-    ['/commercial', 'Commercial property'],
-    ['/rent?propertyType=pg', 'PG and hostels'],
-    ['/buy?propertyType=plot', 'Plots'],
-    ['/buy?view=map', 'Map search'],
-    ['/locations', 'Browse by location'],
+  const property: [string, string][] = [
+    [`/buy?city=${citySlug}`, `Property for sale in ${cityName}`],
+    [`/rent?city=${citySlug}`, `Property for rent in ${cityName}`],
+    [`/buy?city=${citySlug}&propertyType=apartment`, `Flats in ${cityName}`],
+    [`/buy?city=${citySlug}&propertyType=plot`, `Plots in ${cityName}`],
+    [`/rent?city=${citySlug}&propertyType=pg`, `PG in ${cityName}`],
+    ['/commercial', `Commercial property in ${cityName}`],
+    ...localities.map((l): [string, string] => [
+      `/buy/${l.city.slug}/${l.slug}`,
+      `Property in ${l.name}`,
+    ]),
   ];
-  const partners = [
+  const projects: [string, string][] = [
+    ['/projects', `New projects in ${cityName}`],
+    ['/builders', `Builders in ${cityName}`],
+    [`/buy?city=${citySlug}&possession=under-construction`, 'Under construction homes'],
+    [`/buy?city=${citySlug}&possession=ready`, 'Ready to move homes'],
+  ];
+  const services: [string, string][] = [
     ['/post-property', 'Post property'],
     ['/agents', 'Find an agent'],
-    ['/builders', 'Builders'],
-    ['/dashboard', 'My dashboard'],
+    ['/search', 'AI search'],
+    ['/buy?view=map', 'Map search'],
   ];
-  const company = [
-    ['/about', 'About NEXUS'],
-    ['/contact', 'Contact'],
+  const bottom: [string, string][] = [
+    ['/sitemap.xml', 'Sitemap'],
+    ['/terms-and-conditions', 'Terms & Conditions'],
+    ['/privacy-policy', 'Privacy Policy'],
+    ['/cookie-policy', 'Cookie Policy'],
     ['/blog', 'Blog'],
+    ['/about', 'About Us'],
+    ['/contact', 'Contact Us'],
     ['/faq', 'FAQs'],
-    ['/privacy-policy', 'Privacy policy'],
-    ['/terms-and-conditions', 'Terms & conditions'],
-    ['/cookie-policy', 'Cookie policy'],
+    ['/dashboard', 'My Dashboard'],
   ];
 
   return (
-    <footer className="relative isolate mt-12 overflow-hidden bg-brand-900 text-white">
-      <div className="nx-aurora opacity-40" aria-hidden />
-      <div className="nx-grid opacity-60" aria-hidden />
-
-      {/* CTA band */}
-      <div className="container-page pt-12">
-        <div className="nx-glass flex flex-col gap-6 rounded-2xl p-6 sm:p-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="font-display text-[1.6rem] leading-tight sm:text-[1.9rem]">
-              Have a property in {cities[0]?.name ?? 'your city'}?{' '}
-              <span className="nx-ai-text">List it today.</span>
-            </p>
-            <p className="mt-1.5 text-sm text-white/70">
-              Owners, agents and builders reach serious buyers and tenants. Every listing is
-              reviewed before it goes live.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Link href="/post-property" className="btn btn-accent">
-              <PlusIcon size={18} /> Post property
-            </Link>
-            <a
-              href={whatsappLink(
-                settings.whatsapp,
-                'Hello NEXUS Estate, I would like to know more about a property.',
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn border border-white/25 text-white hover:bg-white/10"
-            >
-              <WhatsAppIcon size={18} /> Talk to an expert
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div className="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+    <footer className="mt-12 border-t border-line bg-surface text-ink">
+      <div className="container-page grid gap-10 py-10 lg:grid-cols-[1fr_1.4fr] lg:gap-16">
         <div>
-          <Link
-            href="/"
-            className="inline-block rounded-xl bg-white px-3 py-2 shadow-sm"
-            aria-label={`${settings.businessName} home`}
-          >
-            <Image
-              src="/brand/nexus-logo.png"
-              alt="NEXUS Estate | Rentals | Properties"
-              width={96}
-              height={80}
-            />
-          </Link>
-          <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/70">
-            Homes and commercial spaces to buy and rent
-            {cities.length ? ` in ${cities.map((c) => c.name).join(', ')}` : ''}. Every listing is
-            reviewed before it goes live.
+          <h2 className="font-sans text-base font-semibold">About {settings.businessName}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            {settings.businessName} helps you buy, sell and rent homes, plots and commercial spaces
+            in {cityName}. Every listing is reviewed by our team before it goes live.{' '}
+            <Link href="/about" className="font-semibold text-brand hover:underline">
+              Read more
+            </Link>
           </p>
-          <ul className="mt-6 space-y-3 text-sm">
+
+          <h2 className="mt-6 font-sans text-base font-semibold">Contact us</h2>
+          <ul className="mt-2 space-y-1.5 text-sm text-ink-soft">
             <li>
               <a
                 href={`tel:${settings.phone}`}
-                className="group inline-flex items-center gap-3 font-semibold text-white"
+                className="inline-flex items-center gap-2 hover:text-brand"
               >
-                <span className="grid size-9 place-items-center rounded-full bg-white/10 text-accent ring-1 ring-white/15 group-hover:bg-accent group-hover:text-brand-900">
-                  <PhoneIcon size={16} />
-                </span>
-                {formatIndianPhone(settings.phone)}
+                <PhoneIcon size={15} /> {formatIndianPhone(settings.phone)}
+              </a>
+            </li>
+            <li>
+              <a
+                href={whatsappLink(
+                  settings.whatsapp,
+                  'Hello NEXUS Estate, I would like to know more about a property.',
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 hover:text-brand"
+              >
+                <WhatsAppIcon size={15} /> WhatsApp us
               </a>
             </li>
             {settings.email && (
               <li>
                 <a
                   href={`mailto:${settings.email}`}
-                  className="group inline-flex items-center gap-3 text-white/80 hover:text-white"
+                  className="inline-flex items-center gap-2 hover:text-brand"
                 >
-                  <span className="grid size-9 place-items-center rounded-full bg-white/10 text-accent ring-1 ring-white/15 group-hover:bg-accent group-hover:text-brand-900">
-                    <MailIcon size={16} />
-                  </span>
-                  {settings.email}
+                  <MailIcon size={15} /> {settings.email}
                 </a>
               </li>
             )}
             {settings.showAddress && settings.address.line1 && (
-              <li className="flex items-start gap-3 text-white/70">
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-accent ring-1 ring-white/15">
-                  <MapPinIcon size={16} />
-                </span>
-                <address className="pt-1.5 not-italic">
+              <li className="flex items-start gap-2">
+                <MapPinIcon size={15} className="mt-0.5 shrink-0" />
+                <address className="not-italic">
                   {[
                     settings.address.line1,
                     settings.address.line2,
@@ -157,12 +131,10 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
                 </address>
               </li>
             )}
-            {settings.businessHours && (
-              <li className="pl-12 text-xs text-white/55">{settings.businessHours}</li>
-            )}
           </ul>
+
           {socials.length > 0 && (
-            <ul className="mt-6 flex gap-2" aria-label="Social media">
+            <ul className="mt-5 flex gap-2" aria-label="Social media">
               {socials.map(({ key, label, Icon }) => (
                 <li key={key}>
                   <a
@@ -170,9 +142,9 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="grid size-10 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/15 transition-colors hover:bg-accent hover:text-brand-900"
+                    className="grid size-9 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-accent hover:text-ink"
                   >
-                    <Icon size={18} />
+                    <Icon size={16} />
                   </a>
                 </li>
               ))}
@@ -180,72 +152,57 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
           )}
         </div>
 
-        <FooterLinks title="Explore" links={explore} />
-        <FooterLinks title="Owners, agents & builders" links={partners} />
-        <FooterLinks title="Company" links={company} />
+        <div className="grid gap-6">
+          <InlineLinks title={`Properties in ${cityName}`} links={property} />
+          <InlineLinks title={`New projects in ${cityName}`} links={projects} />
+          <InlineLinks title="Property services" links={services} />
+        </div>
       </div>
 
-      {localities.length > 0 && (
-        <div className="border-t border-white/10">
-          <nav aria-label="Popular locations" className="container-page py-7">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
-              Popular locations
-            </h2>
-            <ul className="mt-4 flex flex-wrap gap-2 text-sm">
-              {localities.map((l) => (
-                <li key={`${l.city.slug}-${l.slug}`}>
-                  <Link
-                    className="inline-block rounded-full bg-white/[0.06] px-3 py-1.5 text-white/75 ring-1 ring-white/10 transition-colors hover:bg-white/15 hover:text-white"
-                    href={`/buy/${l.city.slug}/${l.slug}`}
-                  >
-                    Property in {l.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
-      )}
+      <nav aria-label="Site links" className="border-t border-line bg-[#eef0f3]">
+        <ul className="container-page flex flex-wrap gap-x-5 gap-y-2 py-4 text-sm text-ink-soft">
+          {bottom.map(([href, label]) => (
+            <li key={href}>
+              <Link href={href} className="hover:text-brand">
+                {label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
-      <div className="border-t border-white/10 bg-black/20">
-        <div className="container-page flex flex-col gap-2 py-5 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {year} {settings.businessName}. All rights reserved.
-          </p>
-          <p className="sm:max-w-2xl sm:text-right">
-            NEXUS Estate is a listing platform. Listing details are shared by owners, agents and
-            builders and should be confirmed before any payment. For new projects, check the RERA
-            registration on{' '}
-            <a
-              href="https://rera.rajasthan.gov.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-white"
-            >
-              rera.rajasthan.gov.in
-            </a>{' '}
-            before you book.
-          </p>
-        </div>
+      <div className="container-page py-4 text-xs leading-relaxed text-ink-muted">
+        Disclaimer: {settings.businessName} is a listing platform. Listing details are shared by
+        owners, agents and builders and should be confirmed before any payment. For new projects,
+        check the RERA registration on{' '}
+        <a
+          href="https://rera.rajasthan.gov.in"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-brand"
+        >
+          rera.rajasthan.gov.in
+        </a>{' '}
+        before you book.
+      </div>
+
+      <div className="bg-brand-900 text-white/75">
+        <p className="container-page py-3 text-xs">
+          © {year} {settings.businessName}. All rights reserved.
+        </p>
       </div>
     </footer>
   );
 }
 
-function FooterLinks({ title, links }: { title: string; links: string[][] }) {
+function InlineLinks({ title, links }: { title: string; links: [string, string][] }) {
   return (
     <nav aria-label={title}>
-      <h2 className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
-        {title}
-      </h2>
-      <ul className="mt-5 space-y-3 text-sm">
+      <h2 className="font-sans text-base font-semibold">{title}</h2>
+      <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-ink-soft">
         {links.map(([href, label]) => (
           <li key={href}>
-            <Link
-              className="group inline-flex items-center gap-1.5 text-white/75 transition-colors hover:text-white"
-              href={href!}
-            >
-              <span className="h-px w-0 bg-accent transition-all group-hover:w-3" aria-hidden />
+            <Link href={href} className="hover:text-brand">
               {label}
             </Link>
           </li>
