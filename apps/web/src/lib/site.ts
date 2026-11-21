@@ -5,8 +5,12 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3
   '',
 );
 export const SITE_NOINDEX = process.env.NEXT_PUBLIC_NOINDEX === 'true';
-/** Google Analytics 4 measurement ID (G-XXXXXXX). Empty = no analytics. */
+/** Google Tag Manager container. Set NEXT_PUBLIC_GTM_ID to an empty string to turn it off. */
+export const GTM_ID = (process.env.NEXT_PUBLIC_GTM_ID ?? 'GTM-TDXSXMSM').trim();
+/** Optional direct Google Analytics 4 measurement ID (G-XXXXXXX), if not added through GTM. */
 export const GA_ID = (process.env.NEXT_PUBLIC_GA_ID ?? '').trim();
+/** True when any analytics tool loads on the public site. */
+export const ANALYTICS_ON = Boolean(GTM_ID || GA_ID);
 export const REVALIDATE_SECONDS = Number(process.env.REVALIDATE_SECONDS ?? 60);
 
 /** Fallback used only if the API is unreachable, so the header/footer still render. */

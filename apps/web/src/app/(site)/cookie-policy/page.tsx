@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { LegalPage } from '@/components/LegalPage';
-import { GA_ID } from '@/lib/site';
+import { ANALYTICS_ON } from '@/lib/site';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Cookie Policy',
@@ -16,13 +16,13 @@ export default function CookiePage() {
         Cookies are small files a website stores in your browser. We keep their use to a minimum.
       </p>
       <h2>Public website</h2>
-      {GA_ID ? (
+      {ANALYTICS_ON ? (
         <p>
-          We use Google Analytics to understand how visitors use the website, for example which
-          pages are visited and how long people stay. It sets cookies named <code>_ga</code> and{' '}
-          <code>_ga_*</code>, which last up to two years and do not identify you by name. We do not
-          use advertising cookies. You can block these cookies in your browser settings or with
-          Google&apos;s opt-out add-on at tools.google.com/dlpage/gaoptout.
+          We use Google Tag Manager and Google Analytics to understand how visitors use the website,
+          for example which pages are visited and how long people stay. It sets cookies named{' '}
+          <code>_ga</code> and <code>_ga_*</code>, which last up to two years and do not identify
+          you by name. We do not use advertising cookies. You can block these cookies in your
+          browser settings or with Google&apos;s opt-out add-on at tools.google.com/dlpage/gaoptout.
         </p>
       ) : (
         <p>

@@ -15,6 +15,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const [settings, cities] = await Promise.all([getSettings(), getLocations()]);
   return (
     <SessionProvider>
+      <Analytics />
       <JsonLd data={organizationJsonLd(settings, cities)} />
       <Header settings={settings} cities={cities} />
       <main id="main" className="pb-20">
@@ -22,7 +23,6 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       </main>
       <Footer settings={settings} cities={cities} />
       <FloatingContact phone={settings.phone} whatsapp={settings.whatsapp} />
-      <Analytics />
     </SessionProvider>
   );
 }
