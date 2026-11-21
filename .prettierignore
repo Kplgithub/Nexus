@@ -5,3 +5,6 @@ coverage
 pnpm-lock.yaml
 playwright-report
 backend
+
+# Generated IP → city table (scripts/build-geo.mjs)
+apps/web/data/
