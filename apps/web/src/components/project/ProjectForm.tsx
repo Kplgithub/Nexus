@@ -16,6 +16,7 @@ import {
   type ProjectStage,
   type ProjectUnitType,
   type PropertyImage,
+  coverFirst,
 } from '@nexus/shared';
 import { apiFetch } from '@/lib/client-api';
 import { ImageManager } from '../admin/ImageManager';
@@ -104,8 +105,9 @@ export function formFromProject(p?: OwnProject | AdminProject): ProjectFormState
         }))
       : [emptyConfig()],
     amenities: p?.amenities ?? [],
-    images: p?.images ?? [],
-    coverImageIndex: p?.coverImageIndex ?? 0,
+    // The first photo is the cover; older records may point at another one.
+    images: coverFirst(p?.images ?? [], p?.coverImageIndex),
+    coverImageIndex: 0,
     brochureUrl: p?.brochureUrl ?? '',
     videoUrl: p?.videoUrl ?? '',
     featured: p?.featured ?? false,
@@ -513,7 +515,6 @@ export function ProjectFields({
       <Group title="Photos, description and documents">
         <ImageManager
           images={f.images}
-          cover={f.coverImageIndex}
           title={f.name}
           uploadPath={uploadPath}
           onChange={(images, cover) => setF((s) => ({ ...s, images, coverImageIndex: cover }))}
