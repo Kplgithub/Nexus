@@ -5,6 +5,16 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3
   '',
 );
 export const SITE_NOINDEX = process.env.NEXT_PUBLIC_NOINDEX === 'true';
+/** Google Tag Manager container. Set NEXT_PUBLIC_GTM_ID to an empty string to turn it off. */
+export const GTM_ID = (process.env.NEXT_PUBLIC_GTM_ID ?? 'GTM-TDXSXMSM').trim();
+/**
+ * Google Analytics 4, loaded directly (not through GTM). Do NOT also add a GA4
+ * "Google tag" for this ID inside the GTM container, or every pageview counts twice.
+ * Set NEXT_PUBLIC_GA_ID to an empty string to turn it off.
+ */
+export const GA_ID = (process.env.NEXT_PUBLIC_GA_ID ?? 'G-4CWB09V7NM').trim();
+/** True when any analytics tool loads on the public site. */
+export const ANALYTICS_ON = Boolean(GTM_ID || GA_ID);
 export const REVALIDATE_SECONDS = Number(process.env.REVALIDATE_SECONDS ?? 60);
 
 /** Fallback used only if the API is unreachable, so the header/footer still render. */

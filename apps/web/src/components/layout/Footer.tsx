@@ -212,9 +212,19 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
           <p>
             © {year} {settings.businessName}. All rights reserved.
           </p>
-          <p>
-            Listing details are shared by owners, agents and builders and should be confirmed before
-            any payment.
+          <p className="sm:max-w-2xl sm:text-right">
+            NEXUS Estate is a listing platform. Listing details are shared by owners, agents and
+            builders and should be confirmed before any payment. For new projects, check the RERA
+            registration on{' '}
+            <a
+              href="https://rera.rajasthan.gov.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white"
+            >
+              rera.rajasthan.gov.in
+            </a>{' '}
+            before you book.
           </p>
         </div>
       </div>
