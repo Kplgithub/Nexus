@@ -35,12 +35,12 @@ export function SectionHead({
   linkLabel?: string;
 }) {
   return (
-    <div className="mb-5 flex items-end justify-between gap-4">
+    <div className="mb-4 flex items-end justify-between gap-4">
       <div>
-        <h2 id={id} className="font-sans text-xl font-semibold leading-tight sm:text-2xl">
+        <h2 id={id} className="font-sans text-lg font-semibold leading-tight sm:text-[1.375rem]">
           {title}
         </h2>
-        <span className="mt-2 block h-1 w-10 rounded-full bg-accent" aria-hidden />
+        <span className="mt-1.5 block h-[3px] w-8 rounded-full bg-accent" aria-hidden />
       </div>
       {href && (
         <Link
@@ -53,6 +53,10 @@ export function SectionHead({
     </div>
   );
 }
+
+/** Slide widths for compact home rails: about 1.4 cards on phones, 5 on wide screens. */
+export const SLIDE =
+  'w-[70%] sm:w-[calc(33.333%-0.84rem)] lg:w-[calc(25%-0.94rem)] xl:w-[calc(20%-1rem)]';
 
 const isExternal = (href: string) => /^https?:\/\//.test(href);
 
@@ -90,7 +94,14 @@ function SmartLink({
 const u = (id: string) =>
   `https://images.unsplash.com/photo-${id}?w=700&h=520&fit=crop&q=70&auto=format`;
 
-export type CountTile = { label: string; count: number; href: string; img: string };
+export type CountTile = {
+  label: string;
+  hint: string;
+  count: number;
+  unit: string;
+  href: string;
+  img: string;
+};
 
 export const TILE_IMAGES = {
   owner: u('1583847268964-b28dc8f51f92'),
@@ -108,7 +119,7 @@ export function CountTiles({ tiles, banner }: { tiles: CountTile[]; banner?: Hom
           <li key={t.label}>
             <Link
               href={t.href}
-              className="nx-lift group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-brand-900 text-white sm:aspect-[16/11]"
+              className="nx-lift group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-brand-50"
             >
               <Image
                 src={t.img}
@@ -116,19 +127,20 @@ export function CountTiles({ tiles, banner }: { tiles: CountTile[]; banner?: Hom
                 fill
                 priority={i < 2}
                 sizes="(min-width: 1024px) 25vw, 50vw"
-                className="object-cover opacity-80 transition-transform duration-500 group-hover:scale-105"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <span
-                className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"
-                aria-hidden
-              />
-              <span className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-                <span className="tabular block text-2xl font-bold leading-none sm:text-3xl">
-                  {t.count.toLocaleString('en-IN')}
+              <span className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-xl bg-white/95 px-3 py-2 shadow-md backdrop-blur sm:inset-x-3 sm:bottom-3">
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold sm:text-base">
+                    {t.label}
+                  </span>
+                  <span className="tabular block truncate text-xs text-ink-muted">
+                    {t.count.toLocaleString('en-IN')} {t.unit}
+                    <span className="hidden sm:inline"> · {t.hint}</span>
+                  </span>
                 </span>
-                <span className="mt-1 block text-sm font-semibold sm:text-base">{t.label}</span>
-                <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-accent-100">
-                  Explore <ArrowRight size={13} />
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent text-ink transition-transform group-hover:translate-x-0.5">
+                  <ArrowRight size={14} />
                 </span>
               </span>
             </Link>
@@ -139,7 +151,7 @@ export function CountTiles({ tiles, banner }: { tiles: CountTile[]; banner?: Hom
             <SmartLink
               href={banner.link}
               label={banner.title || 'Offer'}
-              className="nx-lift group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-surface sm:aspect-[16/11]"
+              className="nx-lift relative block aspect-[4/3] overflow-hidden rounded-2xl bg-surface"
             >
               <Image
                 src={banner.imageUrl}
@@ -162,48 +174,65 @@ export function CountTiles({ tiles, banner }: { tiles: CountTile[]; banner?: Hom
 export function AgentsRail({ agents, cityName }: { agents: ProfileCard[]; cityName: string }) {
   if (!agents.length) return null;
   return (
-    <section className="py-8 sm:py-10" aria-labelledby="agents-heading">
+    <section className="py-5 sm:py-6" aria-labelledby="agents-heading">
       <div className="container-page">
         <SectionHead id="agents-heading" title={`Preferred agents in ${cityName}`} href="/agents" />
-        <Carousel label="Preferred agents">
-          {agents.map((a) => (
-            <Link
-              key={a.id}
-              href={`/agents/${a.slug}`}
-              className="card nx-lift flex h-full flex-col overflow-hidden"
-            >
-              <span className="flex items-center gap-3 bg-brand-50 p-4">
-                <Avatar name={a.companyName || a.name} logoUrl={a.logoUrl} />
-                <span className="min-w-0">
-                  {a.verified && (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-accent-700">
-                      <BadgeCheckIcon size={14} /> Verified agent
+        <Carousel label="Preferred agents" slideClass={SLIDE}>
+          {[
+            ...agents.map((a) => (
+              <Link
+                key={a.id}
+                href={`/agents/${a.slug}`}
+                className="card nx-lift flex h-full flex-col overflow-hidden"
+              >
+                <span className="flex items-center gap-3 bg-brand-50 p-4">
+                  <Avatar name={a.companyName || a.name} logoUrl={a.logoUrl} />
+                  <span className="min-w-0">
+                    {a.verified && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-accent-700">
+                        <BadgeCheckIcon size={14} /> Verified agent
+                      </span>
+                    )}
+                    <span className="block truncate font-semibold">{a.name}</span>
+                  </span>
+                </span>
+                <span className="flex flex-1 flex-col gap-3 p-4">
+                  {a.companyName && (
+                    <span className="truncate text-sm font-medium text-ink-soft">
+                      {a.companyName}
                     </span>
                   )}
-                  <span className="block truncate font-semibold">{a.name}</span>
-                </span>
-              </span>
-              <span className="flex flex-1 flex-col gap-3 p-4">
-                {a.companyName && (
-                  <span className="truncate text-sm font-medium text-ink-soft">
-                    {a.companyName}
-                  </span>
-                )}
-                <span className="mt-auto flex gap-6">
-                  <span>
-                    <span className="tabular block text-xl font-bold">{a.listings}</span>
-                    <span className="text-xs text-ink-muted">Live listings</span>
-                  </span>
-                  {a.experienceYears ? (
+                  <span className="mt-auto flex gap-6">
                     <span>
-                      <span className="tabular block text-xl font-bold">{a.experienceYears}</span>
-                      <span className="text-xs text-ink-muted">Years experience</span>
+                      <span className="tabular block text-xl font-bold">{a.listings}</span>
+                      <span className="text-xs text-ink-muted">Live listings</span>
                     </span>
-                  ) : null}
+                    {a.experienceYears ? (
+                      <span>
+                        <span className="tabular block text-xl font-bold">{a.experienceYears}</span>
+                        <span className="text-xs text-ink-muted">Years experience</span>
+                      </span>
+                    ) : null}
+                  </span>
+                </span>
+              </Link>
+            )),
+            <Link
+              key="join"
+              href="/signup?role=agent"
+              className="flex h-full min-h-44 flex-col justify-between rounded-xl bg-gradient-to-br from-brand-800 to-brand p-4 text-white"
+            >
+              <span>
+                <span className="block font-semibold">Are you an agent?</span>
+                <span className="mt-1 block text-sm text-white/75">
+                  List your properties and get leads from buyers and tenants in {cityName}.
                 </span>
               </span>
-            </Link>
-          ))}
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-accent-100">
+                Join as agent <ArrowRight size={14} />
+              </span>
+            </Link>,
+          ]}
         </Carousel>
       </div>
     </section>
@@ -226,7 +255,7 @@ export function WideBanners({ banners }: { banners: HomeBanner[] }) {
 export function BannerGrid({ banners, title }: { banners: HomeBanner[]; title: string }) {
   if (!banners.length) return null;
   return (
-    <section className="py-8 sm:py-10" aria-labelledby="updates-heading">
+    <section className="py-5 sm:py-6" aria-labelledby="updates-heading">
       <div className="container-page">
         <SectionHead id="updates-heading" title={title} />
         <div className="grid gap-4 md:grid-cols-2">
@@ -246,13 +275,15 @@ function BannerCard({ b, wide = false }: { b: HomeBanner; wide?: boolean }) {
       href={b.link}
       label={b.title || undefined}
       className={`nx-lift group relative flex overflow-hidden rounded-2xl border border-line bg-white ${
-        wide ? 'flex-col md:flex-row' : 'flex-col'
+        wide ? 'flex-col md:flex-row' : 'flex-col sm:flex-row'
       }`}
     >
       <span
         className={`relative block shrink-0 overflow-hidden bg-surface ${
-          wide ? 'aspect-[16/7] md:aspect-auto md:w-[58%]' : 'aspect-[16/8]'
-        } ${hasText ? '' : 'w-full md:w-full'}`}
+          wide
+            ? 'aspect-[16/7] md:aspect-auto md:w-[58%]'
+            : 'aspect-[16/7] sm:aspect-auto sm:min-h-40 sm:w-[48%]'
+        } ${hasText ? '' : 'w-full sm:w-full md:w-full'}`}
       >
         <Image
           src={b.imageUrl}
@@ -289,47 +320,67 @@ export async function TopLocalities({ city }: { city: City }) {
   const insights = await Promise.all(top.map((l) => getLocalityInsights(city.slug, l.slug)));
 
   return (
-    <section className="py-8 sm:py-10" aria-labelledby="localities-heading" id="top-localities">
+    <section className="py-5 sm:py-6" aria-labelledby="localities-heading" id="top-localities">
       <div className="container-page">
         <SectionHead id="localities-heading" title={`Top localities in ${city.name}`} />
-        <Carousel label="Top localities">
-          {top.map((l, i) => {
-            const rate = insights[i]?.sale.medianPricePerSqft;
-            const rent = insights[i]?.rent.medianRent;
-            const n = l.publishedCount ?? 0;
-            return (
-              <Link
-                key={l.slug}
-                href={`/buy?city=${city.slug}&locality=${l.slug}`}
-                className="card nx-lift flex h-full flex-col gap-3 border-t-4 border-t-brand p-4"
-              >
-                <span className="flex items-start gap-2">
-                  <MapPinIcon size={18} className="mt-0.5 shrink-0 text-brand" />
-                  <span className="font-semibold leading-snug">{l.name}</span>
+        <Carousel label="Top localities" slideClass={SLIDE}>
+          {[
+            <div
+              key="intro"
+              className="flex h-full flex-col justify-between rounded-xl bg-gradient-to-br from-brand-50 to-accent-50 p-4"
+            >
+              <span>
+                <span className="block text-lg font-semibold leading-snug text-brand-900">
+                  Busiest areas in {city.name}
                 </span>
-                <span className="grid gap-1 text-sm text-ink-soft">
-                  <span>
-                    {rate ? (
-                      <>
-                        <span className="font-semibold text-ink">{formatINR(rate)}</span> per sq ft
-                      </>
-                    ) : (
-                      'Price per sq ft: not enough data yet'
-                    )}
+                <span className="mt-2 block text-sm text-ink-soft">
+                  Rates and rents worked out from live listings on NEXUS.
+                </span>
+              </span>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand">
+                <TrendingUpIcon size={16} /> Updated daily
+              </span>
+            </div>,
+            ...top.map((l, i) => {
+              const rate = insights[i]?.sale.medianPricePerSqft;
+              const rent = insights[i]?.rent.medianRent;
+              const n = l.publishedCount ?? 0;
+              return (
+                <Link
+                  key={l.slug}
+                  href={`/buy?city=${city.slug}&locality=${l.slug}`}
+                  className="card nx-lift flex h-full flex-col gap-3 border-t-4 border-t-brand p-4"
+                >
+                  <span className="flex items-start gap-2">
+                    <MapPinIcon size={18} className="mt-0.5 shrink-0 text-brand" />
+                    <span className="font-semibold leading-snug">{l.name}</span>
                   </span>
-                  {rent ? (
+                  <span className="grid gap-1 text-sm text-ink-soft">
                     <span>
-                      Typical rent <span className="font-semibold text-ink">{formatINR(rent)}</span>
-                      /month
+                      {rate ? (
+                        <>
+                          <span className="font-semibold text-ink">{formatINR(rate)}</span> per sq
+                          ft
+                        </>
+                      ) : (
+                        'Price per sq ft: not enough data yet'
+                      )}
                     </span>
-                  ) : null}
-                </span>
-                <span className="mt-auto inline-flex items-center gap-1 rounded-lg bg-brand-50 px-3 py-2 text-sm font-semibold text-brand">
-                  {n} {n === 1 ? 'property' : 'properties'} <ArrowRight size={14} />
-                </span>
-              </Link>
-            );
-          })}
+                    {rent ? (
+                      <span>
+                        Typical rent{' '}
+                        <span className="font-semibold text-ink">{formatINR(rent)}</span>
+                        /month
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="mt-auto inline-flex items-center gap-1 rounded-lg bg-brand-50 px-3 py-2 text-sm font-semibold text-brand">
+                    {n} {n === 1 ? 'property' : 'properties'} <ArrowRight size={14} />
+                  </span>
+                </Link>
+              );
+            }),
+          ]}
         </Carousel>
       </div>
     </section>
@@ -367,23 +418,27 @@ const TOOLS = [
 
 export function AdviceTools() {
   return (
-    <section className="py-8 sm:py-10" aria-labelledby="tools-heading">
+    <section className="py-5 sm:py-6" aria-labelledby="tools-heading">
       <div className="container-page">
         <SectionHead id="tools-heading" title="Advice & tools" />
-        <Carousel label="Advice and tools">
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {TOOLS.map(({ title, text, href, Icon }) => (
-            <Link key={title} href={href} className="card nx-lift flex h-full flex-col p-5">
-              <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand">
-                <Icon size={22} />
-              </span>
-              <span className="mt-4 font-semibold">{title}</span>
-              <span className="mt-1.5 flex-1 text-sm leading-relaxed text-ink-soft">{text}</span>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand">
-                View now <ArrowRight size={14} />
-              </span>
-            </Link>
+            <li key={title}>
+              <Link href={href} className="card nx-lift flex h-full flex-col p-4">
+                <span className="grid size-10 place-items-center rounded-xl bg-brand-50 text-brand">
+                  <Icon size={20} />
+                </span>
+                <span className="mt-3 font-semibold">{title}</span>
+                <span className="mt-1 line-clamp-3 flex-1 text-xs leading-relaxed text-ink-soft sm:text-sm">
+                  {text}
+                </span>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand">
+                  View now <ArrowRight size={14} />
+                </span>
+              </Link>
+            </li>
           ))}
-        </Carousel>
+        </ul>
       </div>
     </section>
   );
@@ -397,7 +452,7 @@ export function GuideSection({ posts }: { posts: BlogPostCard[] }) {
   const rest = posts.slice(2);
   const list = (rest.length >= 3 ? rest : posts).slice(0, 5);
   return (
-    <section className="py-8 sm:py-10" aria-labelledby="guide-heading">
+    <section className="py-5 sm:py-6" aria-labelledby="guide-heading">
       <div className="container-page">
         <SectionHead id="guide-heading" title="Your real estate guide" href="/blog" />
         <div className="grid gap-4 lg:grid-cols-2">
@@ -479,7 +534,7 @@ export function CitySnapshot({
     intro ||
     `NEXUS Estate lists homes, plots and commercial spaces for sale and rent across ${cityName}. Every listing is reviewed by our team before it goes live, so you see real options from owners, agents and builders. Search by area, budget or property type, compare prices per sq ft and contact the poster directly.`;
   return (
-    <section className="py-8 sm:py-10" aria-labelledby="snapshot-heading">
+    <section className="py-5 sm:py-6" aria-labelledby="snapshot-heading">
       <div className="container-page">
         <SectionHead id="snapshot-heading" title={`${cityName} property snapshot`} />
         <div className="card p-5 sm:p-6">

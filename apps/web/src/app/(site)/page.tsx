@@ -12,6 +12,7 @@ import {
   GuideSection,
   PostStrip,
   SectionHead,
+  SLIDE,
   TILE_IMAGES,
   TopLocalities,
   WideBanners,
@@ -28,7 +29,7 @@ import {
 } from '@/lib/api';
 import { pageMetadata, websiteJsonLd } from '@/lib/seo';
 import { HeroSearch } from '@/components/search/HeroSearch';
-import { PropertyCard } from '@/components/property/PropertyCard';
+import { HomeCard, SeeAllCard } from '@/components/home/HomeCard';
 import { JsonLd } from '@/components/ui';
 import { BadgeCheckIcon, SparklesIcon } from '@/components/icons';
 
@@ -190,25 +191,33 @@ export default async function HomePage() {
         tiles={[
           {
             label: 'Owner properties',
+            hint: 'Talk to owners directly',
             count: ownerTotal,
+            unit: ownerTotal === 1 ? 'listing' : 'listings',
             href: '/buy?postedBy=owner',
             img: TILE_IMAGES.owner,
           },
           {
             label: 'New projects',
+            hint: 'RERA details and price lists',
             count: projectTotal,
+            unit: projectTotal === 1 ? 'project' : 'projects',
             href: '/projects',
             img: TILE_IMAGES.projects,
           },
           {
             label: 'Budget homes',
+            hint: 'Under ₹50 Lakh',
             count: budgetTotal,
+            unit: budgetTotal === 1 ? 'home' : 'homes',
             href: '/buy?maxPrice=5000000',
             img: TILE_IMAGES.budget,
           },
           {
             label: 'Homes for rent',
+            hint: 'Flats, houses and PG',
             count: home.counts.rent,
+            unit: home.counts.rent === 1 ? 'listing' : 'listings',
             href: '/rent',
             img: TILE_IMAGES.rent,
           },
@@ -224,9 +233,10 @@ export default async function HomePage() {
         />
       )}
 
-      <AgentsRail agents={agents.items} cityName={cityName} />
-
-      <WideBanners banners={middle} />
+      <div className="bg-surface">
+        <AgentsRail agents={agents.items} cityName={cityName} />
+        <WideBanners banners={middle} />
+      </div>
 
       {city && <TopLocalities city={city} />}
 
@@ -239,9 +249,10 @@ export default async function HomePage() {
         />
       )}
 
-      <AdviceTools />
-
-      <BannerGrid banners={lower} title="Offers & updates" />
+      <div className="bg-surface">
+        <AdviceTools />
+        <BannerGrid banners={lower} title="Offers & updates" />
+      </div>
 
       <GuideSection posts={posts.items} />
 
@@ -254,18 +265,20 @@ export default async function HomePage() {
         />
       )}
 
-      <CitySnapshot
-        cityName={cityName}
-        intro={city?.intro}
-        stats={[
-          { value: home.counts.sale, label: `Properties for sale in ${cityName}` },
-          { value: home.counts.rent, label: `Properties for rent in ${cityName}` },
-          { value: agents.meta.total ?? agents.items.length, label: `Agents in ${cityName}` },
-          { value: projectTotal, label: `New projects in ${cityName}` },
-        ]}
-      />
+      <div className="bg-surface pb-1">
+        <CitySnapshot
+          cityName={cityName}
+          intro={city?.intro}
+          stats={[
+            { value: home.counts.sale, label: `Properties for sale in ${cityName}` },
+            { value: home.counts.rent, label: `Properties for rent in ${cityName}` },
+            { value: agents.meta.total ?? agents.items.length, label: `Agents in ${cityName}` },
+            { value: projectTotal, label: `New projects in ${cityName}` },
+          ]}
+        />
 
-      <PostStrip />
+        <PostStrip />
+      </div>
 
       <PropertyOptions city={citySlug} cityName={cityName} />
     </>
@@ -284,7 +297,7 @@ function Rail({
   items: Card[];
 }) {
   return (
-    <section className="py-8 sm:py-10" aria-labelledby={`${id}-heading`}>
+    <section className="py-5 sm:py-6" aria-labelledby={`${id}-heading`}>
       <div className="container-page">
         <SectionHead
           id={`${id}-heading`}
@@ -292,10 +305,11 @@ function Rail({
           href={href}
           linkLabel="See all properties"
         />
-        <Carousel label={title}>
-          {items.map((p, i) => (
-            <PropertyCard key={p.id} p={p} index={i} />
-          ))}
+        <Carousel label={title} slideClass={SLIDE}>
+          {[
+            ...items.map((p) => <HomeCard key={p.id} p={p} />),
+            <SeeAllCard key="all" href={href} label="See all properties" />,
+          ]}
         </Carousel>
       </div>
     </section>
