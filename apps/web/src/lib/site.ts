@@ -5,6 +5,8 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3
   '',
 );
 export const SITE_NOINDEX = process.env.NEXT_PUBLIC_NOINDEX === 'true';
+/** Google Analytics 4 measurement ID (G-XXXXXXX). Empty = no analytics. */
+export const GA_ID = (process.env.NEXT_PUBLIC_GA_ID ?? '').trim();
 export const REVALIDATE_SECONDS = Number(process.env.REVALIDATE_SECONDS ?? 60);
 
 /** Fallback used only if the API is unreachable, so the header/footer still render. */

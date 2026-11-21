@@ -5,6 +5,7 @@ import { JsonLd } from '@/components/ui';
 import { getLocations, getSettings } from '@/lib/api';
 import { organizationJsonLd } from '@/lib/seo';
 import { SessionProvider } from '@/components/session/SessionProvider';
+import { Analytics } from '@/components/Analytics';
 
 // Render public pages per request so they always reflect current listings and settings.
 // API responses are still cached for REVALIDATE_SECONDS by fetch(), so this stays fast.
@@ -21,6 +22,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       </main>
       <Footer settings={settings} cities={cities} />
       <FloatingContact phone={settings.phone} whatsapp={settings.whatsapp} />
+      <Analytics />
     </SessionProvider>
   );
 }

@@ -41,7 +41,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const cities = await getLocations();
   const where = cities.length === 1 ? ` in ${cities[0]!.name}` : '';
   return pageMetadata({
-    title: `NEXUS Estate | Property to Buy and Rent${where}`,
+    // The root layout template appends " | NEXUS Estate".
+    title: `Property to Buy and Rent${where}`,
     description: `Flats, houses, villas, plots, offices and shops for sale and rent${where}. Every listing is reviewed before it goes live. Owners, agents and builders can post property free.`,
     path: '/',
   });

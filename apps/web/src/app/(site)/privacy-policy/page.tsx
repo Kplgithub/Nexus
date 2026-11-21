@@ -4,6 +4,7 @@ import { formatIndianPhone } from '@nexus/shared';
 import { getSettings } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo';
 import { LegalPage } from '@/components/LegalPage';
+import { GA_ID } from '@/lib/site';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Privacy Policy',
@@ -85,8 +86,11 @@ export default async function PrivacyPage() {
 
       <h2>Cookies</h2>
       <p>
-        The public website does not use advertising or analytics cookies by default. See our{' '}
-        <Link href="/cookie-policy">cookie policy</Link> for details.
+        The public website does not use advertising cookies.{' '}
+        {GA_ID
+          ? 'We use Google Analytics to measure how the website is used.'
+          : 'It does not use analytics cookies.'}{' '}
+        See our <Link href="/cookie-policy">cookie policy</Link> for details.
       </p>
 
       <h2>Changes</h2>
