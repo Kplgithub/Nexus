@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { formatIndianPhone, type City, type SessionUser } from '@nexus/shared';
+import { formatIndianPhone, isBusinessRole, type City, type SessionUser } from '@nexus/shared';
 import { useApi } from '@/components/admin/useApi';
 import {
   OtpInput,
@@ -49,7 +49,7 @@ function ProfileForm({ user }: { user: SessionUser }) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [note, setNote] = useState<Note>(null);
   const [busy, setBusy] = useState(false);
-  const business = user.role !== 'individual';
+  const business = isBusinessRole(user.role);
   const [citySlug, setCitySlug] = useState(user.citySlug ?? '');
   const [areas, setAreas] = useState<string[]>(user.localities ?? []);
   const city = cities?.find((c) => c.slug === citySlug);
