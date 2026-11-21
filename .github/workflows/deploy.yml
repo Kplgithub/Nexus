@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+# One deploy at a time: two overlapping `next build` runs on the server fail
+# ("Another next build process is already running").
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
