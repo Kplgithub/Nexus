@@ -41,11 +41,17 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const cities = await getLocations();
   const where = cities.length === 1 ? ` in ${cities[0]!.name}` : '';
-  return pageMetadata({
-    title: `NEXUS Estate | Property to Buy and Rent${where}`,
+  // Keyword first, brand once: `absolute` skips the "%s | NEXUS Estate" template,
+  // which used to give "NEXUS Estate | ... | NEXUS Estate".
+  const title = where
+    ? `Property${where}: Flats & Houses to Buy and Rent | NEXUS Estate`
+    : 'NEXUS Estate | Buy, Rent & Sell Property';
+  const meta = pageMetadata({
+    title,
     description: `Flats, houses, villas, plots, offices and shops for sale and rent${where}. Every listing is reviewed before it goes live. Owners, agents and builders can post property free.`,
     path: '/',
   });
+  return { ...meta, title: { absolute: title } };
 }
 
 const POSTERS = [
