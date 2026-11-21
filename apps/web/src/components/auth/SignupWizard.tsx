@@ -308,6 +308,7 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
                 inputMode="tel"
                 autoComplete="tel"
                 placeholder="10-digit mobile"
+                defaultValue={(params.get('phone') ?? '').replace(/\D/g, '').slice(-10)}
                 required
                 error={errors.phone?.[0]}
               />
