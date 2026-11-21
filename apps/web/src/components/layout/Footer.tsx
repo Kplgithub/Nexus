@@ -44,7 +44,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
     ['/locations', 'Browse by location'],
   ];
   const partners = [
-    ['/post-property', 'Post property free'],
+    ['/post-property', 'Post property'],
     ['/agents', 'Find an agent'],
     ['/builders', 'Builders'],
     ['/dashboard', 'My dashboard'],
@@ -70,7 +70,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
           <div>
             <p className="font-display text-[1.6rem] leading-tight sm:text-[1.9rem]">
               Have a property in {cities[0]?.name ?? 'your city'}?{' '}
-              <span className="nx-ai-text">List it free.</span>
+              <span className="nx-ai-text">List it today.</span>
             </p>
             <p className="mt-1.5 text-sm text-white/70">
               Owners, agents and builders reach serious buyers and tenants. Every listing is

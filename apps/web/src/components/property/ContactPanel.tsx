@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { POSTER_LABELS, formatIndianPhone, whatsappLink, type ListingPoster } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 import { useSession } from '../session/SessionProvider';
 import { EnquiryForm } from '../forms/EnquiryForm';
 import { BadgeCheckIcon, PhoneIcon, WhatsAppIcon } from '../icons';
-
-type Revealed = { name: string; contactPerson: string; phone: string; whatsapp: string | null };
+import { ContactPopup, type ContactPopupHandle, type Revealed } from './ContactPopup';
+import { PremiumBadge } from './PremiumBadge';
 
 /**
  * Sidebar on the property page. NEXUS listings show the office number; listings
@@ -32,7 +32,8 @@ export function ContactPanel({
   office: { phone: string; whatsapp: string };
   shareUrl: string;
 }) {
-  const { user, requireLogin } = useSession();
+  const { user } = useSession();
+  const popup = useRef<ContactPopupHandle>(null);
   const [revealed, setRevealed] = useState<Revealed | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
@@ -43,7 +44,7 @@ export function ContactPanel({
   const waText = `Hello, I'm interested in "${propertyTitle}" (${shareUrl}). Is it available?`;
 
   async function reveal() {
-    if (!user) return requireLogin('contact');
+    if (!user) return popup.current?.open();
     setBusy(true);
     setError(null);
     try {
@@ -71,6 +72,7 @@ export function ContactPanel({
           {(isNexus || poster.verified) && (
             <BadgeCheckIcon size={18} className="text-accent-700" aria-label="Verified" />
           )}
+          {poster.premium && <PremiumBadge />}
         </p>
         {poster.profilePath && (
           <Link
@@ -148,7 +150,9 @@ export function ContactPanel({
               <PhoneIcon size={18} /> {busy ? 'Loading…' : 'View phone number'}
             </button>
             {!user && (
-              <p className="mt-2 text-center text-xs text-ink-muted">Free account required</p>
+              <p className="mt-2 text-center text-xs text-ink-muted">
+                Free · takes 30 seconds with an OTP
+              </p>
             )}
             {error && (
               <p
@@ -168,6 +172,18 @@ export function ContactPanel({
           <p className="text-sm text-ink-soft">
             {displayName} prefers to be contacted through the form below.
           </p>
+        )}
+
+        {/* Kept outside the branches above: it stays open after the number shows. */}
+        {poster.canRevealPhone && !closed && (
+          <ContactPopup
+            ref={popup}
+            propertyId={propertyId}
+            posterName={displayName}
+            premium={poster.premium}
+            waText={waText}
+            onRevealed={setRevealed}
+          />
         )}
 
         <div className="my-5 flex items-center gap-3 text-xs text-ink-muted">

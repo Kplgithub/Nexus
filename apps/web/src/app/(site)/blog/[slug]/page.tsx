@@ -203,7 +203,7 @@ export default async function BlogPostPage({ params }: Props) {
                 href="/post-property"
                 className="btn justify-start bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20"
               >
-                <PlusIcon size={18} /> Post property free
+                <PlusIcon size={18} /> Post property
               </Link>
             </div>
           </div>

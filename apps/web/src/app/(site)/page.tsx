@@ -48,7 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
     : 'NEXUS Estate | Buy, Rent & Sell Property';
   const meta = pageMetadata({
     title,
-    description: `Flats, houses, villas, plots, offices and shops for sale and rent${where}. Every listing is reviewed before it goes live. Owners, agents and builders can post property free.`,
+    description: `Flats, houses, villas, plots, offices and shops for sale and rent${where}. Every listing is reviewed before it goes live. Owners, agents and builders can list property here.`,
     path: '/',
   });
   return { ...meta, title: { absolute: title } };
@@ -450,7 +450,7 @@ export default async function HomePage() {
           <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-end">
             <div>
               <h2 id="post-heading" className="text-[2.2rem] leading-tight sm:text-[2.75rem]">
-                Have property to sell or rent out? List it free.
+                Have property to sell or rent out? List it with us.
               </h2>
               <p className="mt-4 max-w-xl text-lg text-white/75">
                 Create an account as an owner, agent or builder and post from your own dashboard.

@@ -13,6 +13,7 @@ import {
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { absoluteUrl } from '@/lib/site';
 import { PropertyGrid } from '../property/PropertyCard';
+import { PremiumBadge } from '../property/PremiumBadge';
 import { ProjectGrid } from '../project/ProjectCard';
 import { Breadcrumbs, EmptyState, JsonLd, Pagination } from '../ui';
 import { BadgeCheckIcon, BriefcaseIcon, CraneIcon, MapPinIcon } from '../icons';
@@ -234,6 +235,7 @@ export async function ProfilePage({ role, slug }: { role: ProfileRole; slug: str
                 <BadgeCheckIcon size={15} /> Verified
               </span>
             )}
+            {p.premium && <PremiumBadge className="font-sans text-xs" />}
           </h1>
           {p.companyName && <p className="mt-1 text-ink-soft">{p.name}</p>}
           <ul className="mt-3 flex flex-wrap gap-2 text-sm">

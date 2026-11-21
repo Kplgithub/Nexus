@@ -149,7 +149,7 @@ export function MobileNav({ phone }: { phone: string }) {
               }
               className="btn btn-primary w-full"
             >
-              Post property free
+              Post property
             </Link>
             <a href={`tel:${phone}`} className="btn btn-outline w-full">
               <PhoneIcon size={18} /> {formatIndianPhone(phone)}

@@ -94,13 +94,13 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
     setFormError(null);
     const body = { ...userPayload(f), status: intent };
     try {
-      if (listing) {
-        await apiFetch<OwnListing>(`/me/properties/${listing.id}`, { method: 'PATCH', body });
-      } else {
-        await apiFetch<OwnListing>('/me/properties', { method: 'POST', body });
-        writeDraft(null);
-      }
-      router.push(`/dashboard/listings?status=${intent}`);
+      const { data: saved } = listing
+        ? await apiFetch<OwnListing>(`/me/properties/${listing.id}`, { method: 'PATCH', body })
+        : await apiFetch<OwnListing>('/me/properties', { method: 'POST', body });
+      if (!listing) writeDraft(null);
+      // No free listing left and no plan: it is saved, and the plan page takes over.
+      if (saved.awaitingPlan) router.push(`/dashboard/plans?saved=${saved.id}`);
+      else router.push(`/dashboard/listings?status=${intent}`);
       router.refresh();
     } catch (err) {
       setBusy(false);

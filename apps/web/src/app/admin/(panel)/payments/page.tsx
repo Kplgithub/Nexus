@@ -111,7 +111,7 @@ function Inner() {
         {plans.loading && !plans.data && <Skeleton className="h-32 w-full" />}
         {plans.data?.length === 0 && (
           <p className="card p-6 text-center text-sm text-ink-muted">
-            No plans yet. Everyone gets the free listing limit until you add one.
+            No plans yet. Agents and builders get 5 free listings; owners need a plan to list.
           </p>
         )}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -133,8 +133,8 @@ function Inner() {
               </p>
               {p.description && <p className="mt-1 text-sm text-ink-muted">{p.description}</p>}
               <ul className="mt-3 space-y-1 text-sm">
-                <li>Up to {p.listingLimit} live listings</li>
-                {p.featuredListings > 0 && <li>{p.featuredListings} featured listings</li>}
+                <li>{p.listingLimit} listings in the plan</li>
+                <li>{p.leadLimit > 0 ? `${p.leadLimit} leads` : 'Unlimited leads'}</li>
                 <li className="text-ink-muted">
                   For: {p.roles.map((r) => USER_ROLE_LABELS[r]).join(', ')}
                 </li>
@@ -263,7 +263,10 @@ function PaymentRow({ p, onDone }: { p: Payment; onDone: () => void }) {
         )}
         <span className="block text-xs text-ink-muted">{date(p.paidAt ?? p.createdAt)}</span>
       </td>
-      <td>{p.plan.name}</td>
+      <td>
+        {p.plan.name}
+        {p.property && <span className="block text-xs text-ink-muted">{p.property.title}</span>}
+      </td>
       <td className="font-semibold whitespace-nowrap">{rupees(p.amount)}</td>
       <td>
         {p.method === 'online' ? 'Online' : 'Recorded'}
@@ -326,7 +329,7 @@ function PlanForm({
     price: String(plan?.price ?? ''),
     durationDays: String(plan?.durationDays ?? 30),
     listingLimit: String(plan?.listingLimit ?? 25),
-    featuredListings: String(plan?.featuredListings ?? 0),
+    leadLimit: String(plan?.leadLimit ?? 0),
     roles: plan?.roles ?? (['agent', 'builder'] as UserRole[]),
     active: plan?.active ?? true,
   });
@@ -341,7 +344,7 @@ function PlanForm({
       price: Number(f.price),
       durationDays: Number(f.durationDays),
       listingLimit: Number(f.listingLimit),
-      featuredListings: Number(f.featuredListings),
+      leadLimit: Number(f.leadLimit),
       roles: f.roles,
       active: f.active,
     };
@@ -361,7 +364,7 @@ function PlanForm({
   }
 
   const num = (
-    k: 'price' | 'durationDays' | 'listingLimit' | 'featuredListings',
+    k: 'price' | 'durationDays' | 'listingLimit' | 'leadLimit',
     label: string,
     min: number,
   ) => (
@@ -415,8 +418,8 @@ function PlanForm({
         <div className="grid grid-cols-2 gap-3">
           {num('price', 'Price in ₹ (with GST)', 1)}
           {num('durationDays', 'Valid for (days)', 1)}
-          {num('listingLimit', 'Live listings allowed', 1)}
-          {num('featuredListings', 'Featured listings', 0)}
+          {num('listingLimit', 'Listings in the plan', 1)}
+          {num('leadLimit', 'Leads (0 = unlimited)', 0)}
         </div>
         <fieldset>
           <legend className="field-label">Who can buy it</legend>
