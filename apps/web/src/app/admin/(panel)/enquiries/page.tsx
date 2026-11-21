@@ -3,8 +3,14 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
-import { ENQUIRY_STATUSES, type Enquiry } from '@nexus/shared';
-import { PageTitle, StatusPill, useAdmin } from '@/components/admin/AdminShell';
+import {
+  ENQUIRY_STATUSES,
+  SITE_VISIT_STATUS_LABELS,
+  type Enquiry,
+  type SiteVisit,
+} from '@nexus/shared';
+import { PageTitle, Skeleton, StatusPill, useAdmin } from '@/components/admin/AdminShell';
+import { AssigneeSelect, VisitForm } from '@/components/admin/VisitForm';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
 
@@ -21,12 +27,14 @@ function EnquiriesInner() {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<string | null>(params.get('open'));
+  const [assignee, setAssignee] = useState(params.get('assignee') ?? '');
 
   const filters = new URLSearchParams({
     ...(status && { status }),
     ...(followUpDue && { followUpDue: 'true' }),
     ...(propertyId && { propertyId }),
     ...(query && { q: query }),
+    ...(assignee && { assignee }),
   });
   const list = new URLSearchParams(filters);
   list.set('page', String(page));
@@ -34,13 +42,42 @@ function EnquiriesInner() {
 
   return (
     <>
-      <PageTitle title="Enquiries">
+      <PageTitle
+        title="Enquiries"
+        sub="Every lead from the site. Assign it, call, book a visit, close it."
+      >
         {can('admin') && (
           <a className="btn btn-outline" href={`/api/v1/admin/enquiries/export.csv?${filters}`}>
             Export CSV
           </a>
         )}
       </PageTitle>
+
+      <div role="tablist" aria-label="Whose leads" className="adm-seg mb-3">
+        {[
+          ['', 'All leads'],
+          ['me', 'My leads'],
+          ['none', 'Not assigned'],
+        ].map(([v, l]) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={assignee === v}
+            onClick={() => {
+              setAssignee(v!);
+              setPage(1);
+            }}
+          >
+            {l}
+          </button>
+        ))}
+        {assignee && !['me', 'none'].includes(assignee) && (
+          <button type="button" role="tab" aria-selected>
+            One person
+          </button>
+        )}
+      </div>
 
       <form
         className="card mb-4 grid gap-3 p-4 sm:grid-cols-[1fr_10rem_auto_auto]"
@@ -118,6 +155,7 @@ function EnquiriesInner() {
               <th className="px-4 py-3">Contact</th>
               <th className="px-4 py-3">Property</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">With</th>
               <th className="px-4 py-3">Follow-up</th>
               <th className="px-4 py-3">Received</th>
             </tr>
@@ -125,14 +163,14 @@ function EnquiriesInner() {
           <tbody className="divide-y divide-line">
             {loading && !data && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                  Loading…
+                <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
+                  <Skeleton className="h-24 w-full" />
                 </td>
               </tr>
             )}
             {data?.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
+                <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
                   No enquiries match.
                 </td>
               </tr>
@@ -162,6 +200,11 @@ function EnquiriesInner() {
                 </td>
                 <td className="px-4 py-3">
                   <StatusPill status={e.status} />
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {e.assignedAdmin?.name ?? e.assignedTo ?? (
+                    <span className="text-ink-muted">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {e.followUpAt ? (
@@ -225,8 +268,27 @@ function EnquiryDrawer({
 }) {
   const { toast } = useAdmin();
   const { data: e, error, reload } = useApi<Enquiry>(`/admin/enquiries/${id}`);
+  const visits = useApi<SiteVisit[]>(`/admin/visits?enquiryId=${id}`);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [booking, setBooking] = useState(false);
+
+  async function assign(adminId: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/admin/enquiries/${id}/assign`, {
+        method: 'POST',
+        body: { adminId: adminId || null },
+      });
+      toast(adminId ? 'Lead assigned' : 'Lead unassigned');
+      reload();
+      onSaved();
+    } catch (err) {
+      toast(errMsg(err), 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function patch(body: Record<string, unknown>, msg: string) {
     setBusy(true);
@@ -364,21 +426,49 @@ function EnquiryDrawer({
               </div>
               <div className="sm:col-span-2">
                 <label htmlFor="ed-assign" className="field-label">
-                  Assigned to
+                  Who is working this lead
                 </label>
-                <input
+                <AssigneeSelect
                   id="ed-assign"
-                  className="field"
-                  maxLength={80}
-                  defaultValue={e.assignedTo ?? ''}
+                  value={e.assignedAdmin?.id ?? ''}
                   disabled={busy}
-                  onBlur={(ev) =>
-                    ev.target.value !== (e.assignedTo ?? '') &&
-                    void patch({ assignedTo: ev.target.value }, 'Assignment updated')
-                  }
+                  onChange={(v) => void assign(v)}
                 />
               </div>
             </div>
+
+            <section className="rounded-xl border border-line p-4">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-semibold">Site visits</h3>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setBooking(true)}
+                >
+                  Book visit
+                </button>
+              </div>
+              {visits.data?.length === 0 && <p className="mt-2 text-ink-muted">None booked yet.</p>}
+              <ul className="mt-2 space-y-2">
+                {visits.data?.map((v) => (
+                  <li
+                    key={v.id}
+                    className="flex items-center justify-between gap-2 rounded-lg bg-surface px-3 py-2"
+                  >
+                    <span>
+                      <b>{fmt(v.scheduledAt)}</b>
+                      {v.assignedAdmin && (
+                        <span className="text-ink-muted"> · {v.assignedAdmin.name}</span>
+                      )}
+                      {v.outcome && (
+                        <span className="block text-xs text-ink-muted">{v.outcome}</span>
+                      )}
+                    </span>
+                    <StatusPill status={v.status} label={SITE_VISIT_STATUS_LABELS[v.status]} />
+                  </li>
+                ))}
+              </ul>
+            </section>
 
             <form
               onSubmit={async (ev) => {
@@ -424,6 +514,25 @@ function EnquiryDrawer({
           </div>
         )}
       </aside>
+      {booking && e && (
+        <div onClick={(ev) => ev.stopPropagation()}>
+          <VisitForm
+            lead={{
+              id: e.id,
+              name: e.name,
+              phone: e.phone,
+              assignedAdminId: e.assignedAdmin?.id,
+              propertyTitle: e.property?.title,
+            }}
+            onClose={() => setBooking(false)}
+            onDone={() => {
+              visits.reload();
+              reload();
+              onSaved();
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
