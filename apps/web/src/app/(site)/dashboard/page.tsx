@@ -246,7 +246,7 @@ function ListerOverview() {
                 {usage.listings.limit > 0 ? (
                   <>
                     <p className="mt-3 flex justify-between text-[13px]">
-                      Listings
+                      {sub ? 'Live listings' : 'Free listings'}
                       <b className="tabular">
                         {usage.listings.used} / {usage.listings.limit}
                       </b>

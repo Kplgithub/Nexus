@@ -133,7 +133,7 @@ function Inner() {
               </p>
               {p.description && <p className="mt-1 text-sm text-ink-muted">{p.description}</p>}
               <ul className="mt-3 space-y-1 text-sm">
-                <li>{p.listingLimit} listings in the plan</li>
+                <li>{p.listingLimit} listings live at a time</li>
                 <li>{p.leadLimit > 0 ? `${p.leadLimit} leads` : 'Unlimited leads'}</li>
                 <li className="text-ink-muted">
                   For: {p.roles.map((r) => USER_ROLE_LABELS[r]).join(', ')}
@@ -330,7 +330,7 @@ function PlanForm({
     durationDays: String(plan?.durationDays ?? 30),
     listingLimit: String(plan?.listingLimit ?? 25),
     leadLimit: String(plan?.leadLimit ?? 0),
-    roles: plan?.roles ?? (['agent', 'builder'] as UserRole[]),
+    roles: plan?.roles ?? ([...LISTING_ROLES] as UserRole[]),
     active: plan?.active ?? true,
   });
   const [busy, setBusy] = useState(false);
@@ -418,7 +418,7 @@ function PlanForm({
         <div className="grid grid-cols-2 gap-3">
           {num('price', 'Price in ₹ (with GST)', 1)}
           {num('durationDays', 'Valid for (days)', 1)}
-          {num('listingLimit', 'Listings in the plan', 1)}
+          {num('listingLimit', 'Live listings at a time', 1)}
           {num('leadLimit', 'Leads (0 = unlimited)', 0)}
         </div>
         <fieldset>

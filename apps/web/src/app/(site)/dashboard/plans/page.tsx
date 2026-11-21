@@ -195,7 +195,7 @@ function MyPlan() {
                 </p>
                 <ul className="mt-5 space-y-3 text-[0.95rem]">
                   <Feature>
-                    <b>{premium.listingLimit}</b> properties in the plan
+                    <b>{premium.listingLimit}</b> properties live at a time
                   </Feature>
                   <Feature>
                     <b>{premium.leadLimit > 0 ? premium.leadLimit : 'Unlimited'}</b> leads with
@@ -249,7 +249,7 @@ function MyPlan() {
                 <div>
                   <b>{p.name}</b>
                   <p className="text-sm text-ink-muted">
-                    {p.listingLimit} properties ·{' '}
+                    {p.listingLimit} live at a time ·{' '}
                     {p.leadLimit > 0 ? `${p.leadLimit} leads` : 'unlimited leads'}
                   </p>
                 </div>
@@ -282,7 +282,7 @@ function MyPlan() {
           <SectionTitle title="What you have used" />
           <div className="grid gap-3 sm:grid-cols-3">
             <UsageBar
-              label={sub ? 'Listings posted in this plan' : 'Free listings posted'}
+              label={sub ? 'Listings live now' : 'Free listings posted'}
               used={usage.listings.used}
               limit={usage.listings.limit}
               note={
@@ -291,7 +291,11 @@ function MyPlan() {
                     {usage.awaitingPlan} waiting for a plan
                   </span>
                 ) : (
-                  <span className="text-ink-muted">Deleting a listing does not free a slot</span>
+                  <span className="text-ink-muted">
+                    {sub
+                      ? 'Unlist, sell or rent one to free a place'
+                      : 'Deleting a listing does not free a slot'}
+                  </span>
                 )
               }
             />

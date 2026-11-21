@@ -37,7 +37,7 @@ const ROLES = [
     Icon: BriefcaseIcon,
     title: 'Agent',
     points: [
-      `${LISTING_LIMITS.agent} free listings, ${DEFAULT_PLAN.listingLimit} with Premium`,
+      `${LISTING_LIMITS.agent} free listings, ${DEFAULT_PLAN.listingLimit} live at a time with Premium`,
       'Agency name and RERA number on every listing',
       'One inbox for leads across all your listings',
     ],
@@ -47,7 +47,7 @@ const ROLES = [
     Icon: CraneIcon,
     title: 'Builder',
     points: [
-      `${LISTING_LIMITS.builder} free listings, ${DEFAULT_PLAN.listingLimit} with Premium`,
+      `${LISTING_LIMITS.builder} free listings, ${DEFAULT_PLAN.listingLimit} live at a time with Premium`,
       'Project name, RERA ID and possession date shown to buyers',
       'New-booking and under-construction listings supported',
     ],
