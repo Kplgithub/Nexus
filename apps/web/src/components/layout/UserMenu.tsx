@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { USER_ROLE_LABELS } from '@nexus/shared';
+import { USER_ROLE_LABELS, canListProperty } from '@nexus/shared';
 import { POST_PROPERTY_PATH } from '@/lib/site';
 import { useSession } from '../session/SessionProvider';
 import {
@@ -86,12 +86,20 @@ export function UserMenu() {
                 <MenuLink href="/dashboard" icon={<GridIcon size={17} />}>
                   Dashboard
                 </MenuLink>
-                <MenuLink href="/dashboard/listings" icon={<HomeIcon size={17} />}>
-                  My listings
-                </MenuLink>
-                <MenuLink href="/dashboard/leads" icon={<InboxIcon size={17} />}>
-                  Leads
-                </MenuLink>
+                {canListProperty(user.role) ? (
+                  <>
+                    <MenuLink href="/dashboard/listings" icon={<HomeIcon size={17} />}>
+                      My listings
+                    </MenuLink>
+                    <MenuLink href="/dashboard/leads" icon={<InboxIcon size={17} />}>
+                      Leads
+                    </MenuLink>
+                  </>
+                ) : (
+                  <MenuLink href="/dashboard/enquiries" icon={<InboxIcon size={17} />}>
+                    My enquiries
+                  </MenuLink>
+                )}
                 <MenuLink href="/dashboard/saved" icon={<HeartIcon size={17} />}>
                   Saved
                 </MenuLink>

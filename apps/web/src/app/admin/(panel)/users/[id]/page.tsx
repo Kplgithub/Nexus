@@ -7,6 +7,7 @@ import {
   USER_ROLE_LABELS,
   VERIFICATION_STATUS_LABELS,
   formatIndianPhone,
+  isBusinessRole,
   type AdminWebsiteUser,
 } from '@nexus/shared';
 import { PageTitle, Skeleton, StatusPill, useAdmin } from '@/components/admin/AdminShell';
@@ -65,7 +66,7 @@ export default function AdminUserPage() {
         <section className="card p-6">
           <div className="mb-4 flex items-center gap-2">
             <StatusPill status={u.status} />
-            {u.role !== 'individual' && (
+            {isBusinessRole(u.role) && (
               <StatusPill
                 status={u.verificationStatus === 'pending' ? 'unverified' : u.verificationStatus}
                 label={VERIFICATION_STATUS_LABELS[u.verificationStatus]}
@@ -87,7 +88,7 @@ export default function AdminUserPage() {
           {can('editor') && (
             <section className="card space-y-3 p-5">
               <h2 className="font-sans font-semibold">Actions</h2>
-              {u.role !== 'individual' && (
+              {isBusinessRole(u.role) && (
                 <button
                   type="button"
                   className="btn btn-outline w-full"

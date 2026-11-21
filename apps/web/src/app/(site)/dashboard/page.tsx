@@ -1,13 +1,72 @@
 'use client';
 
 import Link from 'next/link';
-import { formatIndianPhone, type UserDashboard } from '@nexus/shared';
+import { canListProperty, formatIndianPhone, type UserDashboard } from '@nexus/shared';
 import { useApi } from '@/components/admin/useApi';
 import { SectionTitle } from '@/components/dashboard/DashboardShell';
 import { useSession } from '@/components/session/SessionProvider';
 import { POST_PROPERTY_PATH } from '@/lib/site';
 
 export default function DashboardOverview() {
+  const { user } = useSession();
+  if (!user) return null;
+  return canListProperty(user.role) ? <ListerOverview /> : <SeekerOverview />;
+}
+
+/** Buyer / tenant: no listings, leads or plans. Just what they saved and asked about. */
+function SeekerOverview() {
+  const { user } = useSession();
+  if (!user) return null;
+  const cards = [
+    {
+      href: '/properties',
+      title: 'Search properties',
+      text: 'Flats, houses, plots and shops for sale and rent in Jaipur.',
+    },
+    { href: '/dashboard/saved', title: 'Saved', text: 'Homes you saved to look at again.' },
+    {
+      href: '/dashboard/enquiries',
+      title: 'My enquiries',
+      text: 'Properties you asked about and numbers you viewed.',
+    },
+  ];
+  return (
+    <div className="space-y-8">
+      {!user.phoneVerified && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn/30 bg-warn-50 p-4 text-sm">
+          <p className="text-warn">
+            Verify your mobile number {formatIndianPhone(user.phone)} to see owners’ contact
+            details.
+          </p>
+          <Link href="/dashboard/profile#phone" className="btn btn-outline btn-sm">
+            Verify now
+          </Link>
+        </div>
+      )}
+      <ul className="grid gap-3 sm:grid-cols-3">
+        {cards.map((c) => (
+          <li key={c.href}>
+            <Link
+              href={c.href}
+              className="block h-full rounded-2xl border border-line bg-white p-5 hover:border-brand/50"
+            >
+              <p className="font-semibold text-brand-900">{c.title}</p>
+              <p className="mt-1 text-sm text-ink-muted">{c.text}</p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="text-sm text-ink-muted">
+        Own a property you want to sell or rent out?{' '}
+        <Link href={POST_PROPERTY_PATH} className="font-semibold text-brand underline">
+          List it here
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+function ListerOverview() {
   const { user } = useSession();
   const { data, error } = useApi<UserDashboard>('/me/dashboard');
   if (!user) return null;

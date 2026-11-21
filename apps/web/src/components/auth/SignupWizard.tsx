@@ -3,17 +3,27 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { POST_PROPERTY_PATH } from '@/lib/site';
 import {
   USER_ROLE_DESCRIPTIONS,
   USER_ROLE_LABELS,
   USER_ROLES,
+  LISTING_ROLES,
   type AuthConfig,
   type SessionUser,
   type UserRole,
 } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 import { useSession } from '../session/SessionProvider';
-import { ArrowLeft, ArrowRight, BriefcaseIcon, CheckIcon, CraneIcon, HomeIcon } from '../icons';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BriefcaseIcon,
+  CheckIcon,
+  CraneIcon,
+  HomeIcon,
+  SearchIcon,
+} from '../icons';
 import {
   OtpInput,
   PasswordField,
@@ -24,6 +34,7 @@ import {
 } from './fields';
 
 const ROLE_ICONS: Record<UserRole, typeof HomeIcon> = {
+  seeker: SearchIcon,
   individual: HomeIcon,
   agent: BriefcaseIcon,
   builder: CraneIcon,
@@ -40,7 +51,12 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
   const params = useSearchParams();
   const { refresh } = useSession();
   const next = safeNext(params.get('next'));
-  const initialRole = USER_ROLES.find((r) => r === params.get('role'));
+  // Someone who came to post a property needs an owner, agent or builder account.
+  const roles: readonly UserRole[] =
+    next.startsWith(POST_PROPERTY_PATH) || next.startsWith('/post-property')
+      ? LISTING_ROLES
+      : USER_ROLES;
+  const initialRole = roles.find((r) => r === params.get('role'));
   const [role, setRole] = useState<UserRole | null>(initialRole ?? null);
   const [step, setStep] = useState<'role' | 'details' | 'verify'>(initialRole ? 'details' : 'role');
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -181,12 +197,12 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
             Create your free account
           </h1>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
-            Pick the one that fits you best. You can post property with any of them.
+            Pick the one that fits you best. Owners, agents and builders can post property.
           </p>
           <fieldset className="mt-6">
             <legend className="sr-only">I am</legend>
             <div className="space-y-2.5">
-              {USER_ROLES.map((r) => {
+              {roles.map((r) => {
                 const Icon = ROLE_ICONS[r];
                 const selected = role === r;
                 return (
@@ -245,7 +261,7 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
             Change account type
           </button>
           <h1 className="text-[2.1rem] leading-tight lg:text-[2.375rem]">
-            {role === 'individual'
+            {role === 'seeker' || role === 'individual'
               ? 'A little about you'
               : role === 'agent'
                 ? 'Agent details'

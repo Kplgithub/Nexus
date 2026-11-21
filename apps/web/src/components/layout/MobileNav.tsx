@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { formatIndianPhone } from '@nexus/shared';
+import { canListProperty, formatIndianPhone } from '@nexus/shared';
 import { NAV_LINKS, POST_PROPERTY_PATH } from '@/lib/site';
 import { useSession } from '../session/SessionProvider';
 import { CloseIcon, MenuIcon, PhoneIcon } from '../icons';
@@ -102,9 +102,15 @@ export function MobileNav({ phone }: { phone: string }) {
                   <li className="px-3 pb-2 text-sm text-ink-muted">Signed in as {user.name}</li>
                   {[
                     ['/dashboard', 'Dashboard'],
-                    ['/dashboard/listings', 'My listings'],
-                    ...(user.role === 'builder' ? [['/dashboard/projects', 'My projects']] : []),
-                    ['/dashboard/leads', 'Leads'],
+                    ...(canListProperty(user.role)
+                      ? [
+                          ['/dashboard/listings', 'My listings'],
+                          ...(user.role === 'builder'
+                            ? [['/dashboard/projects', 'My projects']]
+                            : []),
+                          ['/dashboard/leads', 'Leads'],
+                        ]
+                      : [['/dashboard/enquiries', 'My enquiries']]),
                     ['/dashboard/saved', 'Saved'],
                     ['/dashboard/profile', 'Profile and settings'],
                   ].map(([href, label]) => (

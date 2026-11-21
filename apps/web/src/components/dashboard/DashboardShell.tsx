@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { USER_ROLE_LABELS } from '@nexus/shared';
+import { USER_ROLE_LABELS, canListProperty, isBusinessRole } from '@nexus/shared';
+import { BecomeOwner } from './BecomeOwner';
 import { POST_PROPERTY_PATH } from '@/lib/site';
 import { useSession } from '../session/SessionProvider';
 import {
@@ -19,15 +20,33 @@ import {
   SettingsIcon,
 } from '../icons';
 
-const NAV = [
+type NavItem = {
+  href: string;
+  label: string;
+  Icon: typeof GridIcon;
+  /** Builders only. */
+  builderOnly?: boolean;
+  /** Owners, agents and builders only: hidden from buyer/tenant accounts. */
+  listerOnly?: boolean;
+};
+
+const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Overview', Icon: GridIcon },
-  { href: '/dashboard/listings', label: 'My listings', Icon: HomeIcon },
+  { href: '/dashboard/listings', label: 'My listings', Icon: HomeIcon, listerOnly: true },
   { href: '/dashboard/projects', label: 'My projects', Icon: CraneIcon, builderOnly: true },
-  { href: '/dashboard/leads', label: 'Leads', Icon: InboxIcon },
+  { href: '/dashboard/leads', label: 'Leads', Icon: InboxIcon, listerOnly: true },
   { href: '/dashboard/saved', label: 'Saved', Icon: HeartIcon },
   { href: '/dashboard/enquiries', label: 'My enquiries', Icon: SendIcon },
-  { href: '/dashboard/plans', label: 'My plan', Icon: LayersIcon },
+  { href: '/dashboard/plans', label: 'My plan', Icon: LayersIcon, listerOnly: true },
   { href: '/dashboard/profile', label: 'Profile & security', Icon: SettingsIcon },
+];
+
+/** Pages a buyer/tenant account cannot use. */
+const LISTER_PATHS = [
+  '/dashboard/listings',
+  '/dashboard/projects',
+  '/dashboard/leads',
+  '/dashboard/plans',
 ];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -49,7 +68,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const active = (href: string) =>
     href === '/dashboard' ? path === '/dashboard' : path.startsWith(href);
-  const display = user.role === 'individual' ? user.name : user.companyName || user.name;
+  const display = isBusinessRole(user.role) ? user.companyName || user.name : user.name;
+  const lister = canListProperty(user.role);
+  const blocked = !lister && LISTER_PATHS.some((p) => path.startsWith(p));
 
   return (
     <div className="container-page pb-10 pt-8">
@@ -63,9 +84,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             )}
           </h1>
         </div>
-        <Link href={POST_PROPERTY_PATH} className="btn btn-primary">
-          <PlusIcon size={18} /> Post a property
-        </Link>
+        {lister && (
+          <Link href={POST_PROPERTY_PATH} className="btn btn-primary">
+            <PlusIcon size={18} /> Post a property
+          </Link>
+        )}
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[14rem_1fr]">
@@ -74,24 +97,24 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:overflow-visible lg:px-0"
         >
           <ul className="flex gap-1 lg:sticky lg:top-24 lg:flex-col">
-            {NAV.filter((n) => !('builderOnly' in n) || user.role === 'builder').map(
-              ({ href, label, Icon }) => (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    aria-current={active(href) ? 'page' : undefined}
-                    className={`flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                      active(href) ? 'bg-brand-900 text-white' : 'text-ink-soft hover:bg-surface'
-                    }`}
-                  >
-                    <Icon size={18} /> {label}
-                  </Link>
-                </li>
-              ),
-            )}
+            {NAV.filter(
+              (n) => (!n.builderOnly || user.role === 'builder') && (!n.listerOnly || lister),
+            ).map(({ href, label, Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  aria-current={active(href) ? 'page' : undefined}
+                  className={`flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    active(href) ? 'bg-brand-900 text-white' : 'text-ink-soft hover:bg-surface'
+                  }`}
+                >
+                  <Icon size={18} /> {label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0">{blocked ? <BecomeOwner /> : children}</div>
       </div>
     </div>
   );

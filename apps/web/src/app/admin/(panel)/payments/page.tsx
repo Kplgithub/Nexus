@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import {
-  USER_ROLES,
+  LISTING_ROLES,
   USER_ROLE_LABELS,
   type AdminWebsiteUser,
   type Payment,
@@ -424,7 +424,7 @@ function PlanForm({
         <fieldset>
           <legend className="field-label">Who can buy it</legend>
           <div className="flex flex-wrap gap-4 text-sm">
-            {USER_ROLES.map((r) => (
+            {LISTING_ROLES.map((r) => (
               <label key={r} className="flex items-center gap-2">
                 <input
                   type="checkbox"
