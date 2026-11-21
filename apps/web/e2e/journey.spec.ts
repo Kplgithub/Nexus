@@ -123,7 +123,7 @@ test.describe('journeys', () => {
     const title = `E2E owner rental ${stamp}`;
     const phone = `98${String(stamp).slice(-8)}`;
 
-    // Sign up as Buyer / Owner / Tenant, straight into the posting form.
+    // Sign up as an owner, straight into the posting form.
     await page.goto(
       `/signup?role=individual&next=${encodeURIComponent('/dashboard/listings/new')}`,
     );
@@ -159,15 +159,26 @@ test.describe('journeys', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByRole('heading', { name: 'Review and submit' })).toBeVisible();
     await page.getByRole('button', { name: 'Submit for review' }).click();
-    await expect(page).toHaveURL(/\/dashboard\/listings\?status=pending/);
-    await expect(page.getByText(title)).toBeVisible();
+    // Owners have no free listings: the listing is saved and the plan page opens.
+    await expect(page).toHaveURL(/\/dashboard\/plans\?saved=/);
+    await expect(page.getByText('Your listing is saved')).toBeVisible();
+    const me = (await (await page.request.get('/api/v1/me')).json()).data.user;
 
     // Not public until approved
     const before = await page.request.get(`/api/v1/properties?q=${stamp}`);
     expect((await before.json()).data).toHaveLength(0);
 
-    // Staff approves from the review queue
+    // Staff records the owner's plan payment, which sends the listing for review
     await adminLogin(page);
+    const plans = (await (await page.request.get('/api/v1/admin/plans')).json()).data;
+    const csrf = (await page.context().cookies()).find((c) => c.name === 'nexus_csrf')!.value;
+    const paid = await page.request.post('/api/v1/admin/payments/manual', {
+      headers: { 'X-CSRF-Token': csrf },
+      data: { userId: me.id, planId: plans[0].id, amount: plans[0].price, reference: 'e2e' },
+    });
+    expect(paid.ok()).toBeTruthy();
+
+    // Staff approves from the review queue
     await page.goto('/admin/review');
     const item = page.locator('li', { hasText: title });
     await item.getByRole('button', { name: 'Approve & publish' }).click();
