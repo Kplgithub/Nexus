@@ -30,10 +30,6 @@ export default async function TermsPage() {
         and are confirmed only when you speak with our team. A listing on this website is an
         invitation to enquire, not an offer or a binding commitment.
       </p>
-      <p>
-        Listings marked “Demo listing” are examples used for testing and are not available
-        properties.
-      </p>
 
       <h2>No booking or payment through the website</h2>
       <p>
