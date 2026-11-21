@@ -90,8 +90,8 @@ function Listings() {
 
       {planFull && (
         <p role="status" className="mb-5 rounded-xl border border-warn/30 bg-warn-50 p-4 text-sm">
-          <b>All the live places in your plan are in use.</b> We saved this listing in Drafts.
-          Mark an old listing as sold, rented or inactive, then send this one for review.
+          <b>All the live places in your plan are in use.</b> We saved this listing in Drafts. Mark
+          an old listing as sold, rented or inactive, then send this one for review.
         </p>
       )}
 
