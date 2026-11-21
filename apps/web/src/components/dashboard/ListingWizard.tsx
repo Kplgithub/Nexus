@@ -108,6 +108,23 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
       else router.push(`/dashboard/listings?status=${intent}`);
       router.refresh();
     } catch (err) {
+      // All plan places are taken: keep a new listing as a draft so nothing is lost.
+      if (err instanceof ApiClientError && err.code === 'LISTING_LIMIT' && intent === 'pending') {
+        try {
+          const draft = { ...body, status: 'draft' as const };
+          if (listing) {
+            await apiFetch(`/me/properties/${listing.id}`, { method: 'PATCH', body: draft });
+          } else {
+            await apiFetch('/me/properties', { method: 'POST', body: draft });
+            writeDraft(null);
+          }
+          router.push('/dashboard/listings?status=draft&full=1');
+          router.refresh();
+          return;
+        } catch {
+          // Fall through and show the limit message on the form.
+        }
+      }
       setBusy(false);
       if (err instanceof ApiClientError) {
         setFormError(err.message);
