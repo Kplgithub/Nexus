@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import {
-  FEATURE_ADDONS,
   FREE_LEADS_PER_MONTH,
   LISTING_LIMITS,
   type MySubscription,
@@ -28,7 +27,7 @@ type Res = {
   subscription: MySubscription;
   payments: Payment[];
   usage: PlanUsage;
-  featureAddons: typeof FEATURE_ADDONS;
+  featureAddons: { days: number; price: number; label: string }[];
   onlineEnabled: boolean;
 };
 
@@ -307,7 +306,7 @@ function MyPlan() {
               <p className="text-sm font-semibold text-ink-muted">Feature a listing</p>
               <p className="mt-1 text-lg font-bold">Show at the top of search</p>
               <p className="mt-2 text-sm font-semibold text-accent-700">
-                ₹49 for 7 days · ₹99 for 1 month →
+                {data?.featureAddons.map((a) => `${rupees(a.price)} for ${a.label}`).join(' · ')} →
               </p>
             </Link>
           </div>

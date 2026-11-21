@@ -20,7 +20,12 @@ const DAY = 86_400_000;
 
 function FeatureListing() {
   const params = useSearchParams();
-  const plans = useApi<{ onlineEnabled: boolean }>('/me/plans');
+  const plans = useApi<{
+    onlineEnabled: boolean;
+    featureAddons: { days: FeatureAddonDays; price: number; label: string }[];
+  }>('/me/plans');
+  const addons: { days: FeatureAddonDays; price: number; label: string }[] = plans.data
+    ?.featureAddons ?? [...FEATURE_ADDONS];
   const live = useApi<OwnListing[]>('/me/properties?status=published');
   const dash = useDashboardData();
   const [picked, setPicked] = useState<string | null>(params.get('listing'));
@@ -35,7 +40,7 @@ function FeatureListing() {
   const until = (l: OwnListing) =>
     l.featuredUntil && new Date(l.featuredUntil).getTime() > now ? l.featuredUntil : null;
   const chosen = listings.find((l) => l.id === picked) ?? null;
-  const addon = FEATURE_ADDONS.find((a) => a.days === days)!;
+  const addon = addons.find((a) => a.days === days) ?? addons[0]!;
   const startsAt = chosen && until(chosen) ? new Date(until(chosen)!).getTime() : now;
   const endsAt = new Date(startsAt + days * DAY).toISOString();
   const online = plans.data?.onlineEnabled ?? false;
@@ -132,7 +137,7 @@ function FeatureListing() {
             <fieldset className="mt-6 min-w-0">
               <legend className="text-[15px] font-bold">2. Choose how long</legend>
               <div className="mt-3 grid grid-cols-2 gap-3">
-                {FEATURE_ADDONS.map((a) => {
+                {addons.map((a) => {
                   const on = a.days === days;
                   const best = a.days === 30;
                   return (

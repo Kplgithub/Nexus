@@ -117,7 +117,7 @@ export async function ListingResults({
     `inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium ${view === v ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-muted hover:text-ink'}`;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <aside
         aria-label="Filters"
         className="lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:self-start lg:overflow-y-auto"
@@ -133,7 +133,7 @@ export async function ListingResults({
         />
       </aside>
 
-      <section aria-labelledby="results-heading" aria-busy={false}>
+      <section aria-labelledby="results-heading" aria-busy={false} className="min-w-0">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 id="results-heading" className="text-base font-medium text-ink-soft">
             {failed
