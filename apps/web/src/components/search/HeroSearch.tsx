@@ -126,8 +126,14 @@ export function HeroSearch({ cities }: { cities: City[] }) {
       DEAL_WORDS.test(query) || tab === 'sale' || tab === 'rent'
         ? query
         : `${query}${TAB_HINT[tab]}`;
-    const dealFor: ListingType =
-      tab === 'rent' || tab === 'pg' ? 'rent' : tab === 'commercial' ? deal : 'sale';
+    // Words like "rent" or "buy" in the text win over the selected tab.
+    const dealFor: ListingType | undefined = DEAL_WORDS.test(query)
+      ? undefined
+      : tab === 'rent' || tab === 'pg'
+        ? 'rent'
+        : tab === 'commercial'
+          ? deal
+          : 'sale';
     start(() => router.push(smartSearchHref({ q: q.trim(), deal: dealFor })));
   }
 

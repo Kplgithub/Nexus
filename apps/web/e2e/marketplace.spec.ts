@@ -44,7 +44,9 @@ test.describe('marketplace pages', () => {
       .fill('2 bhk flat for rent under 25k in Malviya Nagar');
     await expect(search.getByText('AI understood:')).toBeVisible();
     await search.getByRole('button', { name: /Search/ }).click();
-    await expect(page).toHaveURL(/\/rent\/jaipur\/malviya-nagar\?.*maxPrice=25000.*bedrooms=2/);
+    await expect(page).toHaveURL(/\/search\?q=2\+bhk\+flat\+for\+rent/);
+    await expect(page).not.toHaveURL(/deal=sale/);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
   test('a property page has location, EMI (sale) and report', async ({ page }) => {
