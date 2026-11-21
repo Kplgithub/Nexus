@@ -148,7 +148,10 @@ export async function getFaqs(opts: { category?: string; home?: boolean } = {}):
 export async function getSitemapProperties(): Promise<{ slug: string; updatedAt: string }[]> {
   try {
     return (
-      await get<{ slug: string; updatedAt: string }[]>('/sitemap/properties', { revalidate: 300 })
+      await get<{ slug: string; updatedAt: string }[]>('/sitemap/properties', {
+        revalidate: 300,
+        tags: ['properties'],
+      })
     ).data;
   } catch {
     return [];
@@ -217,7 +220,10 @@ export async function getLocalityInsights(city: string, locality: string) {
 export async function getSitemapProjects(): Promise<{ slug: string; updatedAt: string }[]> {
   try {
     return (
-      await get<{ slug: string; updatedAt: string }[]>('/sitemap/projects', { revalidate: 300 })
+      await get<{ slug: string; updatedAt: string }[]>('/sitemap/projects', {
+        revalidate: 300,
+        tags: ['projects'],
+      })
     ).data;
   } catch {
     return [];
@@ -227,7 +233,10 @@ export async function getSitemapProjects(): Promise<{ slug: string; updatedAt: s
 export async function getSitemapProfiles(): Promise<{ path: string; updatedAt: string }[]> {
   try {
     return (
-      await get<{ path: string; updatedAt: string }[]>('/sitemap/profiles', { revalidate: 300 })
+      await get<{ path: string; updatedAt: string }[]>('/sitemap/profiles', {
+        revalidate: 300,
+        tags: ['profiles'],
+      })
     ).data;
   } catch {
     return [];

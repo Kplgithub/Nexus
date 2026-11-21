@@ -48,6 +48,9 @@ jobs:
             echo 'Building frontend...'
             pnpm build
 
+            echo 'Clearing cached API data (old listings must never show)...'
+            rm -rf apps/web/.next/cache/fetch-cache
+
             echo 'Restarting nexus-web process...'
             pm2 restart nexus-web
 
