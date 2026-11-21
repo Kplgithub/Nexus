@@ -17,6 +17,7 @@ import type {
   SiteSettings,
 } from '@nexus/shared';
 import { FALLBACK_SETTINGS, REVALIDATE_SECONDS } from './site';
+import type { SmartParams, SmartSearchResult } from './smart-search-types';
 
 const API = (process.env.API_INTERNAL_URL ?? 'http://localhost:4000').replace(/\/$/, '');
 
@@ -64,6 +65,18 @@ export async function searchProperties(qs: string) {
     tags: ['properties'],
   });
   return { items: data, meta: meta! };
+}
+
+/** Plain-language search; never cached, every query is different. */
+export async function smartSearch(p: SmartParams) {
+  const qs = new URLSearchParams();
+  qs.set('q', p.q);
+  if (p.deal) qs.set('deal', p.deal);
+  if (p.locality) qs.set('locality', p.locality);
+  if (p.drop) qs.set('drop', p.drop);
+  if (p.maxPrice) qs.set('maxPrice', p.maxPrice);
+  if (p.page) qs.set('page', p.page);
+  return (await get<SmartSearchResult>(`/smart-search?${qs}`, { revalidate: 0 })).data;
 }
 
 export type DetailResponse =

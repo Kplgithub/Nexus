@@ -23,6 +23,12 @@ function I({ children, ...p }: P & { children: React.ReactNode }) {
 }
 
 export const A = {
+  search: (p: P) => (
+    <I {...p}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </I>
+  ),
   home: (p: P) => (
     <I {...p}>
       <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />

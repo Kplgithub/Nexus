@@ -1,52 +1,71 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import type { ListingType } from '@nexus/shared';
-import { parseSmartQuery, type SmartLocality } from '@/lib/smart-search';
+import { smartSearchHref } from '@/lib/smart-search-types';
 import { SearchIcon, SparklesIcon } from '../icons';
 
+const EXAMPLES: Record<ListingType | 'any', string[]> = {
+  rent: [
+    '2bhk furnished vaishali nagar 15000 tak',
+    'girls PG with food near WTP',
+    'Mansarovar me 1bhk 8000 tak',
+  ],
+  sale: [
+    '3 BHK flat Jagatpura under 60 lakh',
+    'JDA plot Ajmer Road 40 lakh',
+    'villa in Vaishali Nagar under 1.5 cr',
+  ],
+  any: [
+    '2bhk furnished vaishali nagar 15000 tak',
+    'JDA plot Ajmer Road 40 lakh',
+    'office for rent in C-Scheme',
+  ],
+};
+
 /**
- * Compact AI search for browse pages (dark header). Uses the page's deal as the
- * default, so "2 bhk under 25k" on /rent stays a rental search.
+ * AI search box for browse pages (dark header). The text goes to /search, where
+ * our server works out what was meant and ranks the best matches.
  */
 export function SmartSearchBar({
-  city,
-  localities,
   deal,
+  locality,
   commercial = false,
+  initialText = '',
 }: {
-  city?: string;
-  localities: SmartLocality[];
   deal?: ListingType;
+  /** On a locality page, searches stay in that locality unless the text names another place. */
+  locality?: string;
   commercial?: boolean;
+  initialText?: string;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [text, setText] = useState('');
-  const query = (t: string) => {
-    let q = t;
-    if (deal === 'rent' && !/\b(buy|sale|purchase|rent|lease)\b/i.test(q)) q += ' for rent';
-    if (commercial && !/\b(office|shop|showroom|co-?working|warehouse|godown)\b/i.test(q))
-      q += ' commercial';
-    return q;
+  const [text, setText] = useState(initialText);
+  const hint = (t: string) =>
+    commercial && !/\b(office|shop|showroom|co-?working|warehouse|godown|commercial)\b/i.test(t)
+      ? `${t} commercial`
+      : t;
+  const go = (t: string) => {
+    const q = t.trim();
+    if (q) start(() => router.push(smartSearchHref({ q: hint(q), deal, locality })));
   };
-  const smart = useMemo(
-    () => (text.trim() ? parseSmartQuery(query(text), { city, localities }) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [text, city, localities, deal, commercial],
-  );
 
   return (
     <form
       role="search"
       aria-label="AI property search"
+      action="/search"
       onSubmit={(e) => {
         e.preventDefault();
-        if (smart) start(() => router.push(smart.path));
+        go(text);
       }}
       className="w-full max-w-2xl"
     >
+      {deal && <input type="hidden" name="deal" value={deal} />}
+      {locality && <input type="hidden" name="locality" value={locality} />}
       <div className="nx-ai-ring">
         <div className="flex items-center gap-2 rounded-[1rem] bg-white py-1 pl-3 pr-1">
           <SparklesIcon size={18} className="shrink-0 text-accent-700" />
@@ -55,45 +74,48 @@ export function SmartSearchBar({
           </label>
           <input
             id="smart-bar"
+            name="q"
             value={text}
             onChange={(e) => setText(e.target.value)}
+            maxLength={200}
             placeholder={
-              deal === 'rent'
-                ? 'Ask AI: 2 BHK furnished under 25k near Malviya Nagar'
-                : 'Ask AI: 3 BHK villa under 1.5 cr in Vaishali Nagar'
+              deal === 'sale'
+                ? 'Ask AI: 3 BHK flat in Jagatpura under 60 lakh'
+                : 'Ask AI: 2bhk furnished vaishali nagar 15000 tak'
             }
             autoComplete="off"
+            enterKeyHint="search"
             className="h-10 min-w-0 flex-1 bg-transparent text-[0.95rem] text-ink outline-none placeholder:text-ink-muted"
           />
           <button
             type="submit"
-            aria-label="Search"
-            disabled={pending || !smart}
-            className="btn btn-primary h-10 min-h-0 shrink-0 rounded-xl px-4"
+            disabled={pending || !text.trim()}
+            className="btn btn-accent h-10 min-h-0 shrink-0 rounded-xl px-3 sm:px-4"
           >
-            <SearchIcon size={16} />
+            {pending ? (
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+            ) : (
+              <SearchIcon size={16} />
+            )}
+            <span className="hidden sm:inline">{pending ? 'Searching…' : 'AI search'}</span>
+            <span className="sr-only sm:hidden">Search</span>
           </button>
         </div>
       </div>
-      <div className="mt-2 flex min-h-6 flex-wrap items-center gap-1.5 text-xs" aria-live="polite">
-        {smart ? (
-          <>
-            <span className="font-semibold text-accent">AI understood:</span>
-            {smart.understood.map((u) => (
-              <span
-                key={u}
-                className="nx-fade-in rounded-full bg-white/10 px-2.5 py-0.5 text-white ring-1 ring-white/20"
-              >
-                {u}
-              </span>
-            ))}
-          </>
-        ) : (
-          <span className="text-white/55">
-            Type it the way you would say it. We turn it into filters.
-          </span>
-        )}
-      </div>
+      {!initialText && (
+        <div className="mt-2 flex min-h-6 flex-wrap items-center gap-1.5 text-xs text-white/60">
+          <span>Try:</span>
+          {EXAMPLES[deal ?? 'any'].map((ex) => (
+            <Link
+              key={ex}
+              href={smartSearchHref({ q: hint(ex), deal, locality })}
+              className="rounded-full border border-dashed border-white/30 px-2.5 py-0.5 text-white/85 hover:border-white hover:text-white"
+            >
+              {ex}
+            </Link>
+          ))}
+        </div>
+      )}
     </form>
   );
 }
