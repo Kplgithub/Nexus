@@ -36,6 +36,7 @@ export const FALLBACK_SETTINGS: SiteSettings = {
     banners: [],
   },
   allowInternationalEnquiries: false,
+  featurePrices: { days7: 49, days30: 99 },
 };
 
 export const absoluteUrl = (path = '/') => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
