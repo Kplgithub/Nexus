@@ -35,6 +35,7 @@ function Listings() {
   const params = useSearchParams();
   const router = useRouter();
   const tab = params.get('status') ?? '';
+  const planFull = params.get('full') === '1';
   const { data, error, loading, reload } = useApi<OwnListing[]>('/me/properties');
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -86,6 +87,13 @@ function Listings() {
           <PlusIcon size={16} /> New listing
         </Link>
       </SectionTitle>
+
+      {planFull && (
+        <p role="status" className="mb-5 rounded-xl border border-warn/30 bg-warn-50 p-4 text-sm">
+          <b>All the live places in your plan are in use.</b> We saved this listing in Drafts. Mark
+          an old listing as sold, rented or inactive, then send this one for review.
+        </p>
+      )}
 
       <div
         role="tablist"
