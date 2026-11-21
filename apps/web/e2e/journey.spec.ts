@@ -24,11 +24,17 @@ async function uploadPhoto(page: Page) {
   await expect(page.getByText(/1 photo\(s\) uploaded/)).toBeVisible();
 }
 
+// While the launch-test OTP is on, every number uses this code and no
+// development code is shown (see the API's lib/test-otp.ts).
+const TEST_OTP = '123456';
+
 async function typeOtp(page: Page) {
-  const code = (await page
-    .locator('p:has-text("Development mode") strong')
-    .first()
-    .textContent())!.trim();
+  const dev = page.locator('p:has-text("Development mode") strong').first();
+  const shown = await dev
+    .waitFor({ timeout: 10_000 })
+    .then(() => true)
+    .catch(() => false);
+  const code = shown ? (await dev.textContent())!.trim() : TEST_OTP;
   await page.getByLabel('Digit 1').click();
   await page.keyboard.type(code);
 }

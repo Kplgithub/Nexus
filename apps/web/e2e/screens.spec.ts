@@ -127,10 +127,14 @@ test('agent signs up and posts a property', async ({ page }, info) => {
   await shot(page, p, 'signup-details', false);
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('heading', { name: 'Verify your mobile' })).toBeVisible();
-  const code = (await page
-    .locator('p:has-text("Development mode") strong')
-    .first()
-    .textContent())!.trim();
+  // While the launch-test OTP is on, no development code is shown and every
+  // number uses 123456 (see the API's lib/test-otp.ts).
+  const dev = page.locator('p:has-text("Development mode") strong').first();
+  const shown = await dev
+    .waitFor({ timeout: 10_000 })
+    .then(() => true)
+    .catch(() => false);
+  const code = shown ? (await dev.textContent())!.trim() : '123456';
   await page.getByLabel('Digit 1').click();
   await page.keyboard.type(code);
   await shot(page, p, 'signup-verify', false);
