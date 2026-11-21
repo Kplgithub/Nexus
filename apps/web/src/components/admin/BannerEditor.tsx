@@ -11,9 +11,9 @@ type UploadResult =
   | { ok: false; name: string; error: string };
 
 const PLACEMENTS: { value: HomeBanner['placement']; label: string }[] = [
-  { value: 'top', label: 'Top: beside the photo tiles (one only)' },
-  { value: 'middle', label: 'Middle: wide banner after agents' },
-  { value: 'lower', label: 'Lower: two side by side after tools' },
+  { value: 'top', label: 'Top: wide strip under the tiles, one only (image about 1600 × 250)' },
+  { value: 'middle', label: 'Middle: wide banner after agents (image about 1200 × 600)' },
+  { value: 'lower', label: 'Lower: two side by side after tools (image about 1000 × 600)' },
 ];
 
 async function upload(file: File) {

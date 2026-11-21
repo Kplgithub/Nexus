@@ -97,10 +97,16 @@ export function PropertyOptions({ city, cityName }: { city: string; cityName: st
   return (
     <section className="py-8 sm:py-10" aria-labelledby="options-heading">
       <div className="container-page">
-        <h2 id="options-heading" className="font-sans text-xl font-semibold sm:text-2xl">
-          Property options in {cityName}
+        <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-accent-700">
+          <span className="h-px w-6 bg-current" aria-hidden />
+          Quick links
+        </p>
+        <h2
+          id="options-heading"
+          className="mt-1 text-[1.6rem] leading-tight text-brand-900 sm:text-[2rem]"
+        >
+          Popular searches in {cityName}
         </h2>
-        <span className="mt-2 block h-1 w-10 rounded-full bg-accent" aria-hidden />
         <div
           role="tablist"
           aria-label="Buy or rent"

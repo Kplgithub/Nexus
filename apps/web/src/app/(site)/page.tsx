@@ -7,10 +7,10 @@ import {
   AdviceTools,
   AgentsRail,
   BannerGrid,
-  CitySnapshot,
   CountTiles,
   GuideSection,
   PostStrip,
+  PropertyTypes,
   SectionHead,
   SLIDE,
   TILE_IMAGES,
@@ -224,28 +224,45 @@ export default async function HomePage() {
         ]}
       />
 
+      {settings.home.showFeatured && home.featured.length > 0 && (
+        <Rail
+          id="featured"
+          eyebrow="Handpicked"
+          title={`Featured homes in ${cityName}`}
+          href="/properties?featured=true"
+          items={home.featured.slice(0, 12)}
+        />
+      )}
+
+      <div className="bg-surface">
+        <PropertyTypes city={citySlug} cityName={cityName} />
+      </div>
+
       {owners.items.length > 0 && (
         <Rail
           id="owner"
-          title="Popular owner properties"
+          eyebrow="Direct from owners"
+          title="Homes listed by owners"
           href="/buy?postedBy=owner"
           items={owners.items}
         />
       )}
 
-      <div className="bg-surface">
-        <AgentsRail agents={agents.items} cityName={cityName} />
-        <WideBanners banners={middle} />
-      </div>
-
       {city && <TopLocalities city={city} />}
 
-      {settings.home.showFeatured && home.featured.length > 0 && (
+      <WideBanners banners={middle} />
+
+      <div className="bg-surface">
+        <AgentsRail agents={agents.items} cityName={cityName} />
+      </div>
+
+      {settings.home.showRecent && fresh.length > 0 && (
         <Rail
-          id="featured"
-          title={`Featured properties in ${cityName}`}
-          href="/properties?featured=true"
-          items={home.featured.slice(0, 12)}
+          id="fresh"
+          eyebrow="Just listed"
+          title={`Recently added in ${cityName}`}
+          href="/properties"
+          items={fresh}
         />
       )}
 
@@ -256,29 +273,7 @@ export default async function HomePage() {
 
       <GuideSection posts={posts.items} />
 
-      {settings.home.showRecent && fresh.length > 0 && (
-        <Rail
-          id="fresh"
-          title={`Fresh properties in ${cityName}`}
-          href="/properties"
-          items={fresh}
-        />
-      )}
-
-      <div className="bg-surface pb-1">
-        <CitySnapshot
-          cityName={cityName}
-          intro={city?.intro}
-          stats={[
-            { value: home.counts.sale, label: `Properties for sale in ${cityName}` },
-            { value: home.counts.rent, label: `Properties for rent in ${cityName}` },
-            { value: agents.meta.total ?? agents.items.length, label: `Agents in ${cityName}` },
-            { value: projectTotal, label: `New projects in ${cityName}` },
-          ]}
-        />
-
-        <PostStrip />
-      </div>
+      <PostStrip />
 
       <PropertyOptions city={citySlug} cityName={cityName} />
     </>
@@ -287,20 +282,23 @@ export default async function HomePage() {
 
 function Rail({
   id,
+  eyebrow,
   title,
   href,
   items,
 }: {
   id: string;
+  eyebrow: string;
   title: string;
   href: string;
   items: Card[];
 }) {
   return (
-    <section className="py-5 sm:py-6" aria-labelledby={`${id}-heading`}>
+    <section className="py-8 sm:py-10" aria-labelledby={`${id}-heading`}>
       <div className="container-page">
         <SectionHead
           id={`${id}-heading`}
+          eyebrow={eyebrow}
           title={title}
           href={href}
           linkLabel="See all properties"

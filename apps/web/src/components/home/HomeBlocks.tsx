@@ -9,6 +9,7 @@ import {
 } from '@nexus/shared';
 import { getLocalityInsights } from '@/lib/api';
 import { Carousel } from '../Carousel';
+import { JaipurFacade } from '../art/JaipurFacade';
 import { Avatar } from '../profile/ProfilePages';
 import { canOptimise, formatBlogDate } from '../blog/BlogCard';
 import {
@@ -26,26 +27,51 @@ import {
 export function SectionHead({
   id,
   title,
+  eyebrow,
+  sub,
   href,
   linkLabel = 'See all',
+  light = false,
 }: {
   id: string;
   title: string;
+  eyebrow?: string;
+  sub?: string;
   href?: string;
   linkLabel?: string;
+  light?: boolean;
 }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
-      <div>
-        <h2 id={id} className="font-sans text-lg font-semibold leading-tight sm:text-[1.375rem]">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 sm:mb-6">
+      <div className="max-w-2xl">
+        {eyebrow && (
+          <p
+            className={`inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] ${light ? 'text-accent-100' : 'text-accent-700'}`}
+          >
+            <span className="h-px w-6 bg-current" aria-hidden />
+            {eyebrow}
+          </p>
+        )}
+        <h2
+          id={id}
+          className={`mt-1 text-[1.6rem] leading-tight sm:text-[2rem] ${light ? 'text-white' : 'text-brand-900'}`}
+        >
           {title}
         </h2>
-        <span className="mt-1.5 block h-[3px] w-8 rounded-full bg-accent" aria-hidden />
+        {sub && (
+          <p className={`mt-1.5 text-sm sm:text-base ${light ? 'text-white/70' : 'text-ink-soft'}`}>
+            {sub}
+          </p>
+        )}
       </div>
       {href && (
         <Link
           href={href}
-          className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand hover:underline"
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+            light
+              ? 'border-white/25 text-white hover:bg-white/10'
+              : 'border-line bg-white text-brand hover:border-brand hover:bg-brand hover:text-white'
+          }`}
         >
           {linkLabel} <ArrowRight size={15} />
         </Link>
@@ -111,60 +137,58 @@ export const TILE_IMAGES = {
 };
 
 export function CountTiles({ tiles, banner }: { tiles: CountTile[]; banner?: HomeBanner }) {
-  const shown = tiles.slice(0, banner ? 3 : 4);
   return (
     <section aria-label="Browse property" className="container-page pt-6 sm:pt-8">
-      <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {shown.map((t, i) => (
+      <ul className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+        {tiles.map((t, i) => (
           <li key={t.label}>
             <Link
               href={t.href}
-              className="nx-lift group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-brand-50"
+              className="nx-lift group flex items-center gap-2.5 rounded-2xl border border-line bg-white p-2 sm:gap-3 sm:p-2.5"
             >
-              <Image
-                src={t.img}
-                alt=""
-                fill
-                priority={i < 2}
-                sizes="(min-width: 1024px) 25vw, 50vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <span className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-xl bg-white/95 px-3 py-2 shadow-md backdrop-blur sm:inset-x-3 sm:bottom-3">
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold sm:text-base">
-                    {t.label}
-                  </span>
-                  <span className="tabular block truncate text-xs text-ink-muted">
-                    {t.count.toLocaleString('en-IN')} {t.unit}
-                    <span className="hidden sm:inline"> · {t.hint}</span>
-                  </span>
-                </span>
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent text-ink transition-transform group-hover:translate-x-0.5">
-                  <ArrowRight size={14} />
-                </span>
+              <span className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-brand-50 sm:size-20">
+                <Image
+                  src={t.img}
+                  alt=""
+                  fill
+                  priority={i < 2}
+                  sizes="80px"
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                />
               </span>
+              <span className="min-w-0 flex-1">
+                <span className="tabular block text-lg font-bold leading-none text-brand sm:text-xl">
+                  {t.count.toLocaleString('en-IN')}
+                </span>
+                <span className="mt-1 block truncate text-sm font-semibold leading-tight sm:text-base">
+                  {t.label}
+                </span>
+                <span className="hidden truncate text-xs text-ink-muted sm:block">{t.hint}</span>
+              </span>
+              <ArrowRight
+                size={18}
+                className="mr-1.5 hidden shrink-0 text-ink-muted transition-transform sm:block group-hover:translate-x-0.5 group-hover:text-brand"
+              />
             </Link>
           </li>
         ))}
-        {banner && (
-          <li>
-            <SmartLink
-              href={banner.link}
-              label={banner.title || 'Offer'}
-              className="nx-lift relative block aspect-[4/3] overflow-hidden rounded-2xl bg-surface"
-            >
-              <Image
-                src={banner.imageUrl}
-                alt={banner.title}
-                fill
-                sizes="(min-width: 1024px) 25vw, 50vw"
-                unoptimized={!canOptimise(banner.imageUrl)}
-                className="object-cover"
-              />
-            </SmartLink>
-          </li>
-        )}
       </ul>
+      {banner && (
+        <SmartLink
+          href={banner.link}
+          label={banner.title || 'Offer'}
+          className="nx-lift relative mt-4 block aspect-[16/4] overflow-hidden rounded-2xl bg-surface sm:aspect-[16/2.5]"
+        >
+          <Image
+            src={banner.imageUrl}
+            alt={banner.title}
+            fill
+            sizes="(min-width: 1280px) 1232px, 100vw"
+            unoptimized={!canOptimise(banner.imageUrl)}
+            className="object-cover"
+          />
+        </SmartLink>
+      )}
     </section>
   );
 }
@@ -174,9 +198,15 @@ export function CountTiles({ tiles, banner }: { tiles: CountTile[]; banner?: Hom
 export function AgentsRail({ agents, cityName }: { agents: ProfileCard[]; cityName: string }) {
   if (!agents.length) return null;
   return (
-    <section className="py-5 sm:py-6" aria-labelledby="agents-heading">
+    <section className="py-8 sm:py-10" aria-labelledby="agents-heading">
       <div className="container-page">
-        <SectionHead id="agents-heading" title={`Preferred agents in ${cityName}`} href="/agents" />
+        <SectionHead
+          id="agents-heading"
+          eyebrow="Trusted partners"
+          title={`Agents who know ${cityName}`}
+          href="/agents"
+          linkLabel="All agents"
+        />
         <Carousel label="Preferred agents" slideClass={SLIDE}>
           {[
             ...agents.map((a) => (
@@ -220,15 +250,26 @@ export function AgentsRail({ agents, cityName }: { agents: ProfileCard[]; cityNa
             <Link
               key="join"
               href="/signup?role=agent"
-              className="flex h-full min-h-44 flex-col justify-between rounded-xl bg-gradient-to-br from-brand-800 to-brand p-4 text-white"
+              className="group relative isolate flex h-full min-h-44 flex-col justify-between overflow-hidden rounded-xl p-4 text-white"
             >
+              <Image
+                src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=520&fit=crop&q=70&auto=format"
+                alt=""
+                fill
+                sizes="(min-width: 1280px) 240px, 70vw"
+                className="-z-20 object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <span
+                className="absolute inset-0 -z-10 bg-gradient-to-t from-brand-900/95 via-brand-900/70 to-brand-800/30"
+                aria-hidden
+              />
               <span>
                 <span className="block font-semibold">Are you an agent?</span>
-                <span className="mt-1 block text-sm text-white/75">
+                <span className="mt-1 block text-sm text-white/85">
                   List your properties and get leads from buyers and tenants in {cityName}.
                 </span>
               </span>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-accent-100">
+              <span className="mt-4 inline-flex items-center gap-1 self-start rounded-full bg-accent px-3 py-1.5 text-sm font-semibold text-ink">
                 Join as agent <ArrowRight size={14} />
               </span>
             </Link>,
@@ -255,9 +296,9 @@ export function WideBanners({ banners }: { banners: HomeBanner[] }) {
 export function BannerGrid({ banners, title }: { banners: HomeBanner[]; title: string }) {
   if (!banners.length) return null;
   return (
-    <section className="py-5 sm:py-6" aria-labelledby="updates-heading">
+    <section className="py-8 sm:py-10" aria-labelledby="updates-heading">
       <div className="container-page">
-        <SectionHead id="updates-heading" title={title} />
+        <SectionHead id="updates-heading" eyebrow="Offers" title={title} />
         <div className="grid gap-4 md:grid-cols-2">
           {banners.map((b) => (
             <BannerCard key={b.id} b={b} />
@@ -320,67 +361,58 @@ export async function TopLocalities({ city }: { city: City }) {
   const insights = await Promise.all(top.map((l) => getLocalityInsights(city.slug, l.slug)));
 
   return (
-    <section className="py-5 sm:py-6" aria-labelledby="localities-heading" id="top-localities">
+    <section
+      className="relative isolate overflow-hidden bg-brand-900 py-10 text-white sm:py-12"
+      aria-labelledby="localities-heading"
+      id="top-localities"
+    >
+      <div className="nx-aurora opacity-60" aria-hidden />
+      <div className="nx-grid opacity-50" aria-hidden />
       <div className="container-page">
-        <SectionHead id="localities-heading" title={`Top localities in ${city.name}`} />
+        <SectionHead
+          id="localities-heading"
+          eyebrow="Area guide"
+          title={`${city.name}'s most searched areas`}
+          sub="Price per sq ft and typical rent, worked out from live listings."
+          light
+        />
         <Carousel label="Top localities" slideClass={SLIDE}>
-          {[
-            <div
-              key="intro"
-              className="flex h-full flex-col justify-between rounded-xl bg-gradient-to-br from-brand-50 to-accent-50 p-4"
-            >
-              <span>
-                <span className="block text-lg font-semibold leading-snug text-brand-900">
-                  Busiest areas in {city.name}
+          {top.map((l, i) => {
+            const rate = insights[i]?.sale.medianPricePerSqft;
+            const rent = insights[i]?.rent.medianRent;
+            const n = l.publishedCount ?? 0;
+            return (
+              <Link
+                key={l.slug}
+                href={`/buy?city=${city.slug}&locality=${l.slug}`}
+                className="group flex h-full flex-col gap-3 rounded-xl bg-white/[0.07] p-4 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/[0.12]"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-ink">
+                    <MapPinIcon size={16} />
+                  </span>
+                  <span className="truncate font-semibold">{l.name}</span>
                 </span>
-                <span className="mt-2 block text-sm text-ink-soft">
-                  Rates and rents worked out from live listings on NEXUS.
+                <span className="grid gap-2 border-t border-white/10 pt-3 text-sm">
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="text-white/60">Per sq ft</span>
+                    <span className="tabular font-semibold">{rate ? formatINR(rate) : '—'}</span>
+                  </span>
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="text-white/60">Rent / month</span>
+                    <span className="tabular font-semibold">{rent ? formatINR(rent) : '—'}</span>
+                  </span>
                 </span>
-              </span>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand">
-                <TrendingUpIcon size={16} /> Updated daily
-              </span>
-            </div>,
-            ...top.map((l, i) => {
-              const rate = insights[i]?.sale.medianPricePerSqft;
-              const rent = insights[i]?.rent.medianRent;
-              const n = l.publishedCount ?? 0;
-              return (
-                <Link
-                  key={l.slug}
-                  href={`/buy?city=${city.slug}&locality=${l.slug}`}
-                  className="card nx-lift flex h-full flex-col gap-3 border-t-4 border-t-brand p-4"
-                >
-                  <span className="flex items-start gap-2">
-                    <MapPinIcon size={18} className="mt-0.5 shrink-0 text-brand" />
-                    <span className="font-semibold leading-snug">{l.name}</span>
-                  </span>
-                  <span className="grid gap-1 text-sm text-ink-soft">
-                    <span>
-                      {rate ? (
-                        <>
-                          <span className="font-semibold text-ink">{formatINR(rate)}</span> per sq
-                          ft
-                        </>
-                      ) : (
-                        'Price per sq ft: not enough data yet'
-                      )}
-                    </span>
-                    {rent ? (
-                      <span>
-                        Typical rent{' '}
-                        <span className="font-semibold text-ink">{formatINR(rent)}</span>
-                        /month
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="mt-auto inline-flex items-center gap-1 rounded-lg bg-brand-50 px-3 py-2 text-sm font-semibold text-brand">
-                    {n} {n === 1 ? 'property' : 'properties'} <ArrowRight size={14} />
-                  </span>
-                </Link>
-              );
-            }),
-          ]}
+                <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-accent-100">
+                  {n} {n === 1 ? 'property' : 'properties'}
+                  <ArrowRight
+                    size={14}
+                    className="transition-transform group-hover:translate-x-0.5"
+                  />
+                </span>
+              </Link>
+            );
+          })}
         </Carousel>
       </div>
     </section>
@@ -418,9 +450,13 @@ const TOOLS = [
 
 export function AdviceTools() {
   return (
-    <section className="py-5 sm:py-6" aria-labelledby="tools-heading">
+    <section className="py-8 sm:py-10" aria-labelledby="tools-heading">
       <div className="container-page">
-        <SectionHead id="tools-heading" title="Advice & tools" />
+        <SectionHead
+          id="tools-heading"
+          eyebrow="Smart tools"
+          title="Search smarter, decide faster"
+        />
         <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {TOOLS.map(({ title, text, href, Icon }) => (
             <li key={title}>
@@ -452,9 +488,15 @@ export function GuideSection({ posts }: { posts: BlogPostCard[] }) {
   const rest = posts.slice(2);
   const list = (rest.length >= 3 ? rest : posts).slice(0, 5);
   return (
-    <section className="py-5 sm:py-6" aria-labelledby="guide-heading">
+    <section className="py-8 sm:py-10" aria-labelledby="guide-heading">
       <div className="container-page">
-        <SectionHead id="guide-heading" title="Your real estate guide" href="/blog" />
+        <SectionHead
+          id="guide-heading"
+          eyebrow="Guides"
+          title="Read before you buy or rent"
+          href="/blog"
+          linkLabel="All articles"
+        />
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="card border-t-4 border-t-brand p-5">
             <h3 className="font-semibold">Latest articles</h3>
@@ -518,45 +560,112 @@ export function GuideSection({ posts }: { posts: BlogPostCard[] }) {
   );
 }
 
-/* ---------------- City snapshot ---------------- */
+/* ---------------- Browse by property type ---------------- */
 
-export function CitySnapshot({
-  cityName,
-  intro,
-  stats,
-}: {
-  cityName: string;
-  intro?: string;
-  stats: { value: number; label: string }[];
-}) {
-  const shown = stats.filter((s) => s.value > 0);
-  const text =
-    intro ||
-    `NEXUS Estate lists homes, plots and commercial spaces for sale and rent across ${cityName}. Every listing is reviewed by our team before it goes live, so you see real options from owners, agents and builders. Search by area, budget or property type, compare prices per sq ft and contact the poster directly.`;
+const TYPES = [
+  {
+    label: 'Flats',
+    hint: 'Apartments to buy',
+    q: 'buy',
+    t: 'apartment',
+    img: '1545324418-cc1a3fa10c00',
+  },
+  {
+    label: 'Villas',
+    hint: 'Space and privacy',
+    q: 'buy',
+    t: 'villa',
+    img: '1613490493576-7fde63acd811',
+  },
+  {
+    label: 'Independent houses',
+    hint: 'Own a full home',
+    q: 'buy',
+    t: 'independent-house',
+    img: '1580587771525-78b9dba3b914',
+  },
+  {
+    label: 'Plots',
+    hint: 'JDA approved and more',
+    q: 'buy',
+    t: 'plot',
+    img: '1500382017468-9049fed747ef',
+  },
+  {
+    label: 'Flats for rent',
+    hint: 'Furnished and unfurnished',
+    q: 'rent',
+    t: 'apartment',
+    img: '1560448204-e02f11c3d0e2',
+  },
+  {
+    label: 'PG & hostels',
+    hint: 'Beds with meals',
+    q: 'rent',
+    t: 'pg',
+    img: '1555854877-bab0e564b8d5',
+  },
+  {
+    label: 'Offices',
+    hint: 'Buy or rent',
+    q: 'rent',
+    t: 'office',
+    img: '1497366216548-37526070297c',
+  },
+  {
+    label: 'Shops',
+    hint: 'Showrooms and retail',
+    q: 'rent',
+    t: 'shop',
+    img: '1604719312566-8912e9227c6a',
+  },
+] as const;
+
+export function PropertyTypes({ city, cityName }: { city: string; cityName: string }) {
   return (
-    <section className="py-5 sm:py-6" aria-labelledby="snapshot-heading">
+    <section className="py-8 sm:py-10" aria-labelledby="types-heading">
       <div className="container-page">
-        <SectionHead id="snapshot-heading" title={`${cityName} property snapshot`} />
-        <div className="card p-5 sm:p-6">
-          <details className="group">
-            <summary className="cursor-pointer list-none text-sm leading-relaxed text-ink-soft [&::-webkit-details-marker]:hidden">
-              <span className="line-clamp-2 group-open:line-clamp-none">{text}</span>
-              <span className="mt-1 inline-block font-semibold text-brand group-open:hidden">
-                Read more
-              </span>
-            </summary>
-          </details>
-          {shown.length > 0 && (
-            <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-4">
-              {shown.map((s) => (
-                <div key={s.label}>
-                  <dd className="tabular text-xl font-bold">{s.value.toLocaleString('en-IN')}</dd>
-                  <dt className="text-xs text-ink-muted">{s.label}</dt>
-                </div>
-              ))}
-            </dl>
-          )}
-        </div>
+        <SectionHead
+          id="types-heading"
+          eyebrow="Browse"
+          title="Find your kind of space"
+          sub={`Homes, plots and workspaces across ${cityName}.`}
+        />
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          {TYPES.map((x) => (
+            <li key={x.label}>
+              <Link
+                href={`/${x.q}?city=${city}&propertyType=${x.t}`}
+                className="nx-lift group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-brand-900"
+              >
+                <Image
+                  src={`https://images.unsplash.com/photo-${x.img}?w=600&h=450&fit=crop&q=70&auto=format`}
+                  alt=""
+                  fill
+                  sizes="(min-width: 640px) 25vw, 50vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <span
+                  className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"
+                  aria-hidden
+                />
+                <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 text-white sm:p-4">
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold leading-tight sm:text-lg">
+                      {x.label}
+                    </span>
+                    <span className="block truncate text-xs text-white/80 sm:text-sm">
+                      {x.hint}
+                    </span>
+                  </span>
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur transition-colors group-hover:bg-accent group-hover:text-ink">
+                    <ArrowRight size={14} />
+                  </span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -566,19 +675,40 @@ export function CitySnapshot({
 
 export function PostStrip() {
   return (
-    <section className="container-page py-6" aria-labelledby="post-strip-heading">
-      <div className="flex flex-col gap-4 rounded-2xl bg-accent-50 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-        <div>
-          <h2 id="post-strip-heading" className="font-sans text-xl font-semibold sm:text-2xl">
-            Post your property on NEXUS
-          </h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            Owners, agents and builders get genuine enquiries straight to their dashboard.
-          </p>
+    <section className="container-page py-8 sm:py-10" aria-labelledby="post-strip-heading">
+      <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 via-brand-900 to-[#0B1A3F] p-6 text-white sm:p-10">
+        <JaipurFacade
+          className="absolute inset-x-0 bottom-0 -z-10 h-3/4 w-full text-accent"
+          opacity={0.14}
+        />
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-accent-100">
+              <span className="h-px w-6 bg-current" aria-hidden />
+              For owners, agents and builders
+            </p>
+            <h2
+              id="post-strip-heading"
+              className="mt-2 text-[1.75rem] leading-tight sm:text-[2.25rem]"
+            >
+              Have a property in Jaipur? Put it in front of serious buyers.
+            </h2>
+            <p className="mt-2 text-white/75">
+              Post from your dashboard. Our team reviews it, and enquiries come straight to you.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-3">
+            <Link href="/post-property" className="btn btn-accent">
+              <PlusIcon size={18} /> Post property
+            </Link>
+            <Link
+              href="/signup?role=agent"
+              className="btn border border-white/25 text-white hover:bg-white/10"
+            >
+              Join as agent
+            </Link>
+          </div>
         </div>
-        <Link href="/post-property" className="btn btn-accent shrink-0">
-          <PlusIcon size={18} /> Post property
-        </Link>
       </div>
     </section>
   );
