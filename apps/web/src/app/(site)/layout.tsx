@@ -7,9 +7,10 @@ import { organizationJsonLd } from '@/lib/seo';
 import { SessionProvider } from '@/components/session/SessionProvider';
 import { Analytics } from '@/components/Analytics';
 
-// Render public pages per request so they always reflect current listings and settings.
-// API responses are still cached for REVALIDATE_SECONDS by fetch(), so this stays fast.
-export const dynamic = 'force-dynamic';
+// Public pages are cached and rebuilt in the background at most once a minute (ISR),
+// so a traffic spike is served from cache instead of rendering every request.
+// Pages that read searchParams (filters, pagination) still render per request.
+export const revalidate = 60;
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const [settings, cities] = await Promise.all([getSettings(), getLocations()]);
