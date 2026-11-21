@@ -29,6 +29,13 @@ export const FALLBACK_SETTINGS: SiteSettings = {
 
 export const absoluteUrl = (path = '/') => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
+/**
+ * Locality (area) pages such as /buy/jaipur/mansarovar stay live and in the sitemap for search,
+ * but kapil wants only city-level links in the site's menus and sections (21 Nov 2026).
+ * Set to true to show locality links in the mega menu, footer, home page and /locations again.
+ */
+export const SHOW_LOCALITY_LINKS = false;
+
 export const NAV_LINKS = [
   { href: '/buy', label: 'Buy' },
   { href: '/rent', label: 'Rent' },

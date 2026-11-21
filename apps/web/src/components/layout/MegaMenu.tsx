@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SHOW_LOCALITY_LINKS } from '@/lib/site';
 import type { City } from '@nexus/shared';
 import { NavLink } from './NavLink';
 import { ChevronDown, SparklesIcon } from '../icons';
@@ -18,11 +19,12 @@ function qs(base: string, params: Record<string, string>) {
 
 function menu(cities: City[]): Item[] {
   const city = cities.length === 1 ? cities[0] : undefined;
-  const top = city
-    ? [...city.localities]
-        .sort((a, b) => (b.publishedCount ?? 0) - (a.publishedCount ?? 0))
-        .slice(0, 8)
-    : [];
+  const top =
+    city && SHOW_LOCALITY_LINKS
+      ? [...city.localities]
+          .sort((a, b) => (b.publishedCount ?? 0) - (a.publishedCount ?? 0))
+          .slice(0, 8)
+      : [];
   const buy = city ? `/buy/${city.slug}` : '/buy';
   const rent = city ? `/rent/${city.slug}` : '/rent';
   const where = city ? ` in ${city.name}` : '';

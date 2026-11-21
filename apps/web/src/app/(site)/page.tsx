@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { USER_ROLE_LABELS, whatsappLink, type PropertyCard as Card } from '@nexus/shared';
 import { getFaqs, getHome, getLocations, getSettings } from '@/lib/api';
 import { pageMetadata, websiteJsonLd } from '@/lib/seo';
+import { SHOW_LOCALITY_LINKS } from '@/lib/site';
 import { HeroSearch } from '@/components/search/HeroSearch';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { ProjectGrid } from '@/components/project/ProjectCard';
@@ -144,7 +145,7 @@ export default async function HomePage() {
     getFaqs({ home: true }),
   ]);
   const singleCity = cities.length === 1 ? cities[0] : undefined;
-  const localityList = (singleCity?.localities ?? [])
+  const localityList = (SHOW_LOCALITY_LINKS ? (singleCity?.localities ?? []) : [])
     .slice()
     .sort(
       (a, b) => (b.publishedCount ?? 0) - (a.publishedCount ?? 0) || a.name.localeCompare(b.name),
@@ -376,7 +377,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {singleCity && <PriceTable city={singleCity} />}
+      {singleCity && SHOW_LOCALITY_LINKS && <PriceTable city={singleCity} />}
 
       {/* Localities */}
       {singleCity && localityList.length > 0 && (
