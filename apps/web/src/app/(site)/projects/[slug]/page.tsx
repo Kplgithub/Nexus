@@ -21,6 +21,13 @@ import { MapView } from '@/components/map/Map';
 import { Breadcrumbs, JsonLd } from '@/components/ui';
 import { BadgeCheckIcon, CheckIcon, MapPinIcon } from '@/components/icons';
 
+// Cache each page after its first visit and refresh it in the background once a minute (ISR).
+// No paths are built ahead of time, so builds stay fast and do not need the API.
+export const revalidate = 60;
+export async function generateStaticParams() {
+  return [];
+}
+
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
