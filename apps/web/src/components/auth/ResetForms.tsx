@@ -6,6 +6,7 @@ import { useState } from 'react';
 import type { AuthConfig } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 import { useSession } from '../session/SessionProvider';
+import { ArrowLeft, ArrowRight, LockIcon } from '../icons';
 import { OtpInput, PasswordField, TextField, type FieldErrors } from './fields';
 
 /** Forgot password: mobile → SMS code → new password; email → link (when email is set up). */
@@ -74,12 +75,46 @@ export function ForgotPasswordForm({ config }: { config: AuthConfig }) {
     }
   }
 
+  // The same message is already shown under the field it belongs to.
+  const errorBox = formError && !Object.values(errors).some((v) => v?.[0] === formError) && (
+    <p role="alert" className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger">
+      {formError}
+    </p>
+  );
+
   return (
     <div>
-      <h1 className="text-[2.25rem] leading-tight">Reset your password</h1>
+      {stage === 'code' ? (
+        <button
+          type="button"
+          className="auth-back mb-4"
+          onClick={() => {
+            setStage('ask');
+            setCode('');
+            setErrors({});
+            setFormError(null);
+          }}
+        >
+          <ArrowLeft size={16} />
+          Use a different number
+        </button>
+      ) : (
+        <Link href="/login" className="auth-back mb-4">
+          <ArrowLeft size={16} />
+          Back to log in
+        </Link>
+      )}
       {stage === 'ask' && (
-        <form onSubmit={onAsk} className="mt-8 space-y-5" noValidate>
-          <p className="text-ink-soft">{hint}</p>
+        <span className="mb-4 grid size-[52px] place-items-center rounded-2xl bg-accent-50 text-accent-700">
+          <LockIcon size={26} />
+        </span>
+      )}
+      <h1 className="text-[2.1rem] leading-tight lg:text-[2.375rem]">
+        {stage === 'code' ? 'Set a new password' : 'Forgot your password?'}
+      </h1>
+      {stage === 'ask' && (
+        <form onSubmit={onAsk} className="mt-2 space-y-6" noValidate>
+          <p className="text-[15px] leading-relaxed text-ink-soft">{hint}</p>
           <TextField
             id="identifier"
             label={
@@ -94,30 +129,36 @@ export function ForgotPasswordForm({ config }: { config: AuthConfig }) {
             required
             error={errors.identifier?.[0] ?? errors.phone?.[0]}
           />
-          {formError && (
-            <p role="alert" className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger">
-              {formError}
-            </p>
-          )}
+          {errorBox}
           <button
             type="submit"
-            className="btn btn-primary h-12 w-full"
+            className="auth-cta"
             disabled={busy || (!config.otpEnabled && !config.emailResetEnabled)}
           >
-            {busy ? 'Sending…' : 'Continue'}
+            {busy ? (
+              'Sending…'
+            ) : (
+              <>
+                Send code
+                <span className="auth-cta-arrow" aria-hidden>
+                  <ArrowRight size={14} />
+                </span>
+              </>
+            )}
           </button>
         </form>
       )}
       {stage === 'email-sent' && (
-        <p role="status" className="mt-8 rounded-xl bg-success-50 p-5 text-ink-soft">
+        <p role="status" className="mt-6 rounded-xl bg-success-50 p-5 text-ink-soft">
           If an account exists for <strong>{identifier}</strong>, a reset link is on its way. It
           expires in 30 minutes.
         </p>
       )}
       {stage === 'code' && (
-        <form onSubmit={onReset} className="mt-8 space-y-5" noValidate>
-          <p className="text-ink-soft">
-            If this number has an account, we have sent a 6-digit code to it.
+        <form onSubmit={onReset} className="mt-2 space-y-6" noValidate>
+          <p className="text-[15px] leading-relaxed text-ink-soft">
+            If this number has an account, we have sent a 6-digit code to it. Enter it and choose a
+            new password.
           </p>
           <div>
             <p className="field-label">Code</p>
@@ -134,24 +175,17 @@ export function ForgotPasswordForm({ config }: { config: AuthConfig }) {
             autoComplete="new-password"
             hint="At least 8 characters, with a letter and a number."
             error={errors.password?.[0]}
+            meter
           />
-          {formError && (
-            <p role="alert" className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger">
-              {formError}
-            </p>
-          )}
-          <button
-            type="submit"
-            className="btn btn-primary h-12 w-full"
-            disabled={busy || code.length < 6}
-          >
-            {busy ? 'Saving…' : 'Set new password'}
+          {errorBox}
+          <button type="submit" className="auth-cta" disabled={busy || code.length < 6}>
+            {busy ? 'Saving…' : 'Save and log in'}
           </button>
         </form>
       )}
-      <p className="mt-8 text-center text-sm text-ink-soft">
+      <p className="mt-6 text-center text-[14.5px] text-ink-soft">
         Remembered it?{' '}
-        <Link href="/login" className="font-semibold text-brand hover:underline">
+        <Link href="/login" className="auth-link">
           Log in
         </Link>
       </p>
@@ -194,7 +228,7 @@ export function ResetWithTokenForm() {
   if (!token) {
     return (
       <div>
-        <h1 className="text-[2.25rem] leading-tight">This link is incomplete</h1>
+        <h1 className="text-[2.1rem] leading-tight">This link is incomplete</h1>
         <p className="mt-3 text-ink-soft">
           Open the link from your email again, or{' '}
           <Link href="/forgot-password" className="font-semibold text-brand underline">
@@ -208,21 +242,22 @@ export function ResetWithTokenForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate>
-      <h1 className="text-[2.25rem] leading-tight">Choose a new password</h1>
-      <div className="mt-8 space-y-5">
+      <h1 className="text-[2.1rem] leading-tight lg:text-[2.375rem]">Choose a new password</h1>
+      <div className="mt-6 space-y-6">
         <PasswordField
           id="password"
           label="New password"
           autoComplete="new-password"
           hint="At least 8 characters, with a letter and a number."
           error={errors.password?.[0]}
+          meter
         />
         {formError && (
           <p role="alert" className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger">
             {formError}
           </p>
         )}
-        <button type="submit" className="btn btn-primary h-12 w-full" disabled={busy}>
+        <button type="submit" className="auth-cta" disabled={busy}>
           {busy ? 'Saving…' : 'Set new password'}
         </button>
       </div>

@@ -13,7 +13,7 @@ import {
 } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 import { useSession } from '../session/SessionProvider';
-import { BriefcaseIcon, CheckIcon, CraneIcon, HomeIcon } from '../icons';
+import { ArrowLeft, ArrowRight, BriefcaseIcon, CheckIcon, CraneIcon, HomeIcon } from '../icons';
 import {
   OtpInput,
   PasswordField,
@@ -140,47 +140,59 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
 
   const business = role === 'agent' || role === 'builder';
 
+  const RoleIcon = role ? ROLE_ICONS[role] : HomeIcon;
+  const arrow = (
+    <span className="auth-cta-arrow" aria-hidden>
+      <ArrowRight size={14} />
+    </span>
+  );
+  // The same message is already shown under the field it belongs to.
+  const errorBox = formError && !Object.values(errors).some((v) => v?.[0] === formError) && (
+    <p role="alert" className="mt-5 rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger">
+      {formError}
+    </p>
+  );
+
   return (
     <div>
-      <ol
-        className="mb-8 flex items-center gap-2 text-xs font-semibold text-ink-muted"
-        aria-label="Sign-up progress"
-      >
-        {steps.map((label, i) => (
-          <li key={label} className="flex items-center gap-2">
-            <span
-              className={`grid size-6 place-items-center rounded-full ${i < stepIndex ? 'bg-accent text-brand-900' : i === stepIndex ? 'bg-brand text-white' : 'bg-surface text-ink-muted'}`}
-              aria-hidden
-            >
-              {i < stepIndex ? <CheckIcon size={13} /> : i + 1}
-            </span>
-            <span
-              className={i === stepIndex ? 'text-ink' : ''}
-              aria-current={i === stepIndex ? 'step' : undefined}
-            >
-              {label}
-            </span>
-            {i < steps.length - 1 && <span className="mx-1 h-px w-6 bg-line" aria-hidden />}
-          </li>
-        ))}
-      </ol>
+      <div className="mb-6 flex items-center">
+        <ol className="flex items-center gap-1.5" aria-label="Sign-up progress">
+          {steps.map((label, i) => (
+            <li key={label} className="flex items-center gap-1.5">
+              <span
+                className={`grid size-7 place-items-center rounded-lg text-[13px] font-bold ${i < stepIndex ? 'bg-brand-900 text-white' : i === stepIndex ? 'bg-accent text-white' : 'bg-slate-100 text-ink-muted'}`}
+                aria-current={i === stepIndex ? 'step' : undefined}
+              >
+                {i < stepIndex ? <CheckIcon size={14} /> : i + 1}
+                <span className="sr-only">{label}</span>
+              </span>
+              {i < steps.length - 1 && <span className="h-0.5 w-7 bg-line" aria-hidden />}
+            </li>
+          ))}
+        </ol>
+        <span className="ml-auto text-[12.5px] font-bold tracking-wide text-ink-muted">
+          Step {stepIndex + 1} of {steps.length}
+        </span>
+      </div>
 
       {step === 'role' && (
         <div>
-          <h1 className="text-[2.25rem] leading-tight">Create your account</h1>
-          <p className="mt-2 text-ink-soft">
-            Tell us who you are. You can post properties with any account type.
+          <h1 className="text-[2.1rem] leading-tight lg:text-[2.375rem]">
+            Create your free account
+          </h1>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            Pick the one that fits you best. You can post property with any of them.
           </p>
-          <fieldset className="mt-8">
+          <fieldset className="mt-6">
             <legend className="sr-only">I am</legend>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {USER_ROLES.map((r) => {
                 const Icon = ROLE_ICONS[r];
                 const selected = role === r;
                 return (
                   <label
                     key={r}
-                    className={`flex cursor-pointer items-start gap-4 rounded-2xl border-2 p-5 transition-colors ${selected ? 'border-brand bg-brand-50' : 'border-line hover:border-brand/50'}`}
+                    className={`flex cursor-pointer items-center gap-3.5 rounded-2xl border-[1.5px] px-4 py-3.5 transition-colors ${selected ? 'border-brand-900 shadow-[inset_4px_0_0_var(--color-accent)]' : 'border-line hover:border-brand/50'}`}
                   >
                     <input
                       type="radio"
@@ -191,21 +203,23 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
                       className="sr-only"
                     />
                     <span
-                      className={`grid size-12 shrink-0 place-items-center rounded-xl ${selected ? 'bg-brand text-white' : 'bg-surface text-brand'}`}
+                      className={`grid size-11 shrink-0 place-items-center rounded-full ${selected ? 'bg-brand-900 text-orange-300' : 'border-[1.5px] border-dashed border-blue-300 text-brand'}`}
                     >
-                      <Icon size={24} />
+                      <Icon size={22} />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-lg font-semibold">{USER_ROLE_LABELS[r]}</span>
-                      <span className="mt-0.5 block text-sm text-ink-soft">
+                      <span className="block text-[15.5px] font-bold text-brand-900">
+                        {USER_ROLE_LABELS[r]}
+                      </span>
+                      <span className="mt-0.5 block text-[13px] leading-snug text-ink-muted">
                         {USER_ROLE_DESCRIPTIONS[r]}
                       </span>
                     </span>
                     <span
-                      className={`mt-1 grid size-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-brand bg-brand text-white' : 'border-line-strong'}`}
+                      className={`grid size-[22px] shrink-0 place-items-center rounded-md border-[1.5px] ${selected ? 'border-brand-900 bg-brand-900 text-white' : 'border-line'}`}
                       aria-hidden
                     >
-                      {selected && <CheckIcon size={12} />}
+                      {selected && <CheckIcon size={13} />}
                     </span>
                   </label>
                 );
@@ -214,36 +228,38 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
           </fieldset>
           <button
             type="button"
-            className="btn btn-primary mt-8 h-12 w-full"
+            className="auth-cta mt-6"
             disabled={!role}
             onClick={() => setStep('details')}
           >
             Continue
+            {arrow}
           </button>
         </div>
       )}
 
       {step === 'details' && role && (
         <form onSubmit={onDetails} noValidate>
-          <button
-            type="button"
-            onClick={() => setStep('role')}
-            className="mb-4 text-sm font-semibold text-brand hover:underline"
-          >
+          <button type="button" onClick={() => setStep('role')} className="auth-back mb-3">
+            <ArrowLeft size={16} />
             Change account type
           </button>
-          <h1 className="text-[2.25rem] leading-tight">
+          <h1 className="text-[2.1rem] leading-tight lg:text-[2.375rem]">
             {role === 'individual'
-              ? 'Your details'
+              ? 'A little about you'
               : role === 'agent'
                 ? 'Agent details'
                 : 'Builder details'}
           </h1>
-          <p className="mt-2 text-ink-soft">
-            Signing up as <strong className="text-ink">{USER_ROLE_LABELS[role]}</strong>.
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-[15px] text-ink-soft">
+            Signing up as
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 py-1 pl-2 pr-2.5 text-[13.5px] font-bold text-brand">
+              <RoleIcon size={15} />
+              {USER_ROLE_LABELS[role]}
+            </span>
           </p>
 
-          <div className="mt-8 space-y-5">
+          <div className="mt-6 space-y-5">
             {business && (
               <TextField
                 id="companyName"
@@ -286,6 +302,7 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
               autoComplete="new-password"
               hint="At least 8 characters, with a letter and a number."
               error={errors.password?.[0]}
+              meter
             />
             {business && (
               <TextField
@@ -323,19 +340,23 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
                   type="checkbox"
                   name="acceptTerms"
                   value="true"
-                  className="mt-0.5 size-4 shrink-0 accent-[var(--color-brand)]"
+                  className="mt-0.5 size-[18px] shrink-0 accent-[var(--color-brand-900)]"
                 />
                 <span>
                   I agree to the{' '}
                   <Link
                     href="/terms-and-conditions"
                     target="_blank"
-                    className="text-brand underline"
+                    className="font-bold text-brand underline underline-offset-2"
                   >
                     terms
                   </Link>{' '}
                   and{' '}
-                  <Link href="/privacy-policy" target="_blank" className="text-brand underline">
+                  <Link
+                    href="/privacy-policy"
+                    target="_blank"
+                    className="font-bold text-brand underline underline-offset-2"
+                  >
                     privacy policy
                   </Link>
                   .
@@ -345,64 +366,68 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
             </div>
           </div>
 
-          {formError && (
-            <p role="alert" className="mt-5 rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger">
-              {formError}
-            </p>
-          )}
-          <button type="submit" className="btn btn-primary mt-6 h-12 w-full" disabled={busy}>
-            {busy ? 'Creating account…' : 'Create account'}
+          {errorBox}
+          <button type="submit" className="auth-cta mt-6" disabled={busy}>
+            {busy ? (
+              'Creating account…'
+            ) : (
+              <>
+                Create account
+                {arrow}
+              </>
+            )}
           </button>
         </form>
       )}
 
       {step === 'verify' && (
         <form onSubmit={onVerify} noValidate>
-          <h1 className="text-[2.25rem] leading-tight">Verify your mobile</h1>
-          <p className="mt-2 text-ink-soft">
-            We sent a 6-digit code by SMS. Verified numbers can view owners’ contact details and
-            post faster.
+          <h1 className="text-[2.1rem] leading-tight lg:text-[2.375rem]">Verify your mobile</h1>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            We sent a 6-digit code by SMS. A verified number lets you see owners’ contact details
+            and post faster.
           </p>
-          <div className="mt-8">
+          <div className="mt-7">
             <OtpInput value={code} onChange={setCode} error={errors.code?.[0]} />
             {devCode && (
               <p className="mt-2 rounded bg-warn-50 px-2 py-1 text-xs text-warn">
                 Development mode — code: <strong>{devCode}</strong>
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => void resend()}
-              disabled={timer.left > 0}
-              className="mt-3 text-sm font-semibold text-brand disabled:text-ink-muted"
-            >
-              {timer.left > 0 ? `Resend code in ${timer.left}s` : 'Resend code'}
-            </button>
-          </div>
-          {formError && (
-            <p role="alert" className="mt-5 rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger">
-              {formError}
+            <p className="mt-4 text-sm text-ink-muted">
+              Didn&apos;t get it?{' '}
+              <button
+                type="button"
+                onClick={() => void resend()}
+                disabled={timer.left > 0}
+                className="font-bold text-brand disabled:text-ink-muted"
+              >
+                {timer.left > 0
+                  ? `Resend in 0:${String(timer.left).padStart(2, '0')}`
+                  : 'Resend code'}
+              </button>
             </p>
-          )}
-          <button
-            type="submit"
-            className="btn btn-primary mt-6 h-12 w-full"
-            disabled={busy || code.length < 6}
-          >
+          </div>
+          {errorBox}
+          <button type="submit" className="auth-cta mt-6" disabled={busy || code.length < 6}>
             {busy ? 'Verifying…' : 'Verify and continue'}
           </button>
-          <button type="button" onClick={() => void finish()} className="btn btn-ghost mt-2 w-full">
+          <button
+            type="button"
+            onClick={() => void finish()}
+            className="mt-2 w-full py-2.5 text-[14.5px] font-bold text-ink-muted hover:text-brand"
+          >
             Skip for now
           </button>
         </form>
       )}
 
       {step !== 'verify' && (
-        <p className="mt-8 text-center text-sm text-ink-soft">
+        <p className="mt-6 text-center text-[14.5px] text-ink-soft">
           Already have an account?{' '}
           <Link
             href={`/login${params.get('next') ? `?next=${encodeURIComponent(next)}` : ''}`}
-            className="font-semibold text-brand hover:underline"
+            className="auth-link"
           >
             Log in
           </Link>

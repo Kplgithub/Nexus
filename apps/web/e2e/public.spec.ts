@@ -64,7 +64,7 @@ test.describe('public site', () => {
   test('dashboard requires sign-in', async ({ page }) => {
     await page.goto('/dashboard/listings');
     await expect(page).toHaveURL(/\/login\?next=%2Fdashboard%2Flistings/);
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Log in to NEXUS' })).toBeVisible();
   });
 
   test('contact form validates before sending', async ({ page }) => {
