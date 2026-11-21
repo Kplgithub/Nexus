@@ -10,6 +10,7 @@ import {
   type PaymentStatus,
   type PaymentSummary,
   type Plan,
+  type SiteSettings,
   type UserRole,
 } from '@nexus/shared';
 import {
@@ -153,6 +154,8 @@ function Inner() {
         </div>
       </section>
 
+      <FeaturedPrices />
+
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-sans text-lg font-bold">Payments</h2>
@@ -245,6 +248,83 @@ function Inner() {
         />
       )}
     </>
+  );
+}
+
+/** The paid Featured prices (7 days and 1 month) that owners, agents and builders pay. */
+function FeaturedPrices() {
+  const { toast } = useAdmin();
+  const settings = useApi<SiteSettings>('/admin/settings');
+  const [p7, setP7] = useState<string | null>(null);
+  const [p30, setP30] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const cur = settings.data?.featurePrices;
+  const v7 = p7 ?? String(cur?.days7 ?? '');
+  const v30 = p30 ?? String(cur?.days30 ?? '');
+  const changed = !!cur && (Number(v7) !== cur.days7 || Number(v30) !== cur.days30);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch('/admin/settings', {
+        method: 'PATCH',
+        body: { featurePrices: { days7: Number(v7), days30: Number(v30) } },
+      });
+      toast('Featured prices saved. The website shows them within a minute.');
+      setP7(null);
+      setP30(null);
+      settings.reload();
+    } catch (err) {
+      toast(errMsg(err), 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mb-8">
+      <h2 className="mb-3 font-sans text-lg font-bold">Featured prices</h2>
+      <form className="card flex flex-wrap items-end gap-4 p-4" onSubmit={save}>
+        <div>
+          <label htmlFor="fp-7" className="field-label">
+            7 days (₹, with GST)
+          </label>
+          <input
+            id="fp-7"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            required
+            className="field w-40"
+            value={v7}
+            onChange={(e) => setP7(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="fp-30" className="field-label">
+            1 month (₹, with GST)
+          </label>
+          <input
+            id="fp-30"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            required
+            className="field w-40"
+            value={v30}
+            onChange={(e) => setP30(e.target.value)}
+          />
+        </div>
+        <button type="submit" className="btn btn-primary" disabled={busy || !changed}>
+          {busy ? 'Saving…' : 'Save prices'}
+        </button>
+        <p className="basis-full text-sm text-ink-muted">
+          Anyone can pay this to feature one live listing. Listings already featured are not
+          changed.
+        </p>
+      </form>
+    </section>
   );
 }
 

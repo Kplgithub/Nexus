@@ -238,7 +238,7 @@ function Listings() {
                     href={`/dashboard/feature?listing=${p.id}`}
                     className="btn btn-accent btn-sm"
                   >
-                    ⚡ Feature · ₹49
+                    ⚡ Feature
                   </Link>
                 )}
                 {!p.awaitingPlan &&
