@@ -28,6 +28,8 @@ RUN groupadd --system nexus && useradd --system --gid nexus --home /app nexus
 COPY --from=build --chown=nexus:nexus /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=nexus:nexus /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build --chown=nexus:nexus /repo/apps/web/public ./apps/web/public
+# India IP → city table for the home page city (src/lib/geo.ts reads it from the app folder).
+COPY --from=build --chown=nexus:nexus /repo/apps/web/data ./apps/web/data
 USER nexus
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

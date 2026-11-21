@@ -31,6 +31,18 @@ export default function CookiePage() {
           for your consent first.
         </p>
       )}
+      <h2>Your city</h2>
+      <p>
+        The home page shows properties in your city. To pick it, our own server makes a rough guess
+        from your IP address (it is not sent to anyone else) and remembers the result in{' '}
+        <code>nexus_geo</code> for 30 days. If you choose a city from the menu at the top, it is
+        saved in <code>nexus_city</code>, and <code>nexus_home</code> remembers which city the home
+        page showed. These cookies hold only a city, not who you are. IP location data by{' '}
+        <a href="https://db-ip.com" rel="noopener">
+          DB-IP
+        </a>
+        .
+      </p>
       <h2>Admin area</h2>
       <p>
         Staff who sign in to manage listings receive two strictly necessary cookies:{' '}
