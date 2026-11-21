@@ -79,6 +79,7 @@ const NAV: { group: string | null; items: NavItem[] }[] = [
       { href: '/admin/blog', label: 'Blog', icon: 'pen' },
       { href: '/admin/locations', label: 'Locations & SEO', icon: 'pin' },
       { href: '/admin/faqs', label: 'FAQs', icon: 'help' },
+      { href: '/admin/search-insights', label: 'Search insights', icon: 'search' },
     ],
   },
   {

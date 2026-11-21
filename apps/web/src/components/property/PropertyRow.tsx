@@ -17,6 +17,7 @@ import { absoluteUrl } from '@/lib/site';
 import { BadgeCheckIcon, ImageIcon, MapPinIcon, PhoneIcon, WhatsAppIcon } from '../icons';
 import { DemoBadge } from '../ui';
 import { SaveButton } from './SaveButton';
+import type { SmartMatch } from '@/lib/smart-search-types';
 
 function postedAgo(iso: string | null) {
   if (!iso) return null;
@@ -28,6 +29,35 @@ function postedAgo(iso: string | null) {
   return `Posted ${months} ${months === 1 ? 'month' : 'months'} ago`;
 }
 
+const LEVEL_STYLE = {
+  yes: 'bg-success-50 text-success',
+  near: 'bg-accent-50 text-accent-700',
+  no: 'bg-surface text-ink-muted line-through decoration-ink-muted/50',
+} as const;
+const LEVEL_MARK = { yes: '✓', near: '≈', no: '✕' } as const;
+
+/** "Exact match · ✓ Vaishali Nagar · ✓ In budget · ≈ 3 BHK" */
+function MatchStrip({ match }: { match: SmartMatch }) {
+  return (
+    <ul className="mt-3 flex flex-wrap items-center gap-1.5 text-xs" aria-label="Why this matches">
+      <li
+        className={`rounded-full px-2.5 py-0.5 font-semibold ${match.exact ? 'bg-success text-white' : 'bg-accent text-brand-900'}`}
+      >
+        {match.exact ? 'Exact match' : `${Math.round(match.score * 100)}% match`}
+      </li>
+      {match.reasons.map((r) => (
+        <li
+          key={r.label}
+          className={`rounded-full px-2 py-0.5 font-medium ${LEVEL_STYLE[r.level]}`}
+        >
+          <span aria-hidden>{LEVEL_MARK[r.level]} </span>
+          {r.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * One listing as a wide row (photo left, facts middle, price and contact
  * right), the way the big portals show search results on desktop.
@@ -37,11 +67,14 @@ export function PropertyRow({
   index = 0,
   priority = false,
   whatsapp,
+  match,
 }: {
   p: Card;
   index?: number;
   priority?: boolean;
   whatsapp?: string;
+  /** From the smart search: why this listing was picked. */
+  match?: SmartMatch;
 }) {
   const href = `/properties/${p.slug}`;
   const closed = p.status !== 'published';
@@ -61,7 +94,7 @@ export function PropertyRow({
 
   return (
     <article
-      className={`nx-rise nx-lift group relative grid overflow-hidden rounded-2xl border bg-white ${p.featured && !closed ? 'border-2 border-accent shadow-[0_10px_30px_rgba(249,115,22,0.18)]' : 'border-line'} sm:grid-cols-[17rem_1fr] xl:grid-cols-[18rem_1fr_13rem]`}
+      className={`nx-rise nx-lift group relative grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl border bg-white ${p.featured && !closed ? 'border-2 border-accent shadow-[0_10px_30px_rgba(249,115,22,0.18)]' : 'border-line'} sm:grid-cols-[17rem_1fr] xl:grid-cols-[18rem_1fr_13rem]`}
       style={{ '--i': index } as React.CSSProperties}
     >
       <div className="nx-shine relative aspect-[4/3] overflow-hidden bg-surface sm:aspect-auto sm:min-h-[14rem]">
@@ -136,6 +169,7 @@ export function PropertyRow({
             {p.locality.name}, {p.city.name}
           </span>
         </p>
+        {match && <MatchStrip match={match} />}
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl bg-surface/70 p-3 sm:grid-cols-3">
           {facts.slice(0, 6).map(([k, v]) => (
             <div key={k} className="min-w-0">
@@ -149,7 +183,7 @@ export function PropertyRow({
         </p>
       </div>
 
-      <div className="relative flex flex-row items-center justify-between gap-3 border-t border-line p-4 sm:col-span-2 xl:col-span-1 xl:flex-col xl:items-stretch xl:justify-center xl:border-l xl:border-t-0 xl:bg-gradient-to-b xl:from-brand-50/60 xl:to-white">
+      <div className="relative flex flex-row flex-wrap items-center justify-between gap-3 border-t border-line p-4 sm:col-span-2 xl:col-span-1 xl:flex-col xl:items-stretch xl:justify-center xl:border-l xl:border-t-0 xl:bg-gradient-to-b xl:from-brand-50/60 xl:to-white">
         <div>
           <p className="tabular text-2xl font-bold leading-none tracking-tight text-ink">
             {formatPrice(p.price, p.listingType)}

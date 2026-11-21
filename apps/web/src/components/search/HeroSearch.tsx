@@ -12,6 +12,7 @@ import {
 } from '@nexus/shared';
 import { toQueryString } from '@/lib/search-params';
 import { SMART_EXAMPLES, parseSmartQuery } from '@/lib/smart-search';
+import { smartSearchHref } from '@/lib/smart-search-types';
 import { priceLabel, priceSteps } from './options';
 import { FilterIcon, SearchIcon, SparklesIcon } from '../icons';
 
@@ -112,13 +113,27 @@ export function HeroSearch({ cities }: { cities: City[] }) {
     });
   }, [text, tab, city, smartLocalities]);
 
+  /** Hand the text to the AI search page; new projects keep their own listing. */
   function goSmart(query: string) {
-    const r = parseSmartQuery(query, { city: city || undefined, localities: smartLocalities });
-    start(() => router.push(r.path));
+    if (tab === 'projects') {
+      const r = parseSmartQuery(`${query}${TAB_HINT.projects}`, {
+        city: city || undefined,
+        localities: smartLocalities,
+      });
+      return start(() => router.push(r.path));
+    }
+    const q =
+      DEAL_WORDS.test(query) || tab === 'sale' || tab === 'rent'
+        ? query
+        : `${query}${TAB_HINT[tab]}`;
+    const dealFor: ListingType =
+      tab === 'rent' || tab === 'pg' ? 'rent' : tab === 'commercial' ? deal : 'sale';
+    start(() => router.push(smartSearchHref({ q: q.trim(), deal: dealFor })));
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (mode === 'smart' && text.trim()) return goSmart(text.trim());
     if (mode === 'smart') {
       const path =
         smart?.path ??
