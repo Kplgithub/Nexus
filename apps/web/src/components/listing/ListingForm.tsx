@@ -47,7 +47,7 @@ import { apiFetch } from '@/lib/client-api';
 import { PinPicker } from '../map/Map';
 import { ImageManager } from '../admin/ImageManager';
 import { PropertyCard } from '../property/PropertyCard';
-import { BuildingIcon, CheckIcon, HomeIcon } from '../icons';
+import { BuildingIcon, CheckIcon, HomeIcon, KeyIcon } from '../icons';
 
 /* ------------------------------------------------------------------ */
 /* Form state                                                          */
@@ -398,6 +398,7 @@ export function ListingFields({
                   onChange={() => set('listingType', t)}
                   title={t === 'sale' ? 'Sell' : 'Rent out'}
                   text={t === 'sale' ? 'Find a buyer' : 'Find a tenant'}
+                  Icon={t === 'sale' ? HomeIcon : KeyIcon}
                 />
               ))}
             </div>

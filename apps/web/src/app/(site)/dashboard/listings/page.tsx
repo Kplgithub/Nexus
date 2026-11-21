@@ -227,7 +227,7 @@ function Listings() {
                 )}
                 {live && (
                   <Link
-                    href={`/dashboard/plans?feature=${p.id}#feature`}
+                    href={`/dashboard/feature?listing=${p.id}`}
                     className="btn btn-accent btn-sm"
                   >
                     ⚡ Feature · ₹49

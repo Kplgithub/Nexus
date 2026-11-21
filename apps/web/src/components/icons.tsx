@@ -335,3 +335,18 @@ export const ArrowLeft = (p: P) => (
     <path d="M19 12H5M11 6l-6 6 6 6" />
   </svg>
 );
+export const CrownIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="m3 8 4.5 4L12 5l4.5 7L21 8l-2 11H5Z" />
+  </svg>
+);
+export const BoltIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M13 2 4 14h7l-1 8 9-12h-7Z" />
+  </svg>
+);
+export const ReceiptIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M6 3h12v18l-3-2-3 2-3-2-3 2ZM9 8h6M9 12h6" />
+  </svg>
+);
