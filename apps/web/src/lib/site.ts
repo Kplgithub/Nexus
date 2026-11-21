@@ -33,6 +33,7 @@ export const FALLBACK_SETTINGS: SiteSettings = {
       'Explore residential homes and commercial spaces that fit your needs, lifestyle, and business goals.',
     showRecent: true,
     showFeatured: true,
+    banners: [],
   },
   allowInternationalEnquiries: false,
   featurePrices: { days7: 49, days30: 99 },

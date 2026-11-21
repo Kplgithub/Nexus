@@ -335,7 +335,7 @@ export async function ProfilePage({ role, slug }: { role: ProfileRole; slug: str
   );
 }
 
-function Avatar({
+export function Avatar({
   name,
   logoUrl,
   size = 'md',
