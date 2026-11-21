@@ -26,6 +26,11 @@ const TABS: { id: string; label: string; statuses?: PropertyStatus[] }[] = [
   { id: 'closed', label: 'Closed', statuses: ['rented', 'sold', 'inactive'] },
 ];
 
+const featuredNow = (p: OwnListing) =>
+  p.status === 'published' && !!p.featuredUntil && new Date(p.featuredUntil) > new Date();
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
 function Listings() {
   const params = useSearchParams();
   const router = useRouter();
@@ -54,11 +59,17 @@ function Listings() {
     setMessage(null);
     try {
       if (action === 'delete') await apiFetch(`/me/properties/${p.id}`, { method: 'DELETE' });
-      else
-        await apiFetch(`/me/properties/${p.id}/status`, {
+      else {
+        const { data: next } = await apiFetch<OwnListing>(`/me/properties/${p.id}/status`, {
           method: 'POST',
           body: { status: action },
         });
+        // No free listing left and no plan: send them to take one.
+        if (next.awaitingPlan) {
+          router.push(`/dashboard/plans?saved=${p.id}`);
+          return;
+        }
+      }
       setMessage({ kind: 'ok', text: done });
       reload();
     } catch (err) {
@@ -131,7 +142,10 @@ function Listings() {
           const live = p.status === 'published';
           const closed = ['rented', 'sold', 'archived'].includes(p.status);
           return (
-            <li key={p.id} className="overflow-hidden rounded-2xl border border-line bg-white">
+            <li
+              key={p.id}
+              className={`overflow-hidden rounded-2xl border bg-white ${featuredNow(p) ? 'border-2 border-accent' : 'border-line'}`}
+            >
               <div className="grid gap-4 p-4 sm:grid-cols-[10rem_1fr]">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-surface">
                   {cover ? (
@@ -144,7 +158,16 @@ function Listings() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Pill status={p.status} label={PROPERTY_STATUS_LABELS[p.status]} />
+                    {p.awaitingPlan ? (
+                      <Pill status="pending" label="Waiting for plan" />
+                    ) : (
+                      <Pill status={p.status} label={PROPERTY_STATUS_LABELS[p.status]} />
+                    )}
+                    {featuredNow(p) && (
+                      <span className="rounded-full bg-accent-50 px-2.5 py-0.5 text-xs font-bold text-accent-700">
+                        ⚡ Featured till {shortDate(p.featuredUntil!)}
+                      </span>
+                    )}
                     <span className="text-xs text-ink-muted">
                       {p.listingType === 'sale' ? 'For sale' : 'For rent'} ·{' '}
                       {PROPERTY_TYPE_LABELS[p.propertyType]}
@@ -159,7 +182,8 @@ function Listings() {
                   </p>
                   {live && (
                     <p className="mt-1 text-xs text-ink-muted">
-                      {p.enquiryCount} {p.enquiryCount === 1 ? 'lead' : 'leads'}
+                      {p.views ?? 0} views · {p.enquiryCount}{' '}
+                      {p.enquiryCount === 1 ? 'lead' : 'leads'}
                     </p>
                   )}
                 </div>
@@ -168,6 +192,14 @@ function Listings() {
               {p.status === 'rejected' && p.moderationNote && (
                 <p className="mx-4 mb-4 rounded-lg bg-danger-50 p-3 text-sm text-danger">
                   <strong>What to fix:</strong> {p.moderationNote}
+                </p>
+              )}
+              {p.awaitingPlan && (
+                <p className="mx-4 mb-4 rounded-lg bg-warn-50 p-3 text-sm text-warn">
+                  This listing is saved. Take Premium to send it for review.{' '}
+                  <Link href={`/dashboard/plans?saved=${p.id}`} className="font-semibold underline">
+                    See plan
+                  </Link>
                 </p>
               )}
               {p.status === 'pending' && (
@@ -188,16 +220,30 @@ function Listings() {
                     <EyeIcon size={15} /> View
                   </Link>
                 )}
-                {(p.status === 'draft' || p.status === 'rejected' || p.status === 'inactive') && (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    disabled={busy === p.id}
-                    onClick={() => act(p, 'pending', 'Submitted for review')}
-                  >
-                    Submit for review
-                  </button>
+                {p.awaitingPlan && (
+                  <Link href={`/dashboard/plans?saved=${p.id}`} className="btn btn-accent btn-sm">
+                    Take Premium to publish
+                  </Link>
                 )}
+                {live && (
+                  <Link
+                    href={`/dashboard/plans?feature=${p.id}#feature`}
+                    className="btn btn-accent btn-sm"
+                  >
+                    ⚡ Feature · ₹49
+                  </Link>
+                )}
+                {!p.awaitingPlan &&
+                  (p.status === 'draft' || p.status === 'rejected' || p.status === 'inactive') && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      disabled={busy === p.id}
+                      onClick={() => act(p, 'pending', 'Submitted for review')}
+                    >
+                      Submit for review
+                    </button>
+                  )}
                 {live && (
                   <>
                     <button

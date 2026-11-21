@@ -61,7 +61,7 @@ export function PropertyRow({
 
   return (
     <article
-      className="nx-rise nx-lift group relative grid overflow-hidden rounded-2xl border border-line bg-white sm:grid-cols-[17rem_1fr] xl:grid-cols-[18rem_1fr_13rem]"
+      className={`nx-rise nx-lift group relative grid overflow-hidden rounded-2xl border bg-white ${p.featured && !closed ? 'border-2 border-accent shadow-[0_10px_30px_rgba(249,115,22,0.18)]' : 'border-line'} sm:grid-cols-[17rem_1fr] xl:grid-cols-[18rem_1fr_13rem]`}
       style={{ '--i': index } as React.CSSProperties}
     >
       <div className="nx-shine relative aspect-[4/3] overflow-hidden bg-surface sm:aspect-auto sm:min-h-[14rem]">
@@ -83,7 +83,10 @@ export function PropertyRow({
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
           <div className="flex flex-wrap gap-1.5">
             {p.featured && !closed && (
-              <span className="rounded-full bg-gradient-to-r from-amber-400 to-amber-300 px-2.5 py-1 text-xs font-semibold text-amber-950 shadow-sm">
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-accent to-orange-400 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden>
+                  <path d="M13 2 4 14h7l-1 8 9-12h-7Z" />
+                </svg>
                 Featured
               </span>
             )}

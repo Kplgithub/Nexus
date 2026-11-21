@@ -20,7 +20,7 @@ export async function GET() {
 
   const body = `# NEXUS Estate
 
-> NEXUS Estate (nexusestate.in) is a property portal for Jaipur, Rajasthan, India. People buy, rent and sell flats, independent houses, villas, plots, offices and shops. Listings come from owners, agents and builders and are reviewed by the NEXUS team before they go live. Owners can post property for free.
+> NEXUS Estate (nexusestate.in) is a property portal for Jaipur, Rajasthan, India. People buy, rent and sell flats, independent houses, villas, plots, offices and shops. Listings come from owners, agents and builders and are reviewed by the NEXUS team before they go live. Owners, agents and builders post listings with a Premium plan; agents and builders get 5 free listings.
 
 ## Buy and rent
 ${cityLines || `- [Buy property](${SITE_URL}/buy)\n- [Rent property](${SITE_URL}/rent)`}

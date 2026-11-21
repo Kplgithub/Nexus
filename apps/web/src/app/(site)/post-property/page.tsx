@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { LISTING_LIMITS } from '@nexus/shared';
+import { DEFAULT_PLAN, LISTING_LIMITS } from '@nexus/shared';
 import { pageMetadata } from '@/lib/seo';
 import { JaipurFacade } from '@/components/art/JaipurFacade';
 import { PostPropertyCta } from '@/components/session/PostPropertyCta';
 import { BadgeCheckIcon, BriefcaseIcon, CraneIcon, HomeIcon } from '@/components/icons';
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Post Property Free — Sell or Rent Out Your Property',
+  title: 'Post Property — Sell or Rent Out Your Property',
   description:
-    'Owners, agents and builders can list property for sale or rent on NEXUS Estate for free. Every listing is reviewed before it goes live.',
+    'Owners, agents and builders can list property for sale or rent on NEXUS Estate. Agents and builders get 5 free listings. Every listing is reviewed before it goes live.',
   path: '/post-property',
 });
 
@@ -19,7 +19,7 @@ const ROLES = [
     Icon: HomeIcon,
     title: 'Owner',
     points: [
-      `Up to ${LISTING_LIMITS.individual} active listings`,
+      `Fill in your property, then Premium at ₹${DEFAULT_PLAN.price}/month to publish`,
       'Your number stays hidden unless you choose to show it',
       'Enquiries arrive in your dashboard as leads',
     ],
@@ -29,7 +29,7 @@ const ROLES = [
     Icon: BriefcaseIcon,
     title: 'Agent',
     points: [
-      `Up to ${LISTING_LIMITS.agent} active listings`,
+      `${LISTING_LIMITS.agent} free listings, ${DEFAULT_PLAN.listingLimit} with Premium`,
       'Agency name and RERA number on every listing',
       'One inbox for leads across all your listings',
     ],
@@ -39,7 +39,7 @@ const ROLES = [
     Icon: CraneIcon,
     title: 'Builder',
     points: [
-      `Up to ${LISTING_LIMITS.builder} active listings`,
+      `${LISTING_LIMITS.builder} free listings, ${DEFAULT_PLAN.listingLimit} with Premium`,
       'Project name, RERA ID and possession date shown to buyers',
       'New-booking and under-construction listings supported',
     ],
@@ -64,11 +64,11 @@ export default function PostPropertyPage() {
         <div className="container-page grid gap-10 py-16 sm:py-24 lg:grid-cols-[1.3fr_1fr] lg:items-end">
           <div>
             <h1 className="text-[2.6rem] leading-[1.05] sm:text-[3.6rem]">
-              Sell or rent out your property, free.
+              Sell or rent out your property.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-white/75">
               List from your own dashboard, track who is interested, and mark it sold or rented when
-              you’re done. No listing fee.
+              you’re done. Agents and builders start with 5 free listings.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <PostPropertyCta className="btn btn-accent h-12 px-6" />

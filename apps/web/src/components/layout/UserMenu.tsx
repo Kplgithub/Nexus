@@ -46,9 +46,6 @@ export function UserMenu() {
     <div className="flex items-center gap-2">
       <Link href={postHref} className="btn btn-outline hidden border-brand/40 sm:inline-flex">
         <PlusIcon size={17} /> Post property
-        <span className="rounded bg-accent-50 px-1.5 py-0.5 text-[0.6875rem] font-bold text-accent-700">
-          Free
-        </span>
       </Link>
 
       {loading ? (

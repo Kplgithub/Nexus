@@ -71,8 +71,12 @@ export default function DashboardOverview() {
         </dl>
         {data && (
           <p className="mt-3 text-sm text-ink-muted">
-            You can have up to {data.listingLimit} active listings ({data.listings.total} created so
-            far).{' '}
+            {data.usage.listings.limit > 0
+              ? `You have posted ${data.usage.listings.used} of ${data.usage.listings.limit} listings ${data.subscription ? 'in your plan' : 'free'}.`
+              : 'Take Premium to post your listings.'}{' '}
+            {data.usage.awaitingPlan > 0 && (
+              <b className="text-warn">{data.usage.awaitingPlan} waiting for a plan. </b>
+            )}
             {data.subscription ? (
               <>
                 Your {data.subscription.plan.name} plan is valid till{' '}
@@ -149,12 +153,18 @@ export default function DashboardOverview() {
                     {l.property ? ` for ${l.property.title}` : ''}
                   </p>
                 </div>
-                <a
-                  href={`tel:${l.phone}`}
-                  className="tabular font-medium text-brand hover:underline"
-                >
-                  {formatIndianPhone(l.phone)}
-                </a>
+                {l.locked ? (
+                  <Link href="/dashboard/plans" className="font-semibold text-accent-700">
+                    🔒 Hidden · Unlock
+                  </Link>
+                ) : (
+                  <a
+                    href={`tel:${l.phone}`}
+                    className="tabular font-medium text-brand hover:underline"
+                  >
+                    {formatIndianPhone(l.phone)}
+                  </a>
+                )}
               </li>
             ))}
           </ul>
