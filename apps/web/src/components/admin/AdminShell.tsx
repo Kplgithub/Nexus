@@ -71,6 +71,7 @@ const NAV: { group: string | null; items: NavItem[] }[] = [
         icon: 'badge',
         badge: (b) => b.verification,
       },
+      { href: '/admin/support', label: 'Support', icon: 'chat', badge: (b) => b.support },
     ],
   },
   {
@@ -98,7 +99,7 @@ const TABS: NavItem[] = [
   { href: '/admin', label: 'Home', icon: 'home' },
   { href: '/admin/review', label: 'Review', icon: 'review', badge: (b) => b.review + b.projects },
   { href: '/admin/enquiries', label: 'Leads', icon: 'inbox', badge: (b) => b.leads },
-  { href: '/admin/visits', label: 'Visits', icon: 'calendar' },
+  { href: '/admin/support', label: 'Support', icon: 'chat', badge: (b) => b.support },
 ];
 
 const initials = (name: string) =>

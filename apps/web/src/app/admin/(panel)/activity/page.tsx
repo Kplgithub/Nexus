@@ -12,6 +12,7 @@ const AREAS = [
   ['property', 'Listings'],
   ['enquiry', 'Leads'],
   ['visit', 'Site visits'],
+  ['support', 'Support'],
   ['user', 'Website users'],
   ['team', 'Team'],
   ['blog', 'Blog'],
