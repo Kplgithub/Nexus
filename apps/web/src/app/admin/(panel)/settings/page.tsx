@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { SiteSettings } from '@nexus/shared';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
+import { BannerEditor } from '@/components/admin/BannerEditor';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 
@@ -20,7 +21,10 @@ export default function SettingsPage() {
 
 function SettingsForm({ initial }: { initial: SiteSettings }) {
   const { toast, can } = useAdmin();
-  const [s, setS] = useState<SiteSettings>(initial);
+  const [s, setS] = useState<SiteSettings>({
+    ...initial,
+    home: { ...initial.home, banners: initial.home.banners ?? [] },
+  });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const disabled = !can('admin');
@@ -34,6 +38,7 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
         method: 'PATCH',
         body: {
           ...s,
+          home: { ...s.home, heroImageUrl: s.home.heroImageUrl ?? '' },
           email: s.email ?? '',
           enquiryNotificationEmail: s.enquiryNotificationEmail ?? '',
         },
@@ -203,6 +208,14 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
           </label>
         </div>
       </section>
+
+      <BannerEditor
+        banners={s.home.banners}
+        disabled={disabled}
+        toast={toast}
+        onChange={(banners) => setS({ ...s, home: { ...s.home, banners } })}
+      />
+      {e('home.banners')}
 
       <section className="card grid gap-4 p-5 md:grid-cols-2">
         <h2 className="text-lg font-semibold md:col-span-2">Leads</h2>
