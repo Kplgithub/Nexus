@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SHOW_LOCALITY_LINKS } from '@/lib/site';
 import Image from 'next/image';
 import { formatIndianPhone, whatsappLink, type City, type SiteSettings } from '@nexus/shared';
 import {
@@ -25,7 +26,7 @@ const SOCIAL = [
 export function Footer({ settings, cities }: { settings: SiteSettings; cities: City[] }) {
   const year = new Date().getFullYear();
   const localities = cities.flatMap((c) =>
-    c.localities
+    (SHOW_LOCALITY_LINKS ? c.localities : [])
       .filter((l) => (l.publishedCount ?? 0) > 0 || l.intro)
       .slice(0, 8)
       .map((l) => ({ ...l, city: c })),

@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { USER_ROLE_LABELS, whatsappLink, type PropertyCard as Card } from '@nexus/shared';
 import { getFaqs, getHome, getLocations, getSettings } from '@/lib/api';
 import { pageMetadata, websiteJsonLd } from '@/lib/seo';
+import { SHOW_LOCALITY_LINKS } from '@/lib/site';
 import { HeroSearch } from '@/components/search/HeroSearch';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { ProjectGrid } from '@/components/project/ProjectCard';
@@ -40,11 +41,17 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const cities = await getLocations();
   const where = cities.length === 1 ? ` in ${cities[0]!.name}` : '';
-  return pageMetadata({
-    title: `NEXUS Estate | Property to Buy and Rent${where}`,
+  // Keyword first, brand once: `absolute` skips the "%s | NEXUS Estate" template,
+  // which used to give "NEXUS Estate | ... | NEXUS Estate".
+  const title = where
+    ? `Property${where}: Flats & Houses to Buy and Rent | NEXUS Estate`
+    : 'NEXUS Estate | Buy, Rent & Sell Property';
+  const meta = pageMetadata({
+    title,
     description: `Flats, houses, villas, plots, offices and shops for sale and rent${where}. Every listing is reviewed before it goes live. Owners, agents and builders can post property free.`,
     path: '/',
   });
+  return { ...meta, title: { absolute: title } };
 }
 
 const POSTERS = [
@@ -144,7 +151,7 @@ export default async function HomePage() {
     getFaqs({ home: true }),
   ]);
   const singleCity = cities.length === 1 ? cities[0] : undefined;
-  const localityList = (singleCity?.localities ?? [])
+  const localityList = (SHOW_LOCALITY_LINKS ? (singleCity?.localities ?? []) : [])
     .slice()
     .sort(
       (a, b) => (b.publishedCount ?? 0) - (a.publishedCount ?? 0) || a.name.localeCompare(b.name),
@@ -376,7 +383,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {singleCity && <PriceTable city={singleCity} />}
+      {singleCity && SHOW_LOCALITY_LINKS && <PriceTable city={singleCity} />}
 
       {/* Localities */}
       {singleCity && localityList.length > 0 && (
