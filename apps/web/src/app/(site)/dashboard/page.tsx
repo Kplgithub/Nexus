@@ -72,7 +72,21 @@ export default function DashboardOverview() {
         {data && (
           <p className="mt-3 text-sm text-ink-muted">
             You can have up to {data.listingLimit} active listings ({data.listings.total} created so
-            far).
+            far).{' '}
+            {data.subscription ? (
+              <>
+                Your {data.subscription.plan.name} plan is valid till{' '}
+                {new Date(data.subscription.endsAt).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+                .{' '}
+              </>
+            ) : null}
+            <Link href="/dashboard/plans" className="font-semibold text-brand underline">
+              {data.subscription ? 'See plan' : 'Need more? See plans'}
+            </Link>
           </p>
         )}
       </section>
