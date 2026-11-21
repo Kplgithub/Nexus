@@ -3,14 +3,20 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { USER_ROLE_LABELS, formatIndianPhone, type AdminWebsiteUser } from '@nexus/shared';
-import { PageTitle, StatusPill, useAdmin } from '@/components/admin/AdminShell';
+import {
+  USER_ROLE_LABELS,
+  VERIFICATION_STATUS_LABELS,
+  formatIndianPhone,
+  type AdminWebsiteUser,
+} from '@nexus/shared';
+import { PageTitle, Skeleton, StatusPill, useAdmin } from '@/components/admin/AdminShell';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
 
 export default function AdminUserPage() {
   const { id } = useParams<{ id: string }>();
-  const { toast, can } = useAdmin();
+  const { toast, can, isSuper } = useAdmin();
+  const [pw, setPw] = useState('');
   const { data: u, error, reload } = useApi<AdminWebsiteUser>(`/admin/users/${id}`);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -29,7 +35,7 @@ export default function AdminUserPage() {
   }
 
   if (error) return <p className="rounded-lg bg-danger-50 p-3 text-danger">{error}</p>;
-  if (!u) return <p className="text-ink-muted">Loading…</p>;
+  if (!u) return <Skeleton className="h-64 w-full" />;
 
   const facts: [string, React.ReactNode][] = [
     ['Account type', USER_ROLE_LABELS[u.role]],
@@ -59,7 +65,12 @@ export default function AdminUserPage() {
         <section className="card p-6">
           <div className="mb-4 flex items-center gap-2">
             <StatusPill status={u.status} />
-            {u.verified && <span className="text-sm font-semibold text-accent-700">Verified</span>}
+            {u.role !== 'individual' && (
+              <StatusPill
+                status={u.verificationStatus === 'pending' ? 'unverified' : u.verificationStatus}
+                label={VERIFICATION_STATUS_LABELS[u.verificationStatus]}
+              />
+            )}
           </div>
           <dl className="divide-y divide-line">
             {facts.map(([k, v]) => (
@@ -73,7 +84,7 @@ export default function AdminUserPage() {
         </section>
 
         <aside className="space-y-4">
-          {can('admin') && (
+          {can('editor') && (
             <section className="card space-y-3 p-5">
               <h2 className="font-sans font-semibold">Actions</h2>
               {u.role !== 'individual' && (
@@ -123,6 +134,55 @@ export default function AdminUserPage() {
               </p>
             </section>
           )}
+          {isSuper && (
+            <section className="card p-5">
+              <h2 className="font-sans font-semibold">Set a new password</h2>
+              <p className="mt-1 text-xs text-ink-muted">
+                Only Super Admins can do this. The user is signed out everywhere and uses the new
+                password next time.
+              </p>
+              <form
+                className="mt-3 space-y-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setBusy(true);
+                  try {
+                    await apiFetch(`/admin/users/${id}/password`, {
+                      method: 'POST',
+                      body: { password: pw },
+                    });
+                    toast('Password changed. Share it with the user privately.');
+                    setPw('');
+                  } catch (err) {
+                    toast(errMsg(err), 'error');
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <label htmlFor="u-pw" className="sr-only">
+                  New password
+                </label>
+                <input
+                  id="u-pw"
+                  className="field"
+                  type="text"
+                  autoComplete="off"
+                  minLength={8}
+                  placeholder="At least 8 characters, with a number"
+                  value={pw}
+                  onChange={(e) => setPw(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-outline btn-sm"
+                  disabled={busy || pw.length < 8}
+                >
+                  Set password
+                </button>
+              </form>
+            </section>
+          )}
           <section className="card p-5">
             <h2 className="font-sans font-semibold">Internal notes</h2>
             <ul className="mt-3 space-y-3 text-sm">
@@ -136,7 +196,7 @@ export default function AdminUserPage() {
                 </li>
               ))}
             </ul>
-            {can('admin') && (
+            {can('editor') && (
               <form
                 className="mt-3 space-y-2"
                 onSubmit={(e) => {
