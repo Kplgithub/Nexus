@@ -294,7 +294,7 @@ export function PropertyEditor({ property }: { property?: AdminProperty }) {
         </div>
       </Group>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur lg:left-60">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur lg:left-[248px]">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <p className="text-sm text-ink-muted">
             {Number(f.price) > 0 ? formatPrice(Number(f.price), f.listingType) : 'No price set'} ·{' '}

@@ -213,6 +213,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     items: g.items.filter((i) => !i.superOnly || isSuper),
   })).filter((g) => g.items.length);
 
+  // The listing editor has its own fixed save bar at the bottom.
+  const editing = /^\/admin\/properties\/[^/]+$/.test(path);
+
   const sidebar = (
     <div className="adm-side flex h-full flex-col text-[#c9d3ee]">
       <div className="flex items-center gap-2.5 px-4 pb-2 pt-3.5">
@@ -322,7 +325,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div className="min-w-0 pb-20 lg:pb-0">
+        <div className={`min-w-0 lg:pb-0 ${editing ? '' : 'pb-20'}`}>
           {/* Phone header */}
           <header className="adm-mtop sticky top-0 z-30 flex items-center gap-2.5 px-3 py-2.5 text-white lg:hidden">
             <button
@@ -358,41 +361,43 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <main className="mx-auto max-w-[1240px] p-4 sm:p-6 lg:px-7 lg:py-7">{children}</main>
         </div>
 
-        {/* Phone tab bar */}
-        <nav
-          aria-label="Quick links"
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-white px-1 pb-[max(.6rem,env(safe-area-inset-bottom))] pt-1.5 lg:hidden"
-        >
-          {TABS.map((t) => {
-            const on = isActive(t.href);
-            const count = badges && t.badge ? t.badge(badges) : 0;
-            const Icon = A[t.icon];
-            return (
-              <Link
-                key={t.href}
-                href={t.href}
-                aria-current={on ? 'page' : undefined}
-                className={`relative flex flex-col items-center gap-0.5 rounded-lg py-1 text-[10.5px] font-bold ${on ? 'text-brand' : 'text-ink-muted'}`}
-              >
-                <Icon width={22} height={22} />
-                {t.label}
-                {count > 0 && (
-                  <span className="absolute -top-0.5 right-[18%] rounded-md bg-accent px-1 text-[9.5px] text-black">
-                    {count > 99 ? '99+' : count}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => setMenu(true)}
-            className="flex flex-col items-center gap-0.5 rounded-lg py-1 text-[10.5px] font-bold text-ink-muted"
+        {/* Phone tab bar (hidden on the listing editor, which has its own save bar) */}
+        {!editing && (
+          <nav
+            aria-label="Quick links"
+            className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-white px-1 pb-[max(.6rem,env(safe-area-inset-bottom))] pt-1.5 lg:hidden"
           >
-            <A.menu width={22} height={22} />
-            More
-          </button>
-        </nav>
+            {TABS.map((t) => {
+              const on = isActive(t.href);
+              const count = badges && t.badge ? t.badge(badges) : 0;
+              const Icon = A[t.icon];
+              return (
+                <Link
+                  key={t.href}
+                  href={t.href}
+                  aria-current={on ? 'page' : undefined}
+                  className={`relative flex flex-col items-center gap-0.5 rounded-lg py-1 text-[10.5px] font-bold ${on ? 'text-brand' : 'text-ink-muted'}`}
+                >
+                  <Icon width={22} height={22} />
+                  {t.label}
+                  {count > 0 && (
+                    <span className="absolute -top-0.5 right-[18%] rounded-md bg-accent px-1 text-[9.5px] text-black">
+                      {count > 99 ? '99+' : count}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setMenu(true)}
+              className="flex flex-col items-center gap-0.5 rounded-lg py-1 text-[10.5px] font-bold text-ink-muted"
+            >
+              <A.menu width={22} height={22} />
+              More
+            </button>
+          </nav>
+        )}
       </div>
 
       <div
