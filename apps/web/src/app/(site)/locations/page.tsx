@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getLocations } from '@/lib/api';
+import { SHOW_LOCALITY_LINKS } from '@/lib/site';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { Breadcrumbs, EmptyState, JsonLd } from '@/components/ui';
 
@@ -52,32 +53,34 @@ export default async function LocationsPage() {
                 </div>
               </div>
               {c.intro && <p className="mt-4 max-w-3xl text-ink-soft">{c.intro}</p>}
-              <ul className="mt-6 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
-                {[...c.localities]
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map((l) => (
-                    <li
-                      key={l.slug}
-                      className="flex items-center justify-between gap-3 border-b border-line py-3"
-                    >
-                      <span className="font-medium">{l.name}</span>
-                      <span className="flex gap-3 text-sm">
-                        <Link
-                          href={`/buy/${c.slug}/${l.slug}`}
-                          className="text-brand hover:underline"
-                        >
-                          Buy
-                        </Link>
-                        <Link
-                          href={`/rent/${c.slug}/${l.slug}`}
-                          className="text-brand hover:underline"
-                        >
-                          Rent
-                        </Link>
-                      </span>
-                    </li>
-                  ))}
-              </ul>
+              {SHOW_LOCALITY_LINKS && (
+                <ul className="mt-6 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {[...c.localities]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((l) => (
+                      <li
+                        key={l.slug}
+                        className="flex items-center justify-between gap-3 border-b border-line py-3"
+                      >
+                        <span className="font-medium">{l.name}</span>
+                        <span className="flex gap-3 text-sm">
+                          <Link
+                            href={`/buy/${c.slug}/${l.slug}`}
+                            className="text-brand hover:underline"
+                          >
+                            Buy
+                          </Link>
+                          <Link
+                            href={`/rent/${c.slug}/${l.slug}`}
+                            className="text-brand hover:underline"
+                          >
+                            Rent
+                          </Link>
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              )}
             </section>
           ))}
         </div>
