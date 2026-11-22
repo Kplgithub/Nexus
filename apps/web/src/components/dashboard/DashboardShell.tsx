@@ -15,6 +15,7 @@ import { useSession } from '../session/SessionProvider';
 import {
   BadgeCheckIcon,
   BoltIcon,
+  ChatIcon,
   CraneIcon,
   CrownIcon,
   GridIcon,
@@ -37,7 +38,7 @@ type NavItem = {
   listerOnly?: boolean;
   /** Short label for the phone menu. */
   short?: string;
-  badge?: 'listings' | 'leads';
+  badge?: 'listings' | 'leads' | 'support';
 };
 
 type NavGroup = { title: string | null; items: NavItem[] };
@@ -93,7 +94,16 @@ const NAV: NavGroup[] = [
   },
   {
     title: 'Account',
-    items: [{ href: '/dashboard/profile', label: 'Profile & security', Icon: SettingsIcon }],
+    items: [
+      {
+        href: '/dashboard/support',
+        label: 'Help & support',
+        short: 'Support',
+        Icon: ChatIcon,
+        badge: 'support',
+      },
+      { href: '/dashboard/profile', label: 'Profile & security', Icon: SettingsIcon },
+    ],
   },
 ];
 
@@ -110,8 +120,17 @@ const LISTER_PATHS = [
 /** The posting wizard (new listing or edit). */
 const FOCUS_PATH = /^\/dashboard\/listings\/[^/]+$/;
 
-type DashCtx = { data?: UserDashboard; error?: string; reload: () => void };
-const DashboardDataContext = createContext<DashCtx>({ reload: () => undefined });
+type DashCtx = {
+  data?: UserDashboard;
+  error?: string;
+  reload: () => void;
+  /** Re-reads the unread support replies count (after opening a request). */
+  reloadSupport: () => void;
+};
+const DashboardDataContext = createContext<DashCtx>({
+  reload: () => undefined,
+  reloadSupport: () => undefined,
+});
 
 /** The poster's dashboard numbers, loaded once by the shell (owners, agents and builders only). */
 export function useDashboardData() {
@@ -133,9 +152,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const lister = !!user && canListProperty(user.role);
   const dash = useApi<UserDashboard>(lister ? '/me/dashboard' : null);
   const reloadDash = dash.reload;
+  const support = useApi<{ unread: number }>(user ? '/me/support/unread' : null);
+  const reloadSupport = support.reload;
   const ctx = useMemo<DashCtx>(
-    () => ({ data: dash.data, error: dash.error, reload: reloadDash }),
-    [dash.data, dash.error, reloadDash],
+    () => ({ data: dash.data, error: dash.error, reload: reloadDash, reloadSupport }),
+    [dash.data, dash.error, reloadDash, reloadSupport],
   );
 
   useEffect(() => {
@@ -178,6 +199,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     (g) => g.items.length > 0,
   );
   const badge = (b: NavItem['badge']) => {
+    if (b === 'support') {
+      const n = support.data?.unread ?? 0;
+      return n > 0 ? { text: `${n} new`, hot: true } : null;
+    }
     const d = dash.data;
     if (!d || !b) return null;
     if (b === 'listings')

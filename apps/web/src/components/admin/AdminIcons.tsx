@@ -177,6 +177,12 @@ export const A = {
       <path d="M11 12l9-9M17 6l3 3M14 9l2 2" />
     </I>
   ),
+  chat: (p: P) => (
+    <I {...p}>
+      <path d="M4 5h16v11H9l-5 4z" />
+      <path d="M8 9.5h8M8 12.5h5" />
+    </I>
+  ),
 };
 
 export type AdminIconName = keyof typeof A;
