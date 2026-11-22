@@ -3,11 +3,11 @@
 import { useId, useState } from 'react';
 import { emi, formatINR, formatINRShort } from '@nexus/shared';
 
-/** Home-loan EMI estimate. Defaults: 80% loan, 8.5% for 20 years. */
-export function EmiCalculator({ price }: { price: number }) {
+/** Home-loan EMI estimate. Defaults: 80% loan, the admin's example rate (8.5%) for 20 years. */
+export function EmiCalculator({ price, rate: startRate = 8.5 }: { price: number; rate?: number }) {
   const uid = useId();
   const [downPct, setDownPct] = useState(20);
-  const [rate, setRate] = useState(8.5);
+  const [rate, setRate] = useState(startRate);
   const [years, setYears] = useState(20);
   const loan = Math.round((price * (100 - downPct)) / 100);
   const monthly = emi(loan, rate, years);

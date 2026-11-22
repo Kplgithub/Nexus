@@ -587,6 +587,10 @@ const STATUS_STYLES: Record<string, string> = {
   refunded: 'bg-surface text-ink-muted',
   failed: 'bg-danger-50 text-danger',
   created: 'bg-surface text-ink-muted',
+  called: 'bg-brand-50 text-brand-800',
+  'sent-to-bank': 'bg-brand-50 text-brand-800',
+  sanctioned: 'bg-success-50 text-success',
+  'not-eligible': 'bg-surface text-ink-muted',
 };
 
 export function StatusPill({ status, label }: { status: string; label?: string }) {

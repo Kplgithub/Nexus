@@ -935,3 +935,76 @@
     text-decoration: underline;
   }
 }
+
+/* ---------------- Home loan page ---------------- */
+.nx-loan-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -5;
+  background-image:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.04) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.04) 0 1px, transparent 1px 64px);
+}
+.nx-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-brand) 0 var(--pct, 50%),
+    var(--color-line) var(--pct, 50%) 100%
+  );
+  cursor: pointer;
+}
+.nx-range:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 4px;
+}
+.nx-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 5px solid var(--color-brand);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+}
+.nx-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 5px solid var(--color-brand);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+}
+@media (max-width: 767px) {
+  .nx-rates thead {
+    display: none;
+  }
+  .nx-rates tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem 0.75rem;
+    padding: 1rem 1.1rem;
+  }
+  .nx-rates td {
+    padding: 0;
+    font-size: 0.875rem;
+  }
+  .nx-rates td:first-child,
+  .nx-rates td:last-child {
+    grid-column: 1 / -1;
+  }
+  .nx-rates td:first-child {
+    margin-bottom: 0.25rem;
+  }
+  .nx-rates td:last-child {
+    text-align: left;
+    margin-top: 0.35rem;
+  }
+  .nx-rates td[data-label]:not([data-label=''])::before {
+    content: attr(data-label) ' ';
+    color: var(--color-ink-muted);
+  }
+}

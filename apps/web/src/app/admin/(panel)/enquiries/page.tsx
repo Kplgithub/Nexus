@@ -5,14 +5,23 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import {
   ENQUIRY_STATUSES,
+  LOAN_EMPLOYMENT_LABELS,
+  LOAN_PURPOSE_LABELS,
+  LOAN_RATES_STALE_DAYS,
+  LOAN_STAGES,
+  LOAN_STAGE_LABELS,
   SITE_VISIT_STATUS_LABELS,
+  formatINR,
+  formatINRShort,
   type Enquiry,
+  type SiteSettings,
   type SiteVisit,
 } from '@nexus/shared';
 import { PageTitle, Skeleton, StatusPill, useAdmin } from '@/components/admin/AdminShell';
 import { AssigneeSelect, VisitForm } from '@/components/admin/VisitForm';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
+import { loanRatesStale } from '@/lib/site';
 
 const fmt = (d: string) =>
   new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
@@ -28,6 +37,14 @@ function EnquiriesInner() {
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<string | null>(params.get('open'));
   const [assignee, setAssignee] = useState(params.get('assignee') ?? '');
+  const [type, setType] = useState(params.get('type') ?? '');
+  const settings = useApi<SiteSettings>('/admin/settings');
+  const loanOn = settings.data?.homeLoan?.enabled ?? false;
+  const checked = settings.data?.homeLoan?.ratesCheckedAt;
+  const ratesStale =
+    loanOn &&
+    (settings.data?.homeLoan?.lenders.length ?? 0) > 0 &&
+    loanRatesStale(checked, LOAN_RATES_STALE_DAYS);
 
   const filters = new URLSearchParams({
     ...(status && { status }),
@@ -35,6 +52,7 @@ function EnquiriesInner() {
     ...(propertyId && { propertyId }),
     ...(query && { q: query }),
     ...(assignee && { assignee }),
+    ...(type && { type }),
   });
   const list = new URLSearchParams(filters);
   list.set('page', String(page));
@@ -52,6 +70,40 @@ function EnquiriesInner() {
           </a>
         )}
       </PageTitle>
+
+      {(loanOn || type === 'home-loan') && (
+        <div role="tablist" aria-label="Lead type" className="adm-seg mb-3 mr-2">
+          {[
+            ['', 'All types'],
+            ['property', 'Property'],
+            ['home-loan', 'Home loan'],
+          ].map(([v, l]) => (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={type === v}
+              onClick={() => {
+                setType(v!);
+                setPage(1);
+              }}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+      {type === 'home-loan' && ratesStale && (
+        <p className="mb-3 rounded-lg bg-warn-50 p-3 text-sm text-warn">
+          Home loan rates on the website were last checked{' '}
+          {checked ? `on ${new Date(checked).toLocaleDateString('en-IN')}` : 'never'}. Check them
+          with the banks and update them in{' '}
+          <Link href="/admin/settings#home-loan" className="font-semibold underline">
+            Settings
+          </Link>
+          .
+        </p>
+      )}
 
       <div role="tablist" aria-label="Whose leads" className="adm-seg mb-3">
         {[
@@ -196,10 +248,30 @@ function EnquiriesInner() {
                   <div className="text-xs text-ink-muted">{e.phone}</div>
                 </td>
                 <td className="max-w-56 truncate px-4 py-3">
-                  {e.property?.title ?? <span className="text-ink-muted">General</span>}
+                  {e.loan ? (
+                    <>
+                      <b>Loan {formatINRShort(e.loan.amount)}</b>
+                      <span className="block text-xs text-ink-muted">
+                        {LOAN_EMPLOYMENT_LABELS[e.loan.employment]}
+                        {e.loan.monthlyIncome
+                          ? ` · ${formatINRShort(e.loan.monthlyIncome)}/mo`
+                          : ''}
+                        {e.property ? ` · ${e.property.title}` : ''}
+                      </span>
+                    </>
+                  ) : (
+                    (e.property?.title ?? <span className="text-ink-muted">General</span>)
+                  )}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusPill status={e.status} />
+                  {e.loan ? (
+                    <StatusPill
+                      status={e.loan.stage}
+                      label={`${LOAN_STAGE_LABELS[e.loan.stage]}${e.loan.bank && e.loan.stage !== 'new' ? ` · ${e.loan.bank}` : ''}`}
+                    />
+                  ) : (
+                    <StatusPill status={e.status} />
+                  )}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {e.assignedAdmin?.name ?? e.assignedTo ?? (
@@ -367,6 +439,8 @@ function EnquiryDrawer({
                   >
                     {e.property.title}
                   </a>
+                ) : e.loan ? (
+                  'Not linked to a listing'
                 ) : (
                   'General enquiry'
                 )}
@@ -378,6 +452,7 @@ function EnquiryDrawer({
               <dt className="text-ink-muted">Consent</dt>
               <dd>Given {fmt(e.consentAt)}</dd>
             </dl>
+            {e.loan && <LoanBox e={e} busy={busy} patch={patch} />}
             {e.message && (
               <blockquote className="whitespace-pre-line rounded-lg bg-surface p-4">
                 {e.message}
@@ -534,6 +609,90 @@ function EnquiryDrawer({
         </div>
       )}
     </div>
+  );
+}
+
+function LoanBox({
+  e,
+  busy,
+  patch,
+}: {
+  e: Enquiry;
+  busy: boolean;
+  patch: (body: Record<string, unknown>, msg: string) => Promise<boolean>;
+}) {
+  const l = e.loan!;
+  const [bank, setBank] = useState(l.bank ?? '');
+  return (
+    <section className="rounded-xl border border-brand-100 bg-brand-50/40 p-4">
+      <h3 className="font-semibold">Home loan</h3>
+      <dl className="mt-3 grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1.5">
+        <dt className="text-ink-muted">Loan amount</dt>
+        <dd className="font-semibold">{formatINR(l.amount)}</dd>
+        <dt className="text-ink-muted">Monthly income</dt>
+        <dd>{l.monthlyIncome ? formatINR(l.monthlyIncome) : '—'}</dd>
+        <dt className="text-ink-muted">Work</dt>
+        <dd>{LOAN_EMPLOYMENT_LABELS[l.employment]}</dd>
+        <dt className="text-ink-muted">Property</dt>
+        <dd>{LOAN_PURPOSE_LABELS[l.purpose]}</dd>
+        <dt className="text-ink-muted">Offer clicked</dt>
+        <dd>{l.lender ?? '—'}</dd>
+        {l.sentToBankAt && (
+          <>
+            <dt className="text-ink-muted">Sent to bank</dt>
+            <dd>
+              {l.bank} · {fmt(l.sentToBankAt)}
+            </dd>
+          </>
+        )}
+      </dl>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div>
+          <label htmlFor="ed-loan-stage" className="field-label">
+            Loan stage
+          </label>
+          <select
+            id="ed-loan-stage"
+            className="field"
+            value={l.stage}
+            disabled={busy}
+            onChange={(ev) =>
+              void patch(
+                { loanStage: ev.target.value, ...(bank !== (l.bank ?? '') && { loanBank: bank }) },
+                `Marked ${LOAN_STAGE_LABELS[ev.target.value as keyof typeof LOAN_STAGE_LABELS]}`,
+              )
+            }
+          >
+            {LOAN_STAGES.map((s) => (
+              <option key={s} value={s}>
+                {LOAN_STAGE_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="ed-loan-bank" className="field-label">
+            Bank you gave it to
+          </label>
+          <input
+            id="ed-loan-bank"
+            className="field"
+            maxLength={80}
+            placeholder="Bank name"
+            value={bank}
+            disabled={busy}
+            onChange={(ev) => setBank(ev.target.value)}
+            onBlur={() => {
+              if (bank.trim() !== (l.bank ?? ''))
+                void patch({ loanBank: bank.trim() }, 'Bank saved');
+            }}
+          />
+        </div>
+      </div>
+      <p className="mt-2 text-xs text-ink-muted">
+        Write the bank name, then set the stage to “Sent to bank”. It is saved in the notes below.
+      </p>
+    </section>
   );
 }
 

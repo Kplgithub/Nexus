@@ -206,9 +206,15 @@ export function PropertyGrid({
   );
 }
 
-export function PropertyGridSkeleton({ count = 6 }: { count?: number }) {
+export function PropertyGridSkeleton({
+  count = 6,
+  className = 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3',
+}: {
+  count?: number;
+  className?: string;
+}) {
   return (
-    <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-hidden>
+    <ul className={className} aria-hidden>
       {Array.from({ length: count }, (_, i) => (
         <li key={i} className="overflow-hidden rounded-2xl border border-line">
           <div className="skeleton aspect-[4/3] rounded-none" />

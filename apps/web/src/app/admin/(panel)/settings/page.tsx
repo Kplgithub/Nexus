@@ -2,11 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import type { SiteSettings } from '@nexus/shared';
+import { DEFAULT_HOME_LOAN, LOAN_RATES_STALE_DAYS, type SiteSettings } from '@nexus/shared';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
 import { BannerEditor } from '@/components/admin/BannerEditor';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
+import { loanRatesStale } from '@/lib/site';
 
 export default function SettingsPage() {
   const { data } = useApi<SiteSettings>('/admin/settings');
@@ -24,6 +25,7 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
   const [s, setS] = useState<SiteSettings>({
     ...initial,
     home: { ...initial.home, banners: initial.home.banners ?? [] },
+    homeLoan: { ...DEFAULT_HOME_LOAN, ...(initial.homeLoan ?? {}) },
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
@@ -217,6 +219,13 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
       />
       {e('home.banners')}
 
+      <HomeLoanSettings
+        value={s.homeLoan}
+        disabled={disabled}
+        onChange={(homeLoan) => setS({ ...s, homeLoan })}
+        error={errors['homeLoan.lenders']?.[0] ?? errors['homeLoan']?.[0]}
+      />
+
       <section className="card grid gap-4 p-5 md:grid-cols-2">
         <h2 className="text-lg font-semibold md:col-span-2">Leads</h2>
         {input(
@@ -244,6 +253,228 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
         </button>
       )}
     </form>
+  );
+}
+
+type HomeLoan = SiteSettings['homeLoan'];
+
+function HomeLoanSettings({
+  value,
+  disabled,
+  onChange,
+  error,
+}: {
+  value: HomeLoan;
+  disabled: boolean;
+  onChange: (v: HomeLoan) => void;
+  error?: string;
+}) {
+  const set = (patch: Partial<HomeLoan>) => onChange({ ...value, ...patch });
+  const setLender = (i: number, patch: Partial<HomeLoan['lenders'][number]>) =>
+    set({ lenders: value.lenders.map((l, j) => (j === i ? { ...l, ...patch } : l)) });
+  const checked = value.ratesCheckedAt ? new Date(value.ratesCheckedAt) : null;
+  const stale =
+    value.lenders.length > 0 && loanRatesStale(value.ratesCheckedAt, LOAN_RATES_STALE_DAYS);
+
+  return (
+    <section id="home-loan" className="card scroll-mt-24 space-y-5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">Home loan</h2>
+          <p className="mt-1 max-w-2xl text-sm text-ink-muted">
+            One switch for the whole home loan feature: the /home-loan page, its links in the menu,
+            footer and sitemap, and the loan button on property and project pages. Off hides all of
+            it. Leads already received stay in Enquiries.
+          </p>
+        </div>
+        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3">
+          <span className="text-sm font-semibold">
+            {value.enabled ? 'On, live on the website' : 'Off, hidden from the website'}
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            className="peer sr-only"
+            disabled={disabled}
+            checked={value.enabled}
+            onChange={(ev) => set({ enabled: ev.target.checked })}
+          />
+          <span
+            aria-hidden
+            className={`relative h-7 w-12 rounded-full transition ${value.enabled ? 'bg-success' : 'bg-line-strong'} peer-focus-visible:ring-2 peer-focus-visible:ring-brand`}
+          >
+            <span
+              className={`absolute top-1 size-5 rounded-full bg-white shadow transition-all ${value.enabled ? 'left-6' : 'left-1'}`}
+            />
+          </span>
+        </label>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[12rem_1fr]">
+        <div>
+          <label htmlFor="hl-rate" className="field-label">
+            Calculator starting rate (%)
+          </label>
+          <input
+            id="hl-rate"
+            type="number"
+            step="0.05"
+            min={1}
+            max={30}
+            className="field"
+            disabled={disabled}
+            value={value.exampleRate}
+            onChange={(ev) => set({ exampleRate: Number(ev.target.value) })}
+          />
+        </div>
+        <div
+          className={`self-end rounded-xl p-3 text-sm ${stale ? 'bg-warn-50 text-warn' : 'bg-surface text-ink-soft'}`}
+        >
+          Rates last checked:{' '}
+          <b>{checked ? checked.toLocaleDateString('en-IN', { dateStyle: 'medium' }) : 'never'}</b>
+          {stale &&
+            ` · more than ${LOAN_RATES_STALE_DAYS} days ago, please check the banks’ websites.`}
+          {!disabled && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm ml-3 bg-white"
+              onClick={() => set({ ratesCheckedAt: new Date().toISOString() })}
+            >
+              I checked them today
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <p className="field-label">Rates table on the website</p>
+        <p className="mb-3 text-xs text-ink-muted">
+          Type the starting rates from each lender’s own website. Names show as plain text, no
+          logos. Only rows marked “Show” appear. The table is hidden while the list is empty.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[46rem] text-left text-sm">
+            <thead className="text-xs uppercase tracking-wide text-ink-muted">
+              <tr>
+                <th className="py-2 pr-2">Lender name</th>
+                <th className="py-2 pr-2">Type</th>
+                <th className="py-2 pr-2">Rate from %</th>
+                <th className="py-2 pr-2">Max years</th>
+                <th className="py-2 pr-2">Processing fee</th>
+                <th className="py-2 pr-2">Show</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {value.lenders.map((l, i) => (
+                <tr key={i}>
+                  <td className="py-1.5 pr-2">
+                    <input
+                      aria-label="Lender name"
+                      className="field"
+                      maxLength={80}
+                      disabled={disabled}
+                      value={l.name}
+                      onChange={(ev) => setLender(i, { name: ev.target.value })}
+                    />
+                  </td>
+                  <td className="py-1.5 pr-2">
+                    <select
+                      aria-label="Type"
+                      className="field"
+                      disabled={disabled}
+                      value={l.kind}
+                      onChange={(ev) => setLender(i, { kind: ev.target.value as 'bank' | 'hfc' })}
+                    >
+                      <option value="bank">Bank</option>
+                      <option value="hfc">Housing finance</option>
+                    </select>
+                  </td>
+                  <td className="w-28 py-1.5 pr-2">
+                    <input
+                      aria-label="Rate from"
+                      type="number"
+                      step="0.05"
+                      className="field"
+                      disabled={disabled}
+                      value={l.rateFrom}
+                      onChange={(ev) => setLender(i, { rateFrom: Number(ev.target.value) })}
+                    />
+                  </td>
+                  <td className="w-24 py-1.5 pr-2">
+                    <input
+                      aria-label="Max years"
+                      type="number"
+                      className="field"
+                      disabled={disabled}
+                      value={l.maxTenureYears}
+                      onChange={(ev) => setLender(i, { maxTenureYears: Number(ev.target.value) })}
+                    />
+                  </td>
+                  <td className="py-1.5 pr-2">
+                    <input
+                      aria-label="Processing fee"
+                      className="field"
+                      maxLength={60}
+                      placeholder="0.35%"
+                      disabled={disabled}
+                      value={l.processingFee}
+                      onChange={(ev) => setLender(i, { processingFee: ev.target.value })}
+                    />
+                  </td>
+                  <td className="py-1.5 pr-2 text-center">
+                    <input
+                      aria-label="Show on website"
+                      type="checkbox"
+                      className="size-4 accent-[var(--color-brand)]"
+                      disabled={disabled}
+                      checked={l.active}
+                      onChange={(ev) => setLender(i, { active: ev.target.checked })}
+                    />
+                  </td>
+                  <td className="py-1.5">
+                    {!disabled && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm text-danger"
+                        onClick={() => set({ lenders: value.lenders.filter((_, j) => j !== i) })}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!disabled && value.lenders.length < 20 && (
+          <button
+            type="button"
+            className="btn btn-outline btn-sm mt-3"
+            onClick={() =>
+              set({
+                lenders: [
+                  ...value.lenders,
+                  {
+                    name: '',
+                    kind: 'bank',
+                    rateFrom: value.exampleRate,
+                    maxTenureYears: 30,
+                    processingFee: '',
+                    active: true,
+                  },
+                ],
+              })
+            }
+          >
+            + Add lender
+          </button>
+        )}
+        {error && <p className="field-error">{error}</p>}
+      </div>
+      <p className="text-xs text-ink-muted">Click “Save settings” below to apply changes.</p>
+    </section>
   );
 }
 

@@ -5,6 +5,7 @@ import {
   getSitemapProfiles,
   getSitemapProjects,
   getSitemapProperties,
+  getSettings,
 } from '@/lib/api';
 import { SITE_URL } from '@/lib/site';
 
@@ -15,12 +16,13 @@ export const dynamic = 'force-dynamic';
  * location pages that have live listings or written local content.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [properties, cities, projects, profiles, posts] = await Promise.all([
+  const [properties, cities, projects, profiles, posts, settings] = await Promise.all([
     getSitemapProperties(),
     getLocations(),
     getSitemapProjects(),
     getSitemapProfiles(),
     getSitemapBlog(),
+    getSettings(),
   ]);
   const now = new Date();
   const url = (p: string) => `${SITE_URL}${p}`;
@@ -32,6 +34,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/rent'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: url('/commercial'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: url('/projects'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    ...(settings.homeLoan?.enabled
+      ? [{ url: url('/home-loan'), changeFrequency: 'weekly' as const, priority: 0.7 }]
+      : []),
     { url: url('/agents'), changeFrequency: 'weekly', priority: 0.5 },
     { url: url('/builders'), changeFrequency: 'weekly', priority: 0.5 },
     { url: url('/locations'), changeFrequency: 'weekly', priority: 0.6 },

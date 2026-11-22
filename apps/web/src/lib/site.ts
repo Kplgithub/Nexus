@@ -37,6 +37,7 @@ export const FALLBACK_SETTINGS: SiteSettings = {
   },
   allowInternationalEnquiries: false,
   featurePrices: { days7: 49, days30: 99 },
+  homeLoan: { enabled: false, lenders: [], ratesCheckedAt: null, exampleRate: 8.5 },
   invoice: { legalName: '', address: '', state: 'Rajasthan', sacCode: '' },
 };
 
@@ -54,6 +55,7 @@ export const NAV_LINKS = [
   { href: '/rent', label: 'Rent' },
   { href: '/projects', label: 'New projects' },
   { href: '/commercial', label: 'Commercial' },
+  { href: '/home-loan', label: 'Home loan' },
   { href: '/agents', label: 'Agents' },
   { href: '/locations', label: 'Locations' },
   { href: '/blog', label: 'Blog' },
@@ -61,3 +63,9 @@ export const NAV_LINKS = [
 
 /** Where the "Post property" button leads: sign-up for visitors, the form for members. */
 export const POST_PROPERTY_PATH = '/dashboard/listings/new';
+
+/** True when the home loan rates have not been checked for a month (or ever). */
+export function loanRatesStale(checkedAt: string | null | undefined, staleDays: number): boolean {
+  if (!checkedAt) return true;
+  return Date.now() - new Date(checkedAt).getTime() > staleDays * 86_400_000;
+}

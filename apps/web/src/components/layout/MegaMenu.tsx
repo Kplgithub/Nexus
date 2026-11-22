@@ -17,7 +17,7 @@ function qs(base: string, params: Record<string, string>) {
   return s ? `${base}?${s}` : base;
 }
 
-function menu(cities: City[]): Item[] {
+function menu(cities: City[], homeLoan: boolean): Item[] {
   const city = cities.length === 1 ? cities[0] : undefined;
   const top =
     city && SHOW_LOCALITY_LINKS
@@ -177,17 +177,18 @@ function menu(cities: City[]): Item[] {
         text: 'Offices, shops and showrooms on the main roads, with direct contact.',
       },
     },
+    ...(homeLoan ? [{ label: 'Home loan', href: '/home-loan' }] : []),
     { label: 'Agents', href: '/agents' },
     { label: 'Locations', href: '/locations' },
     { label: 'Blog', href: '/blog' },
   ];
 }
 
-export function MegaMenu({ cities }: { cities: City[] }) {
+export function MegaMenu({ cities, homeLoan = false }: { cities: City[]; homeLoan?: boolean }) {
   return (
-    <nav aria-label="Main" className="relative ml-4 hidden lg:block">
+    <nav aria-label="Main" className="relative ml-4 hidden xl:block">
       <ul className="flex items-center gap-0.5">
-        {menu(cities).map((item) =>
+        {menu(cities, homeLoan).map((item) =>
           item.cols ? (
             <li key={item.href} className="group">
               <div className="flex items-center">

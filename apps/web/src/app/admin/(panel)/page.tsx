@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import {
   ADMIN_ROLE_LABELS,
+  LOAN_RATES_STALE_DAYS,
+  type SiteSettings,
   type DashboardCharts,
   type DashboardStats,
   type Kpi,
@@ -11,6 +13,7 @@ import {
 import { Avatar, Skeleton, StatusPill, useAdmin } from '@/components/admin/AdminShell';
 import { A } from '@/components/admin/AdminIcons';
 import { useApi } from '@/components/admin/useApi';
+import { loanRatesStale } from '@/lib/site';
 import { describeActivity } from '@/components/admin/activity';
 import { LeadsChart, Legend, MeterBar, SERIES, Sparkline, nf } from '@/components/admin/charts';
 
@@ -45,12 +48,30 @@ export default function DashboardPage() {
   const [days, setDays] = useState(30);
   const charts = useApi<DashboardCharts>(`/admin/dashboard/charts?days=${days}`);
   const stats = useApi<DashboardStats>('/admin/dashboard');
+  const site = useApi<SiteSettings>('/admin/settings');
+  const loan = site.data?.homeLoan;
+  const loanChecked = loan?.ratesCheckedAt ? new Date(loan.ratesCheckedAt) : null;
+  const loanStale =
+    !!loan?.enabled &&
+    loan.lenders.length > 0 &&
+    loanRatesStale(loan.ratesCheckedAt, LOAN_RATES_STALE_DAYS);
   const c = charts.data;
   const period = days === 1 ? 'today' : `last ${days} days`;
   const vs = days === 1 ? 'vs yesterday' : `vs previous ${days} days`;
 
   return (
     <>
+      {loanStale && (
+        <p className="mb-4 rounded-xl bg-warn-50 p-3 text-sm text-warn">
+          Home loan rates on the website were last checked{' '}
+          {loanChecked ? `on ${loanChecked.toLocaleDateString('en-IN')}` : 'never'}. Please check
+          the banks’ websites and{' '}
+          <Link href="/admin/settings#home-loan" className="font-semibold underline">
+            update them in Settings
+          </Link>
+          .
+        </p>
+      )}
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] leading-tight sm:text-[32px]">

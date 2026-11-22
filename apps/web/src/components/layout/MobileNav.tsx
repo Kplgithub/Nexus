@@ -9,7 +9,7 @@ import { NAV_LINKS, POST_PROPERTY_PATH } from '@/lib/site';
 import { useSession } from '../session/SessionProvider';
 import { CloseIcon, MenuIcon, PhoneIcon } from '../icons';
 
-export function MobileNav({ phone }: { phone: string }) {
+export function MobileNav({ phone, homeLoan = false }: { phone: string; homeLoan?: boolean }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -26,7 +26,7 @@ export function MobileNav({ phone }: { phone: string }) {
     <>
       <button
         type="button"
-        className="btn btn-outline btn-sm lg:hidden"
+        className="btn btn-outline btn-sm xl:hidden"
         aria-label="Open menu"
         aria-expanded={open}
         aria-controls="mobile-nav"
@@ -68,7 +68,7 @@ export function MobileNav({ phone }: { phone: string }) {
                   Home
                 </Link>
               </li>
-              {NAV_LINKS.map((l) => (
+              {NAV_LINKS.filter((l) => homeLoan || l.href !== '/home-loan').map((l) => (
                 <li key={l.href}>
                   <Link
                     href={l.href}
