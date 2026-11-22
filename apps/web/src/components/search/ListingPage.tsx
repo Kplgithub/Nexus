@@ -194,7 +194,7 @@ export async function ListingPage({
         <div className="container-page relative pb-8 pt-6 sm:pb-10">
           <Breadcrumbs items={crumbs} dark />
           <p className="nx-rise mt-5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
-            <SparklesIcon size={14} className="text-accent" /> AI search · English, Hindi ya
+            <SparklesIcon size={14} className="text-accent" /> Smart search · English, Hindi ya
             Hinglish
           </p>
           {/* No entrance animation on the heading: it is the LCP element on phones. */}

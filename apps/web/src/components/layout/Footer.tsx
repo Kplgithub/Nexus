@@ -72,7 +72,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
     ['/agents', 'Find an agent'],
     ['/home-loan', 'Home loan'],
     ['/home-loan#calculators', 'EMI calculator'],
-    ['/search', 'AI search'],
+    ['/search', 'Smart search'],
     ['/buy?view=map', 'Map search'],
   ];
   const bottom: [string, string][] = [
