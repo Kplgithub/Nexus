@@ -1,7 +1,13 @@
 import { InCityButton } from './InCityButton';
 import Image from 'next/image';
 import Link from 'next/link';
-import type { BlogPostCard, City, PropertyCard as Card, ProfileCard } from '@nexus/shared';
+import {
+  farmOn,
+  type BlogPostCard,
+  type City,
+  type PropertyCard as Card,
+  type ProfileCard,
+} from '@nexus/shared';
 import { Carousel } from '@/components/Carousel';
 import {
   AdviceTools,
@@ -164,7 +170,11 @@ export async function HomeView({
             </p>
           )}
           <div className="mx-auto mt-5 max-w-4xl sm:mt-6">
-            <HeroSearch cities={cities} defaultCity={citySlug} />
+            <HeroSearch
+              cities={cities}
+              defaultCity={citySlug}
+              farms={farmOn(settings.farms, 'homepage')}
+            />
           </div>
           <dl className="mx-auto mt-5 flex max-w-4xl flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-white/75">
             {home.counts.sale > 0 && on.buy && (
@@ -260,7 +270,12 @@ export async function HomeView({
       )}
 
       <div className="bg-surface">
-        <PropertyTypes city={citySlug} cityName={cityName} on={on} />
+        <PropertyTypes
+          city={citySlug}
+          cityName={cityName}
+          on={on}
+          farms={farmOn(settings.farms, 'homepage')}
+        />
       </div>
 
       {owners.items.length > 0 && browse(`${inCity}&postedBy=owner`) && (
@@ -302,7 +317,11 @@ export async function HomeView({
 
       <PostStrip cityName={cityName} />
 
-      <PropertyOptions city={citySlug} cityName={cityName} />
+      <PropertyOptions
+        city={citySlug}
+        cityName={cityName}
+        farms={farmOn(settings.farms, 'popularSearches')}
+      />
     </>
   );
 }

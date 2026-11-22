@@ -4,11 +4,16 @@ import {
   FURNISHING_LABELS,
   PG_GENDER_LABELS,
   PLOT_APPROVAL_LABELS,
+  FARM_LAND_USE_LABELS,
+  FARM_WATER_SOURCE_LABELS,
+  isFarmType,
+  pricePerLandUnit,
   POSSESSION_LABELS,
   POSTER_LABELS,
   PROPERTY_TYPE_LABELS,
   formatArea,
   formatINR,
+  formatINRShort,
   formatPrice,
   whatsappLink,
   type PropertyCard as Card,
@@ -80,12 +85,25 @@ export function PropertyRow({
   const href = `/properties/${p.slug}`;
   const closed = p.status !== 'published';
   const isSale = p.listingType === 'sale';
+  const farm = isFarmType(p.propertyType);
+  const perLand =
+    p.listingType === 'sale' ? pricePerLandUnit(p.price, p.areaValue, p.areaUnit) : null;
   const facts: [string, string][] = [
-    [p.propertyType === 'plot' ? 'Plot area' : 'Area', formatArea(p.areaValue, p.areaUnit)],
+    [
+      p.propertyType === 'plot' ? 'Plot area' : farm ? 'Land area' : 'Area',
+      formatArea(p.areaValue, p.areaUnit),
+    ],
   ];
   if (p.bedrooms) facts.push(['Bedrooms', `${p.bedrooms} BHK`]);
   if (p.bathrooms) facts.push(['Bathrooms', String(p.bathrooms)]);
-  if (p.propertyType !== 'plot') facts.push(['Furnishing', FURNISHING_LABELS[p.furnishingStatus]]);
+  if (farm && p.farmhouseAreaSqft)
+    facts.push(['Farmhouse', `${p.farmhouseAreaSqft.toLocaleString('en-IN')} sq ft`]);
+  if (farm && p.farmWaterSource && p.farmWaterSource !== 'none')
+    facts.push(['Water', FARM_WATER_SOURCE_LABELS[p.farmWaterSource]]);
+  if (farm && p.farmLandUse && p.farmLandUse !== 'unknown')
+    facts.push(['Land use', FARM_LAND_USE_LABELS[p.farmLandUse]]);
+  if (p.propertyType !== 'plot' && !farm)
+    facts.push(['Furnishing', FURNISHING_LABELS[p.furnishingStatus]]);
   if (isSale && p.possessionStatus) facts.push(['Status', POSSESSION_LABELS[p.possessionStatus]]);
   if (p.plotApproval && p.plotApproval !== 'none')
     facts.push(['Approval', PLOT_APPROVAL_LABELS[p.plotApproval]]);
@@ -195,7 +213,11 @@ export function PropertyRow({
           <p className="tabular text-2xl font-bold leading-none tracking-tight text-ink">
             {formatPrice(p.price, p.listingType)}
           </p>
-          {p.pricePerSqft ? (
+          {perLand ? (
+            <p className="tabular mt-1 text-xs text-ink-muted">
+              {formatINRShort(perLand.amount)} per {perLand.unit}
+            </p>
+          ) : p.pricePerSqft && !farm ? (
             <p className="tabular mt-1 text-xs text-ink-muted">
               {formatINR(p.pricePerSqft)} per sq ft
             </p>

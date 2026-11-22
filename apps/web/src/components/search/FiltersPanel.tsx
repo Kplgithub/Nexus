@@ -11,6 +11,14 @@ import {
   PG_GENDER_LABELS,
   PLOT_APPROVALS,
   PLOT_APPROVAL_LABELS,
+  AREA_TO_SQFT,
+  FARM_LAND_USES,
+  FARM_LAND_USE_LABELS,
+  FARM_WATER_SOURCES,
+  FARM_WATER_SOURCE_LABELS,
+  LAND_AREA_UNITS,
+  isFarmType,
+  type LandAreaUnit,
   POSTED_WITHIN_DAYS,
   POSSESSION_LABELS,
   POSSESSION_STATUSES,
@@ -59,6 +67,8 @@ type Props = {
   resultCount: number;
   /** Current results view; kept when filters change. */
   view?: 'list' | 'grid' | 'map';
+  /** Admin switch: farm types and farm filters. */
+  farmsOn?: boolean;
 };
 
 export function FiltersPanel({
@@ -68,6 +78,7 @@ export function FiltersPanel({
   fixed = {},
   resultCount,
   view = 'list',
+  farmsOn = true,
 }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -81,6 +92,7 @@ export function FiltersPanel({
   const on = useSections();
   const isResidential = category === 'residential';
   // Choices from switched-off site sections are left out (Admin → Settings → Site sections).
+  // Farms are sold only, and admin can switch them off.
   const types = (
     category
       ? PROPERTY_TYPES[category]
@@ -89,7 +101,8 @@ export function FiltersPanel({
     (t) =>
       (t !== 'pg' || on.pg) &&
       (t !== 'plot' || on.plot) &&
-      (on.commercial || !(PROPERTY_TYPES.commercial as readonly string[]).includes(t)),
+      (on.commercial || !(PROPERTY_TYPES.commercial as readonly string[]).includes(t)) &&
+      (!isFarmType(t) || (farmsOn && on.buy && deal !== 'rent')),
   );
   const commercialPage = fixed.category === 'commercial';
   const dealOptions = (
@@ -108,6 +121,13 @@ export function FiltersPanel({
   ).filter(([v]) => !v || (v === 'commercial' ? on.commercial : on.buy || on.rent));
   const showPlot = on.plot && deal !== 'rent' && category !== 'commercial';
   const showPg = on.pg && deal !== 'sale' && category !== 'commercial';
+  const farmsShown = farmsOn && on.buy;
+  const [picked, setPicked] = useState<string[]>(search.propertyType ?? []);
+  const farmPicked = farmsShown && deal !== 'rent' && picked.some((t) => isFarmType(t));
+  const farmOnly = farmPicked && picked.every((t) => isFarmType(t));
+  const [landUnit, setLandUnit] = useState<LandAreaUnit>('bigha');
+  const inLand = (sqft: number | undefined) =>
+    sqft === undefined ? '' : String(Math.round((sqft / AREA_TO_SQFT[landUnit]) * 100) / 100);
   const amenities =
     category === 'commercial'
       ? COMMERCIAL_AMENITIES
@@ -137,6 +157,8 @@ export function FiltersPanel({
     search.withPhotos,
     search.rera,
     search.plotApproval?.length,
+    search.farmLandUse?.length,
+    search.farmWater?.length,
     search.pgGender,
     search.pgFood,
     search.postedWithin,
@@ -150,6 +172,11 @@ export function FiltersPanel({
       return v ? Number(v) : undefined;
     };
     const all = (k: string) => fd.getAll(k).map(String).filter(Boolean);
+    /** Land area typed in bigha or acre, sent to the API in sq ft. */
+    const land = (k: string) => {
+      const v = Number(fd.get(k));
+      return v > 0 ? Math.round(v * AREA_TO_SQFT[landUnit]) : undefined;
+    };
     const next: Partial<PropertySearch> = {
       listingType: (deal || undefined) as ListingType | undefined,
       category: (category || undefined) as Category | undefined,
@@ -167,9 +194,11 @@ export function FiltersPanel({
       furnishing: all('furnishing') as PropertySearch['furnishing'],
       bedrooms: isResidential || !category ? n('bedrooms') : undefined,
       bathrooms: isResidential || !category ? n('bathrooms') : undefined,
-      minArea: n('minArea'),
-      maxArea: n('maxArea'),
-      amenities: all('amenities') as PropertySearch['amenities'],
+      minArea: farmOnly ? land('landMin') : n('minArea'),
+      maxArea: farmOnly ? land('landMax') : n('maxArea'),
+      amenities: farmOnly ? undefined : (all('amenities') as PropertySearch['amenities']),
+      farmLandUse: farmPicked ? (all('farmLandUse') as PropertySearch['farmLandUse']) : undefined,
+      farmWater: farmPicked ? (all('farmWater') as PropertySearch['farmWater']) : undefined,
       parking: fd.get('parking') === 'true' || undefined,
       availableNow: deal !== 'sale' && fd.get('availableNow') === 'true' ? true : undefined,
       withPhotos: fd.get('withPhotos') === 'true' || undefined,
@@ -431,6 +460,13 @@ export function FiltersPanel({
                     name="propertyType"
                     value={t}
                     defaultChecked={search.propertyType?.includes(t)}
+                    onChange={(e) =>
+                      setPicked(
+                        e.currentTarget.form
+                          ? new FormData(e.currentTarget.form).getAll('propertyType').map(String)
+                          : [],
+                      )
+                    }
                     className="size-4 accent-[var(--color-brand)]"
                   />
                   {PROPERTY_TYPE_LABELS[t]}
@@ -439,7 +475,94 @@ export function FiltersPanel({
             </div>
           </fieldset>
 
-          {(isResidential || !category) && (
+          {farmPicked && (
+            <div className="space-y-4 rounded-xl border border-line bg-surface/60 p-3">
+              {farmOnly && (
+                <fieldset>
+                  <legend className="field-label">Land area</legend>
+                  <div
+                    role="group"
+                    aria-label="Land unit"
+                    className="mb-2 inline-flex overflow-hidden rounded-lg border border-line"
+                  >
+                    {LAND_AREA_UNITS.map((u) => (
+                      <button
+                        key={u}
+                        type="button"
+                        aria-pressed={landUnit === u}
+                        onClick={() => setLandUnit(u)}
+                        className={`px-3 py-1.5 text-sm font-semibold ${landUnit === u ? 'bg-brand text-white' : 'bg-white text-ink-soft'}`}
+                      >
+                        {u === 'bigha' ? 'Bigha' : 'Acre'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      key={`min-${landUnit}`}
+                      name="landMin"
+                      aria-label={`Minimum land in ${landUnit}`}
+                      className="field"
+                      inputMode="decimal"
+                      placeholder="Min"
+                      defaultValue={inLand(search.minArea)}
+                    />
+                    <input
+                      key={`max-${landUnit}`}
+                      name="landMax"
+                      aria-label={`Maximum land in ${landUnit}`}
+                      className="field"
+                      inputMode="decimal"
+                      placeholder="Max"
+                      defaultValue={inLand(search.maxArea)}
+                    />
+                  </div>
+                </fieldset>
+              )}
+              <fieldset>
+                <legend className="field-label">Land use</legend>
+                <div className="space-y-1.5">
+                  {FARM_LAND_USES.filter((u) => u !== 'unknown').map((u) => (
+                    <label
+                      key={u}
+                      className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft"
+                    >
+                      <input
+                        type="checkbox"
+                        name="farmLandUse"
+                        value={u}
+                        defaultChecked={search.farmLandUse?.includes(u)}
+                        className="size-4 accent-[var(--color-brand)]"
+                      />
+                      {FARM_LAND_USE_LABELS[u]}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="field-label">Water source</legend>
+                <div className="space-y-1.5">
+                  {FARM_WATER_SOURCES.filter((w) => w !== 'none').map((w) => (
+                    <label
+                      key={w}
+                      className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft"
+                    >
+                      <input
+                        type="checkbox"
+                        name="farmWater"
+                        value={w}
+                        defaultChecked={search.farmWater?.includes(w)}
+                        className="size-4 accent-[var(--color-brand)]"
+                      />
+                      {FARM_WATER_SOURCE_LABELS[w]}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
+          )}
+
+          {(isResidential || !category) && !farmOnly && (
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label htmlFor="f-bed" className="field-label">
@@ -522,79 +645,85 @@ export function FiltersPanel({
             </div>
           )}
 
-          <fieldset>
-            <legend className="field-label">Furnishing</legend>
-            <div className="space-y-1.5">
-              {FURNISHING_STATUSES.map((f) => (
-                <label
-                  key={f}
-                  className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft"
-                >
-                  <input
-                    type="checkbox"
-                    name="furnishing"
-                    value={f}
-                    defaultChecked={search.furnishing?.includes(f)}
-                    className="size-4 accent-[var(--color-brand)]"
-                  />
-                  {FURNISHING_LABELS[f]}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend className="field-label">Area (sq ft)</legend>
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                name="minArea"
-                aria-label="Minimum area"
-                className="field"
-                defaultValue={search.minArea ?? ''}
-              >
-                <option value="">No min</option>
-                {AREA_STEPS.map((a) => (
-                  <option key={a} value={a}>
-                    {a.toLocaleString('en-IN')}
-                  </option>
+          {!farmOnly && (
+            <fieldset>
+              <legend className="field-label">Furnishing</legend>
+              <div className="space-y-1.5">
+                {FURNISHING_STATUSES.map((f) => (
+                  <label
+                    key={f}
+                    className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft"
+                  >
+                    <input
+                      type="checkbox"
+                      name="furnishing"
+                      value={f}
+                      defaultChecked={search.furnishing?.includes(f)}
+                      className="size-4 accent-[var(--color-brand)]"
+                    />
+                    {FURNISHING_LABELS[f]}
+                  </label>
                 ))}
-              </select>
-              <select
-                name="maxArea"
-                aria-label="Maximum area"
-                className="field"
-                defaultValue={search.maxArea ?? ''}
-              >
-                <option value="">No max</option>
-                {AREA_STEPS.map((a) => (
-                  <option key={a} value={a}>
-                    {a.toLocaleString('en-IN')}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </fieldset>
+              </div>
+            </fieldset>
+          )}
 
-          <fieldset>
-            <legend className="field-label">Amenities</legend>
-            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
-              {amenities.map((a) => (
-                <label
-                  key={a}
-                  className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft"
+          {!farmOnly && (
+            <fieldset>
+              <legend className="field-label">Area (sq ft)</legend>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  name="minArea"
+                  aria-label="Minimum area"
+                  className="field"
+                  defaultValue={search.minArea ?? ''}
                 >
-                  <input
-                    type="checkbox"
-                    name="amenities"
-                    value={a}
-                    defaultChecked={search.amenities?.includes(a)}
-                    className="size-4 accent-[var(--color-brand)]"
-                  />
-                  {AMENITY_LABELS[a]}
-                </label>
-              ))}
-            </div>
-          </fieldset>
+                  <option value="">No min</option>
+                  {AREA_STEPS.map((a) => (
+                    <option key={a} value={a}>
+                      {a.toLocaleString('en-IN')}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="maxArea"
+                  aria-label="Maximum area"
+                  className="field"
+                  defaultValue={search.maxArea ?? ''}
+                >
+                  <option value="">No max</option>
+                  {AREA_STEPS.map((a) => (
+                    <option key={a} value={a}>
+                      {a.toLocaleString('en-IN')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </fieldset>
+          )}
+
+          {!farmOnly && (
+            <fieldset>
+              <legend className="field-label">Amenities</legend>
+              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
+                {amenities.map((a) => (
+                  <label
+                    key={a}
+                    className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft"
+                  >
+                    <input
+                      type="checkbox"
+                      name="amenities"
+                      value={a}
+                      defaultChecked={search.amenities?.includes(a)}
+                      className="size-4 accent-[var(--color-brand)]"
+                    />
+                    {AMENITY_LABELS[a]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
           <fieldset className="space-y-1.5">
             <legend className="field-label">More</legend>

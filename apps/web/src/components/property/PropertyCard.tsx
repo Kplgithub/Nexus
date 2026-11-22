@@ -4,11 +4,16 @@ import {
   FURNISHING_LABELS,
   PG_GENDER_LABELS,
   PLOT_APPROVAL_LABELS,
+  FARM_LAND_USE_LABELS,
+  FARM_WATER_SOURCE_LABELS,
+  isFarmType,
+  pricePerLandUnit,
   POSSESSION_LABELS,
   POSTER_LABELS,
   PROPERTY_TYPE_LABELS,
   formatArea,
   formatINR,
+  formatINRShort,
   formatPrice,
   type PropertyCard as Card,
 } from '@nexus/shared';
@@ -37,19 +42,32 @@ export function PropertyCard({
   const href = `/properties/${p.slug}`;
   const closed = p.status !== 'published';
   const updated = closed ? null : refreshedLabel(p.refreshedAt, p.publishedAt);
-  const facts = [
-    p.bedrooms ? `${p.bedrooms} BHK` : PROPERTY_TYPE_LABELS[p.propertyType],
-    formatArea(p.areaValue, p.areaUnit),
-    p.plotApproval && p.plotApproval !== 'none'
-      ? PLOT_APPROVAL_LABELS[p.plotApproval]
-      : p.pgGender
-        ? PG_GENDER_LABELS[p.pgGender]
-        : p.listingType === 'sale' && p.possessionStatus
-          ? POSSESSION_LABELS[p.possessionStatus]
-          : p.propertyType === 'plot'
-            ? null
-            : FURNISHING_LABELS[p.furnishingStatus],
-  ].filter((x): x is string => Boolean(x));
+  const farm = isFarmType(p.propertyType);
+  const perLand =
+    p.listingType === 'sale' ? pricePerLandUnit(p.price, p.areaValue, p.areaUnit) : null;
+  const facts = farm
+    ? [
+        PROPERTY_TYPE_LABELS[p.propertyType],
+        formatArea(p.areaValue, p.areaUnit),
+        p.farmLandUse && p.farmLandUse !== 'unknown'
+          ? FARM_LAND_USE_LABELS[p.farmLandUse]
+          : p.farmWaterSource && p.farmWaterSource !== 'none'
+            ? FARM_WATER_SOURCE_LABELS[p.farmWaterSource]
+            : null,
+      ].filter((x): x is string => Boolean(x))
+    : [
+        p.bedrooms ? `${p.bedrooms} BHK` : PROPERTY_TYPE_LABELS[p.propertyType],
+        formatArea(p.areaValue, p.areaUnit),
+        p.plotApproval && p.plotApproval !== 'none'
+          ? PLOT_APPROVAL_LABELS[p.plotApproval]
+          : p.pgGender
+            ? PG_GENDER_LABELS[p.pgGender]
+            : p.listingType === 'sale' && p.possessionStatus
+              ? POSSESSION_LABELS[p.possessionStatus]
+              : p.propertyType === 'plot'
+                ? null
+                : FURNISHING_LABELS[p.furnishingStatus],
+      ].filter((x): x is string => Boolean(x));
 
   return (
     <article
@@ -124,10 +142,17 @@ export function PropertyCard({
           <p className="tabular text-[1.375rem] font-bold leading-none tracking-tight text-ink">
             {formatPrice(p.price, p.listingType)}
           </p>
-          {p.pricePerSqft && (
+          {perLand ? (
             <p className="tabular shrink-0 text-xs text-ink-muted">
-              {formatINR(p.pricePerSqft)}/sq ft
+              {formatINRShort(perLand.amount)}/{perLand.unit}
             </p>
+          ) : (
+            p.pricePerSqft &&
+            !farm && (
+              <p className="tabular shrink-0 text-xs text-ink-muted">
+                {formatINR(p.pricePerSqft)}/sq ft
+              </p>
+            )
           )}
         </div>
         <H className="mt-2 line-clamp-2 text-[1.0625rem] font-semibold leading-snug text-ink">

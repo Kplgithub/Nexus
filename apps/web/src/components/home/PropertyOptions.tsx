@@ -8,7 +8,7 @@ import { useSections } from '../session/SectionsProvider';
 type Group = { title: string; links: [string, string][] };
 
 /** City-level search links, grouped like a portal's "property options" block. No locality pages. */
-function groups(city: string, name: string): Record<'buy' | 'rent', Group[]> {
+function groups(city: string, name: string, farms: boolean): Record<'buy' | 'rent', Group[]> {
   const b = `/buy?city=${city}`;
   const r = `/rent?city=${city}`;
   return {
@@ -38,6 +38,12 @@ function groups(city: string, name: string): Record<'buy' | 'rent', Group[]> {
         links: [
           [`${b}&propertyType=plot`, `Plots for sale in ${name}`],
           [`${b}&propertyType=plot&plotApproval=jda`, `JDA approved plots`],
+          ...(farms
+            ? ([
+                [`${b}&propertyType=farmhouse`, `Farmhouses for sale in ${name}`],
+                [`${b}&propertyType=farm-land`, `Farm land for sale in ${name}`],
+              ] as [string, string][])
+            : []),
           [`${b}&propertyType=office`, `Offices for sale in ${name}`],
           [`${b}&propertyType=shop`, `Shops for sale in ${name}`],
         ],
@@ -93,9 +99,18 @@ function groups(city: string, name: string): Record<'buy' | 'rent', Group[]> {
   };
 }
 
-export function PropertyOptions({ city, cityName }: { city: string; cityName: string }) {
+export function PropertyOptions({
+  city,
+  cityName,
+  farms = true,
+}: {
+  city: string;
+  cityName: string;
+  /** Admin switch: farm links under Plots. */
+  farms?: boolean;
+}) {
   const on = useSections();
-  const full = groups(city, cityName);
+  const full = groups(city, cityName, farms);
   // Only links of switched-on site sections, and no empty groups or tabs.
   const all = Object.fromEntries(
     (['buy', 'rent'] as const).map((t) => [

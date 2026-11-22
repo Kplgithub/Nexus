@@ -16,6 +16,17 @@ import {
   PG_SHARING_LABELS,
   PLOT_APPROVALS,
   PLOT_APPROVAL_LABELS,
+  FARM_ELECTRICITY,
+  FARM_ELECTRICITY_LABELS,
+  FARM_FEATURES,
+  FARM_FEATURE_LABELS,
+  FARM_LAND_USES,
+  FARM_LAND_USE_LABELS,
+  FARM_WATER_SOURCES,
+  FARM_WATER_SOURCE_LABELS,
+  LAND_AREA_UNITS,
+  isFarmType,
+  pricePerLandUnit,
   OWNERSHIP_TYPES,
   PARKING_LABELS,
   PARKING_OPTIONS,
@@ -40,6 +51,10 @@ import {
   type PgGender,
   type PgSharing,
   type PlotApproval,
+  type FarmElectricity,
+  type FarmFeature,
+  type FarmLandUse,
+  type FarmWaterSource,
   type PropertyType,
   coverFirst,
 } from '@nexus/shared';
@@ -107,6 +122,11 @@ export type ListingFormState = {
   roadWidthFt: string;
   openSides: string;
   boundaryWall: boolean;
+  farmLandUse: FarmLandUse | '';
+  farmWaterSource: FarmWaterSource | '';
+  farmElectricity: FarmElectricity | '';
+  farmFeatures: FarmFeature[];
+  farmhouseAreaSqft: string;
   pgSharing: PgSharing[];
   pgGender: PgGender | '';
   pgFoodIncluded: boolean;
@@ -179,6 +199,11 @@ export function formFromListing(p?: OwnListing | AdminProperty): ListingFormStat
     roadWidthFt: str(p?.roadWidthFt),
     openSides: str(p?.openSides),
     boundaryWall: p?.boundaryWall ?? false,
+    farmLandUse: p?.farmLandUse ?? '',
+    farmWaterSource: p?.farmWaterSource ?? '',
+    farmElectricity: p?.farmElectricity ?? '',
+    farmFeatures: p?.farmFeatures ?? [],
+    farmhouseAreaSqft: str(p?.farmhouseAreaSqft),
     pgSharing: p?.pgSharing ?? [],
     pgGender: p?.pgGender ?? '',
     pgFoodIncluded: p?.pgFoodIncluded ?? false,
@@ -207,6 +232,8 @@ export function userPayload(f: ListingFormState) {
   const sale = f.listingType === 'sale';
   const residential = f.category === 'residential';
   const plot = f.propertyType === 'plot';
+  const farm = isFarmType(f.propertyType);
+  const land = plot || farm;
   const pg = f.propertyType === 'pg';
   return {
     listingType: f.listingType,
@@ -230,26 +257,28 @@ export function userPayload(f: ListingFormState) {
     rentalTerms: sale ? undefined : opt(f.rentalTerms),
     preferredTenants: sale || !residential ? [] : f.preferredTenants,
     availableFrom: sale ? null : f.availableFrom || null,
-    possessionStatus: sale ? f.possessionStatus || null : null,
+    possessionStatus: sale && !farm ? f.possessionStatus || null : null,
     possessionDate:
-      sale && f.possessionStatus === 'under-construction' ? f.possessionDate || null : null,
+      sale && !farm && f.possessionStatus === 'under-construction'
+        ? f.possessionDate || null
+        : null,
     transactionType: sale ? f.transactionType || null : null,
     ownershipType: sale ? f.ownershipType || null : null,
-    reraId: sale ? opt(f.reraId) : undefined,
+    reraId: sale && !farm ? opt(f.reraId) : undefined,
     areaValue: num(f.areaValue) ?? 0,
     areaUnit: f.areaUnit,
-    areaType: f.areaType,
-    bedrooms: residential ? num(f.bedrooms) : null,
-    bathrooms: residential ? num(f.bathrooms) : null,
-    balconies: residential ? num(f.balconies) : null,
+    areaType: farm ? 'plot' : f.areaType,
+    bedrooms: residential && !land ? num(f.bedrooms) : null,
+    bathrooms: residential && !land ? num(f.bathrooms) : null,
+    balconies: residential && !land ? num(f.balconies) : null,
     washrooms: residential ? null : num(f.washrooms),
-    floorNumber: num(f.floorNumber),
-    totalFloors: num(f.totalFloors),
+    floorNumber: land ? null : num(f.floorNumber),
+    totalFloors: land ? null : num(f.totalFloors),
     facing: opt(f.facing),
-    ageOfPropertyYears: num(f.ageOfPropertyYears),
-    furnishingStatus: f.furnishingStatus,
-    amenities: f.amenities,
-    parking: f.parking,
+    ageOfPropertyYears: land ? null : num(f.ageOfPropertyYears),
+    furnishingStatus: land ? 'unfurnished' : f.furnishingStatus,
+    amenities: farm ? [] : f.amenities,
+    parking: farm ? 'none' : f.parking,
     suitableFor: residential ? [] : lines(f.suitableFor, ','),
     images: f.images,
     coverImageIndex: f.coverImageIndex,
@@ -258,9 +287,14 @@ export function userPayload(f: ListingFormState) {
     projectId: f.projectId || null,
     plotApproval: plot ? f.plotApproval || null : null,
     cornerPlot: plot ? f.cornerPlot : false,
-    roadWidthFt: plot ? num(f.roadWidthFt) : null,
-    openSides: plot ? num(f.openSides) : null,
-    boundaryWall: plot ? f.boundaryWall : false,
+    roadWidthFt: land ? num(f.roadWidthFt) : null,
+    openSides: land ? num(f.openSides) : null,
+    boundaryWall: land ? f.boundaryWall : false,
+    farmLandUse: farm ? f.farmLandUse || null : null,
+    farmWaterSource: farm ? f.farmWaterSource || null : null,
+    farmElectricity: farm ? f.farmElectricity || null : null,
+    farmFeatures: farm ? f.farmFeatures : [],
+    farmhouseAreaSqft: f.propertyType === 'farmhouse' ? num(f.farmhouseAreaSqft) : null,
     pgSharing: pg ? f.pgSharing : [],
     pgGender: pg ? f.pgGender || null : null,
     pgFoodIncluded: pg ? f.pgFoodIncluded : false,
@@ -350,6 +384,7 @@ export function ListingFields({
   step,
   uploadPath,
   showBusinessHints,
+  farmsAllowed = true,
 }: {
   f: ListingFormState;
   setF: (fn: (s: ListingFormState) => ListingFormState) => void;
@@ -358,10 +393,12 @@ export function ListingFields({
   step?: StepId;
   uploadPath: string;
   showBusinessHints?: boolean;
+  /** Admin can switch new farm listings off; an existing farm listing stays editable. */
+  farmsAllowed?: boolean;
 }) {
   const set = <K extends keyof ListingFormState>(k: K, v: ListingFormState[K]) =>
     setF((s) => ({ ...s, [k]: v }));
-  const toggle = (k: 'amenities' | 'preferredTenants' | 'pgSharing', v: string) =>
+  const toggle = (k: 'amenities' | 'preferredTenants' | 'pgSharing' | 'farmFeatures', v: string) =>
     setF((s) => ({
       ...s,
       [k]: (s[k] as string[]).includes(v)
@@ -374,15 +411,43 @@ export function ListingFields({
   const city = cities.find((c) => c.slug === f.citySlug);
   const sale = f.listingType === 'sale';
   const residential = f.category === 'residential';
-  const isPlot = f.propertyType === 'plot';
+  const isFarm = isFarmType(f.propertyType);
+  // Plots and farms are land: no rooms, floors or furnishing.
+  const isPlot = f.propertyType === 'plot' || isFarm;
   const isPg = f.propertyType === 'pg';
+  /** Pick a property type, adjusting the deal and units farms need. */
+  const pickType = (t: PropertyType) =>
+    setF((s) =>
+      isFarmType(t)
+        ? {
+            ...s,
+            propertyType: t,
+            listingType: 'sale',
+            areaUnit: (LAND_AREA_UNITS as readonly string[]).includes(s.areaUnit)
+              ? s.areaUnit
+              : 'bigha',
+            areaType: 'plot',
+            furnishingStatus: 'unfurnished',
+          }
+        : {
+            ...s,
+            propertyType: t,
+            areaUnit: (LAND_AREA_UNITS as readonly string[]).includes(s.areaUnit)
+              ? 'sqft'
+              : s.areaUnit,
+          },
+    );
   const needsRooms = TYPES_REQUIRING_ROOMS.includes(f.propertyType);
   const locality = city?.localities.find((l) => l.slug === f.localitySlug);
   const projects = useProjectOptions(f.citySlug);
   const priceNum = num(f.price);
   const areaNum = num(f.areaValue);
+  const perLand =
+    sale && priceNum && areaNum ? pricePerLandUnit(priceNum, areaNum, f.areaUnit) : null;
   const perSqft =
-    sale && priceNum && areaNum ? Math.round(priceNum / toSqft(areaNum, f.areaUnit)) : null;
+    sale && priceNum && areaNum && !perLand
+      ? Math.round(priceNum / toSqft(areaNum, f.areaUnit))
+      : null;
 
   // Switched-off site sections (Admin → Settings → Site sections) can't take new listings.
   const on = useSections();
@@ -427,11 +492,19 @@ export function ListingFields({
                     checked={f.listingType === t}
                     onChange={() => set('listingType', t)}
                     title={t === 'sale' ? 'Sell' : 'Rent out'}
-                    text={t === 'sale' ? 'Find a buyer' : 'Find a tenant'}
+                    text={
+                      t === 'sale'
+                        ? 'Find a buyer'
+                        : isFarm
+                          ? 'Not available for farms'
+                          : 'Find a tenant'
+                    }
                     Icon={t === 'sale' ? HomeIcon : KeyIcon}
+                    disabled={t === 'rent' && isFarm}
                   />
                 ))}
             </div>
+            {err('listingType') && <p className="field-error">{err('listingType')}</p>}
           </fieldset>
           <fieldset className="mt-6">
             <legend className="field-label">Property category</legend>
@@ -447,14 +520,19 @@ export function ListingFields({
                       setF((s) => ({
                         ...s,
                         category: c,
-                        propertyType: (PROPERTY_TYPES[c].find(typeOn) ??
-                          PROPERTY_TYPES[c][0]) as PropertyType,
+                        propertyType: (PROPERTY_TYPES[c].find(
+                          (t) => typeOn(t) && (!isFarmType(t) || farmsAllowed),
+                        ) ?? PROPERTY_TYPES[c][0]) as PropertyType,
                       }))
                     }
                     Icon={c === 'residential' ? HomeIcon : BuildingIcon}
                     title={c === 'residential' ? 'Residential' : 'Commercial'}
                     text={
-                      c === 'residential' ? 'Flat, house, villa, plot' : 'Office, shop, showroom'
+                      c === 'residential'
+                        ? farmsAllowed
+                          ? 'Flat, house, villa, plot, farm'
+                          : 'Flat, house, villa, plot'
+                        : 'Office, shop, showroom'
                     }
                   />
                 ))}
@@ -465,13 +543,15 @@ export function ListingFields({
             <div className="flex flex-wrap gap-2">
               {PROPERTY_TYPES[f.category]
                 .filter((t) => !(t === 'pg' && sale))
-                .filter((t) => typeOn(t) || f.propertyType === t)
+                .filter(
+                  (t) => (typeOn(t) && (!isFarmType(t) || farmsAllowed)) || f.propertyType === t,
+                )
                 .map((t) => (
                   <button
                     key={t}
                     type="button"
                     aria-pressed={f.propertyType === t}
-                    onClick={() => set('propertyType', t as PropertyType)}
+                    onClick={() => pickType(t as PropertyType)}
                     className={`chip ${f.propertyType === t ? 'chip-active' : ''}`}
                   >
                     {PROPERTY_TYPE_LABELS[t as PropertyType]}
@@ -479,6 +559,11 @@ export function ListingFields({
                 ))}
             </div>
             {err('propertyType') && <p className="field-error">{err('propertyType')}</p>}
+            {isFarm && (
+              <p className="mt-3 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-ink-soft">
+                Farms are listed for sale only. Land area is in bigha or acre.
+              </p>
+            )}
           </fieldset>
         </Group>
       )}
@@ -629,7 +714,7 @@ export function ListingFields({
               label={sale ? 'Asking price (₹)' : 'Monthly rent (₹)'}
               hint={
                 priceNum
-                  ? `${formatPrice(priceNum, f.listingType)}${perSqft ? ` · ${formatINR(perSqft)}/sq ft` : ''}`
+                  ? `${formatPrice(priceNum, f.listingType)}${perSqft ? ` · ${formatINR(perSqft)}/sq ft` : ''}${perLand ? ` · ${formatPrice(perLand.amount, 'sale')} per ${perLand.unit}` : ''}`
                   : sale
                     ? 'Total price in rupees, e.g. 6500000'
                     : 'Rent per month in rupees'
@@ -689,22 +774,24 @@ export function ListingFields({
 
           {sale ? (
             <div className="mt-6 grid gap-4 md:grid-cols-3">
-              <Field error={err('possessionStatus')} id="possessionStatus" label="Possession">
-                <select
-                  id="possessionStatus"
-                  className="field"
-                  value={f.possessionStatus}
-                  onChange={(e) => set('possessionStatus', e.target.value)}
-                >
-                  <option value="">Select</option>
-                  {POSSESSION_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {POSSESSION_LABELS[s]}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              {f.possessionStatus === 'under-construction' && (
+              {!isFarm && (
+                <Field error={err('possessionStatus')} id="possessionStatus" label="Possession">
+                  <select
+                    id="possessionStatus"
+                    className="field"
+                    value={f.possessionStatus}
+                    onChange={(e) => set('possessionStatus', e.target.value)}
+                  >
+                    <option value="">Select</option>
+                    {POSSESSION_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {POSSESSION_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              {!isFarm && f.possessionStatus === 'under-construction' && (
                 <Field
                   error={err('possessionDate')}
                   id="possessionDate"
@@ -749,20 +836,22 @@ export function ListingFields({
                   ))}
                 </select>
               </Field>
-              <Field
-                error={err('reraId')}
-                id="reraId"
-                label="RERA registration (if applicable)"
-                hint="Required by law for most new projects. It is shown on the listing."
-              >
-                <input
+              {!isFarm && (
+                <Field
+                  error={err('reraId')}
                   id="reraId"
-                  className="field"
-                  maxLength={60}
-                  value={f.reraId}
-                  onChange={(e) => set('reraId', e.target.value)}
-                />
-              </Field>
+                  label="RERA registration (if applicable)"
+                  hint="Required by law for most new projects. It is shown on the listing."
+                >
+                  <input
+                    id="reraId"
+                    className="field"
+                    maxLength={60}
+                    value={f.reraId}
+                    onChange={(e) => set('reraId', e.target.value)}
+                  />
+                </Field>
+              )}
               <Field error={err('brokerage')} id="brokerage" label="Brokerage (optional)">
                 <input
                   id="brokerage"
@@ -847,7 +936,16 @@ export function ListingFields({
       {show('details') && (
         <Group title="Size and features" bare={!!step}>
           <div className="grid gap-4 md:grid-cols-4">
-            <Field error={err('areaValue')} id="areaValue" label="Area">
+            <Field
+              error={err('areaValue')}
+              id="areaValue"
+              label={isFarm ? 'Total land area' : 'Area'}
+              hint={
+                isFarm && areaNum && f.areaUnit === 'bigha'
+                  ? `≈ ${Math.round(areaNum * 3025).toLocaleString('en-IN')} sq yd (1 pakka bigha = 3,025 sq yd)`
+                  : undefined
+              }
+            >
               <input
                 id="areaValue"
                 className="field tabular"
@@ -864,27 +962,47 @@ export function ListingFields({
                 value={f.areaUnit}
                 onChange={(e) => set('areaUnit', e.target.value as ListingFormState['areaUnit'])}
               >
-                {AREA_UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {AREA_UNIT_LABELS[u]}
-                  </option>
-                ))}
+                {(isFarm ? [...LAND_AREA_UNITS, 'sqyd' as const] : AREA_UNITS)
+                  .filter((u) => isFarm || f.areaUnit === u || !isLandUnit(u))
+                  .map((u) => (
+                    <option key={u} value={u}>
+                      {AREA_UNIT_LABELS[u]}
+                    </option>
+                  ))}
               </select>
             </Field>
-            <Field error={err('areaType')} id="areaType" label="Measured as">
-              <select
-                id="areaType"
-                className="field"
-                value={f.areaType}
-                onChange={(e) => set('areaType', e.target.value as ListingFormState['areaType'])}
+            {!isFarm && (
+              <Field error={err('areaType')} id="areaType" label="Measured as">
+                <select
+                  id="areaType"
+                  className="field"
+                  value={f.areaType}
+                  onChange={(e) => set('areaType', e.target.value as ListingFormState['areaType'])}
+                >
+                  {AREA_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {cap(t.replace(/-/g, ' '))} area
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            {f.propertyType === 'farmhouse' && (
+              <Field
+                error={err('farmhouseAreaSqft')}
+                id="farmhouseAreaSqft"
+                label="Farmhouse built-up (sq ft)"
+                hint="The house on the land"
               >
-                {AREA_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {cap(t.replace(/-/g, ' '))} area
-                  </option>
-                ))}
-              </select>
-            </Field>
+                <input
+                  id="farmhouseAreaSqft"
+                  className="field tabular"
+                  inputMode="numeric"
+                  value={f.farmhouseAreaSqft}
+                  onChange={(e) => set('farmhouseAreaSqft', e.target.value.replace(/[^\d]/g, ''))}
+                />
+              </Field>
+            )}
             {!isPlot && (
               <Field error={err('furnishingStatus')} id="furnishingStatus" label="Furnishing">
                 <select
@@ -956,20 +1074,22 @@ export function ListingFields({
                 placeholder="e.g. East"
               />
             </Field>
-            <Field error={err('parking')} id="parking" label="Parking">
-              <select
-                id="parking"
-                className="field"
-                value={f.parking}
-                onChange={(e) => set('parking', e.target.value as ListingFormState['parking'])}
-              >
-                {PARKING_OPTIONS.map((p) => (
-                  <option key={p} value={p}>
-                    {PARKING_LABELS[p]}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            {!isFarm && (
+              <Field error={err('parking')} id="parking" label="Parking">
+                <select
+                  id="parking"
+                  className="field"
+                  value={f.parking}
+                  onChange={(e) => set('parking', e.target.value as ListingFormState['parking'])}
+                >
+                  {PARKING_OPTIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {PARKING_LABELS[p]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
             {!residential && (
               <div className="md:col-span-2">
                 <Field
@@ -988,27 +1108,54 @@ export function ListingFields({
               </div>
             )}
           </div>
+          {isFarm && (
+            <div className="mt-6 space-y-5">
+              <ChipPick
+                label="Land use"
+                options={FARM_LAND_USES}
+                labels={FARM_LAND_USE_LABELS}
+                value={f.farmLandUse}
+                onChange={(v) => set('farmLandUse', v)}
+              />
+              <ChipPick
+                label="Water source"
+                options={FARM_WATER_SOURCES}
+                labels={FARM_WATER_SOURCE_LABELS}
+                value={f.farmWaterSource}
+                onChange={(v) => set('farmWaterSource', v)}
+              />
+              <ChipPick
+                label="Electricity"
+                options={FARM_ELECTRICITY}
+                labels={FARM_ELECTRICITY_LABELS}
+                value={f.farmElectricity}
+                onChange={(v) => set('farmElectricity', v)}
+              />
+            </div>
+          )}
           {isPlot && (
             <div className="mt-6 grid gap-4 md:grid-cols-4">
-              <Field error={err('plotApproval')} id="plotApproval" label="Approved by">
-                <select
-                  id="plotApproval"
-                  className="field"
-                  value={f.plotApproval}
-                  onChange={(e) => set('plotApproval', e.target.value as PlotApproval | '')}
-                >
-                  <option value="">Select</option>
-                  {PLOT_APPROVALS.map((a) => (
-                    <option key={a} value={a}>
-                      {PLOT_APPROVAL_LABELS[a]}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              {!isFarm && (
+                <Field error={err('plotApproval')} id="plotApproval" label="Approved by">
+                  <select
+                    id="plotApproval"
+                    className="field"
+                    value={f.plotApproval}
+                    onChange={(e) => set('plotApproval', e.target.value as PlotApproval | '')}
+                  >
+                    <option value="">Select</option>
+                    {PLOT_APPROVALS.map((a) => (
+                      <option key={a} value={a}>
+                        {PLOT_APPROVAL_LABELS[a]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
               <Field
                 error={err('roadWidthFt')}
                 id="roadWidthFt"
-                label="Road in front (ft)"
+                label={isFarm ? 'Approach road (ft)' : 'Road in front (ft)'}
                 hint="e.g. 30, 40, 60"
               >
                 <input
@@ -1034,18 +1181,20 @@ export function ListingFields({
                   ))}
                 </select>
               </Field>
-              <div className="flex flex-col justify-end">
-                <Check
-                  checked={f.cornerPlot}
-                  onChange={(v) => set('cornerPlot', v)}
-                  label="Corner plot"
-                />
-                <Check
-                  checked={f.boundaryWall}
-                  onChange={(v) => set('boundaryWall', v)}
-                  label="Boundary wall built"
-                />
-              </div>
+              {!isFarm && (
+                <div className="flex flex-col justify-end">
+                  <Check
+                    checked={f.cornerPlot}
+                    onChange={(v) => set('cornerPlot', v)}
+                    label="Corner plot"
+                  />
+                  <Check
+                    checked={f.boundaryWall}
+                    onChange={(v) => set('boundaryWall', v)}
+                    label="Boundary wall built"
+                  />
+                </div>
+              )}
             </div>
           )}
           {isPg && (
@@ -1088,22 +1237,49 @@ export function ListingFields({
               />
             </div>
           )}
-          <fieldset className="mt-6">
-            <legend className="field-label">Amenities</legend>
-            <div className="flex flex-wrap gap-2">
-              {AMENITIES.map((a) => (
+          {isFarm ? (
+            <fieldset className="mt-6">
+              <legend className="field-label">Also has</legend>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  key={a}
                   type="button"
-                  aria-pressed={f.amenities.includes(a)}
-                  onClick={() => toggle('amenities', a)}
-                  className={`chip ${f.amenities.includes(a) ? 'chip-active' : ''}`}
+                  aria-pressed={f.boundaryWall}
+                  onClick={() => set('boundaryWall', !f.boundaryWall)}
+                  className={`chip ${f.boundaryWall ? 'chip-active' : ''}`}
                 >
-                  {f.amenities.includes(a) && <CheckIcon size={14} />} {AMENITY_LABELS[a]}
+                  {f.boundaryWall && <CheckIcon size={14} />} Boundary wall
                 </button>
-              ))}
-            </div>
-          </fieldset>
+                {FARM_FEATURES.map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    aria-pressed={f.farmFeatures.includes(a)}
+                    onClick={() => toggle('farmFeatures', a)}
+                    className={`chip ${f.farmFeatures.includes(a) ? 'chip-active' : ''}`}
+                  >
+                    {f.farmFeatures.includes(a) && <CheckIcon size={14} />} {FARM_FEATURE_LABELS[a]}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          ) : (
+            <fieldset className="mt-6">
+              <legend className="field-label">Amenities</legend>
+              <div className="flex flex-wrap gap-2">
+                {AMENITIES.map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    aria-pressed={f.amenities.includes(a)}
+                    onClick={() => toggle('amenities', a)}
+                    className={`chip ${f.amenities.includes(a) ? 'chip-active' : ''}`}
+                  >
+                    {f.amenities.includes(a) && <CheckIcon size={14} />} {AMENITY_LABELS[a]}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
         </Group>
       )}
 
@@ -1230,6 +1406,9 @@ export function ListingPreview({
       areaSqft: num(f.areaValue) ? Math.round(toSqft(num(f.areaValue)!, f.areaUnit)) : 0,
       location: f.location,
       plotApproval: f.propertyType === 'plot' ? f.plotApproval || null : null,
+      farmLandUse: isFarmType(f.propertyType) ? f.farmLandUse || null : null,
+      farmWaterSource: isFarmType(f.propertyType) ? f.farmWaterSource || null : null,
+      farmhouseAreaSqft: f.propertyType === 'farmhouse' ? num(f.farmhouseAreaSqft) : null,
       pgGender: f.propertyType === 'pg' ? f.pgGender || null : null,
       partnerBadge: false,
       refreshedAt: null,
@@ -1266,6 +1445,42 @@ function useProjectOptions(citySlug: string) {
 /* ------------------------------------------------------------------ */
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const isLandUnit = (u: string) => (LAND_AREA_UNITS as readonly string[]).includes(u);
+
+/** One choice from a short list, shown as chips. Clicking the chosen chip clears it. */
+function ChipPick<T extends string>({
+  label,
+  options,
+  labels,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly T[];
+  labels: Record<T, string>;
+  value: T | '';
+  onChange: (v: T | '') => void;
+}) {
+  return (
+    <fieldset>
+      <legend className="field-label">{label}</legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <button
+            key={o}
+            type="button"
+            aria-pressed={value === o}
+            onClick={() => onChange(value === o ? '' : o)}
+            className={`chip ${value === o ? 'chip-active' : ''}`}
+          >
+            {labels[o]}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 export function Group({
   title,
@@ -1387,6 +1602,7 @@ function Choice({
   title,
   text,
   Icon,
+  disabled,
 }: {
   name: string;
   checked: boolean;
@@ -1394,16 +1610,26 @@ function Choice({
   title: string;
   text: string;
   Icon?: typeof HomeIcon;
+  disabled?: boolean;
 }) {
   return (
     <label
-      className={`flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-colors ${
+      className={`flex items-center gap-4 rounded-xl border p-4 transition-colors ${
+        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+      } ${
         checked
           ? 'border-brand bg-brand-50 ring-1 ring-brand'
           : 'border-line hover:border-line-strong'
       }`}
     >
-      <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
+      <input
+        type="radio"
+        name={name}
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        className="sr-only"
+      />
       {Icon && <Icon size={24} className={checked ? 'text-brand' : 'text-ink-muted'} />}
       <span>
         <span className="block font-semibold">{title}</span>

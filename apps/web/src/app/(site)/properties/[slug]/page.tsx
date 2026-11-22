@@ -20,6 +20,12 @@ import {
   PG_GENDER_LABELS,
   PG_SHARING_LABELS,
   PLOT_APPROVAL_LABELS,
+  FARM_ELECTRICITY_LABELS,
+  FARM_FEATURE_LABELS,
+  FARM_LAND_USE_LABELS,
+  FARM_WATER_SOURCE_LABELS,
+  isFarmType,
+  pricePerLandUnit,
   type PublicProperty,
 } from '@nexus/shared';
 import { getLocalityInsights, getProperty, getSettings } from '@/lib/api';
@@ -116,6 +122,8 @@ export default async function PropertyPage({ params }: Props) {
   const availableLabel =
     !available || available <= new Date() ? 'Available now' : `From ${fmtDate(p.availableFrom!)}`;
 
+  const farm = isFarmType(p.propertyType);
+  const perLand = isSale ? pricePerLandUnit(p.price, p.areaValue, p.areaUnit) : null;
   type Fact = { Icon: typeof BedIcon; label: string; value: string };
   const facts: Fact[] = [];
   if (p.bedrooms !== null)
@@ -130,10 +138,28 @@ export default async function PropertyPage({ params }: Props) {
     facts.push({ Icon: BathIcon, label: 'Washrooms', value: String(p.washrooms) });
   facts.push({
     Icon: AreaIcon,
-    label: `${cap(p.areaType.replace(/-/g, ' '))} area`,
+    label: farm ? 'Land area' : `${cap(p.areaType.replace(/-/g, ' '))} area`,
     value: formatArea(p.areaValue, p.areaUnit),
   });
-  if (p.propertyType !== 'plot')
+  if (farm && p.farmhouseAreaSqft)
+    facts.push({
+      Icon: AreaIcon,
+      label: 'Farmhouse',
+      value: `${p.farmhouseAreaSqft.toLocaleString('en-IN')} sq ft`,
+    });
+  if (farm && p.farmWaterSource)
+    facts.push({
+      Icon: LayersIcon,
+      label: 'Water',
+      value: FARM_WATER_SOURCE_LABELS[p.farmWaterSource],
+    });
+  if (farm && p.farmLandUse)
+    facts.push({
+      Icon: CalendarIcon,
+      label: 'Land use',
+      value: FARM_LAND_USE_LABELS[p.farmLandUse],
+    });
+  if (p.propertyType !== 'plot' && !farm)
     facts.push({
       Icon: SofaIcon,
       label: 'Furnishing',
@@ -141,8 +167,8 @@ export default async function PropertyPage({ params }: Props) {
     });
   const floor = floorLabel(p.floorNumber, p.totalFloors);
   if (floor) facts.push({ Icon: LayersIcon, label: 'Floor', value: floor });
-  facts.push({ Icon: CarIcon, label: 'Parking', value: PARKING_LABELS[p.parking] });
-  if (isSale) {
+  if (!farm) facts.push({ Icon: CarIcon, label: 'Parking', value: PARKING_LABELS[p.parking] });
+  if (isSale && !farm) {
     facts.push({
       Icon: CalendarIcon,
       label: 'Possession',
@@ -155,7 +181,7 @@ export default async function PropertyPage({ params }: Props) {
               ? POSSESSION_LABELS[p.possessionStatus]
               : '—',
     });
-  } else {
+  } else if (!isSale) {
     facts.push({
       Icon: CalendarIcon,
       label: 'Availability',
@@ -167,7 +193,14 @@ export default async function PropertyPage({ params }: Props) {
   const terms: [string, string][] = isSale
     ? [
         ...row('Asking price', `${formatINR(p.price)}${p.priceNegotiable ? ' (negotiable)' : ''}`),
-        ...row('Price per sq ft', p.pricePerSqft ? `${formatINR(p.pricePerSqft)}` : null),
+        ...row(
+          perLand ? `Price per ${perLand.unit}` : 'Price per sq ft',
+          perLand
+            ? formatINR(perLand.amount)
+            : p.pricePerSqft && !farm
+              ? `${formatINR(p.pricePerSqft)}`
+              : null,
+        ),
         ...row('Project', p.projectName),
         ...row('Transaction', p.transactionType ? TRANSACTION_LABELS[p.transactionType] : null),
         ...row('Ownership', p.ownershipType ? OWNERSHIP_LABELS[p.ownershipType] : null),
@@ -219,10 +252,11 @@ export default async function PropertyPage({ params }: Props) {
         : null,
     ),
     ...row('Approved by', p.plotApproval ? PLOT_APPROVAL_LABELS[p.plotApproval] : null),
-    ...row('Road in front', p.roadWidthFt ? `${p.roadWidthFt} ft` : null),
+    ...row(farm ? 'Approach road' : 'Road in front', p.roadWidthFt ? `${p.roadWidthFt} ft` : null),
+    ...row('Electricity', p.farmElectricity ? FARM_ELECTRICITY_LABELS[p.farmElectricity] : null),
     ...row('Open sides', p.openSides ? String(p.openSides) : null),
     ...row('Corner plot', p.propertyType === 'plot' && p.cornerPlot ? 'Yes' : null),
-    ...row('Boundary wall', p.propertyType === 'plot' && p.boundaryWall ? 'Yes' : null),
+    ...row('Boundary wall', (p.propertyType === 'plot' || farm) && p.boundaryWall ? 'Yes' : null),
     ...row('For', p.pgGender ? PG_GENDER_LABELS[p.pgGender] : null),
     ...row(
       'Room sharing',
@@ -231,6 +265,12 @@ export default async function PropertyPage({ params }: Props) {
     ...row(
       'Meals',
       p.propertyType === 'pg' ? (p.pgFoodIncluded ? 'Included' : 'Not included') : null,
+    ),
+    ...row(
+      'Area in sq yd',
+      p.areaUnit === 'bigha' || p.areaUnit === 'acre'
+        ? `≈ ${Math.round(p.areaSqft / 9).toLocaleString('en-IN')} sq yd`
+        : null,
     ),
     ...row(
       'Area in sq ft',
@@ -258,6 +298,7 @@ export default async function PropertyPage({ params }: Props) {
           { id: 'about', label: 'Details' },
           { id: 'terms', label: isSale ? 'Price and legal' : 'Rent and terms' },
           ...(p.amenities.length ? [{ id: 'amenities', label: 'Amenities' }] : []),
+          ...(farm && p.farmFeatures.length ? [{ id: 'farm-features', label: 'Also has' }] : []),
           { id: 'location', label: 'Location' },
           ...(isSale && !closed && p.price > 0 ? [{ id: 'emi', label: 'EMI' }] : []),
         ]}
@@ -347,7 +388,11 @@ export default async function PropertyPage({ params }: Props) {
               <p className="mt-2 text-sm text-white/70">
                 {isSale
                   ? [
-                      p.pricePerSqft ? `${formatINRShort(p.pricePerSqft)} per sq ft` : null,
+                      perLand
+                        ? `${formatINRShort(perLand.amount)} per ${perLand.unit}`
+                        : p.pricePerSqft && !farm
+                          ? `${formatINRShort(p.pricePerSqft)} per sq ft`
+                          : null,
                       p.priceNegotiable ? 'Negotiable' : null,
                     ]
                       .filter(Boolean)
@@ -448,6 +493,22 @@ export default async function PropertyPage({ params }: Props) {
                 {p.amenities.map((a) => (
                   <li key={a} className="chip">
                     {AMENITY_LABELS[a]}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {farm && p.farmFeatures.length > 0 && (
+            <section aria-labelledby="farm-features" className="mt-12">
+              <h2 id="farm-features" className="text-2xl">
+                Also has
+              </h2>
+              <ul className="mt-4 flex flex-wrap gap-2">
+                {p.boundaryWall && <li className="chip">Boundary wall</li>}
+                {p.farmFeatures.map((a) => (
+                  <li key={a} className="chip">
+                    {FARM_FEATURE_LABELS[a]}
                   </li>
                 ))}
               </ul>

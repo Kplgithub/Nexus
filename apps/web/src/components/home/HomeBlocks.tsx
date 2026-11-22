@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   formatINR,
+  isFarmType,
   type BlogPostCard,
   type City,
   type HomeBanner,
@@ -607,6 +608,20 @@ const TYPES = [
     img: '1500382017468-9049fed747ef',
   },
   {
+    label: 'Farmhouses',
+    hint: 'Weekend homes on the outskirts',
+    q: 'buy',
+    t: 'farmhouse',
+    img: '1500076656116-558758c991c1',
+  },
+  {
+    label: 'Farm land',
+    hint: 'Krishi bhoomi in bigha and acre',
+    q: 'buy',
+    t: 'farm-land',
+    img: '1574943320219-553eb213f72d',
+  },
+  {
     label: 'Flats for rent',
     hint: 'Furnished and unfurnished',
     q: 'rent',
@@ -638,10 +653,17 @@ const TYPES = [
 
 /**
  * Wide tiles fill the last row when switched-off sections leave fewer than 8 types:
- * 2 columns on phones, 4 from small screens up.
+ * 2 columns on phones, 4 from small screens up. With farm tiles (more than 8) the grid
+ * has 5 columns from medium screens and only the phone row is balanced.
  */
 function typeSpan(i: number, n: number): { li: string; tile: string } {
   const phoneWide = n % 2 === 1 && i === n - 1;
+  if (n > 8) {
+    return {
+      li: phoneWide ? 'col-span-2 md:col-span-1' : '',
+      tile: phoneWide ? 'aspect-[8/3] md:aspect-[4/3]' : 'aspect-[4/3]',
+    };
+  }
   const r = n % 4;
   const lastRow = i >= n - r;
   const smSpan = r === 1 && lastRow ? 4 : (r === 2 && lastRow) || (r === 3 && i === n - 1) ? 2 : 1;
@@ -660,12 +682,17 @@ export function PropertyTypes({
   city,
   cityName,
   on,
+  farms = true,
 }: {
   city: string;
   cityName: string;
   on: SectionsOn;
+  /** Admin switch: the Farmhouse and Farm land tiles. */
+  farms?: boolean;
 }) {
-  const types = TYPES.filter((x) => hrefOn(`/${x.q}?propertyType=${x.t}`, on));
+  const types = TYPES.filter((x) => farms || !isFarmType(x.t)).filter((x) =>
+    hrefOn(`/${x.q}?propertyType=${x.t}`, on),
+  );
   if (!types.length) return null;
   return (
     <section className="py-8 sm:py-10" aria-labelledby="types-heading">
@@ -676,7 +703,9 @@ export function PropertyTypes({
           title="Find your kind of space"
           sub={`Homes, plots and workspaces across ${cityName}.`}
         />
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <ul
+          className={`grid grid-cols-2 gap-3 sm:gap-4 ${types.length > 8 ? 'md:grid-cols-5' : 'sm:grid-cols-4'}`}
+        >
           {types.map((x, i) => (
             <li key={x.label} className={typeSpan(i, types.length).li}>
               <Link
@@ -687,7 +716,7 @@ export function PropertyTypes({
                   src={`https://images.unsplash.com/photo-${x.img}?w=600&h=450&fit=crop&q=70&auto=format`}
                   alt=""
                   fill
-                  sizes="(min-width: 640px) 25vw, 50vw"
+                  sizes="(min-width: 768px) 20vw, (min-width: 640px) 25vw, 50vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <span
