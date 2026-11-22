@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSections } from '../session/SectionsProvider';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { CITY_COOKIE, HOME_CITY_COOKIE } from '@/lib/city-cookie';
 import { CheckIcon, ChevronDown, MapPinIcon } from '../icons';
@@ -27,6 +28,7 @@ function saveCity(slug: string) {
  * until then the home page goes by the visitor's location (see src/proxy.ts).
  */
 export function CityMenu({ cities }: { cities: CityLite[] }) {
+  const on = useSections();
   const [open, setOpen] = useState(false);
   // The cookie only exists in the browser; the server render shows the plain menu.
   const current = useSyncExternalStore(
@@ -57,7 +59,7 @@ export function CityMenu({ cities }: { cities: CityLite[] }) {
   if (cities.length === 1) {
     return (
       <Link
-        href={`/buy/${first.slug}`}
+        href={on.buy ? `/buy/${first.slug}` : on.rent ? `/rent/${first.slug}` : '/'}
         className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-ink-soft hover:border-brand hover:text-brand"
       >
         <MapPinIcon size={15} className="text-brand" /> {first.name}

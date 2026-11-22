@@ -6,10 +6,13 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { canListProperty, formatIndianPhone } from '@nexus/shared';
 import { NAV_LINKS, POST_PROPERTY_PATH } from '@/lib/site';
+import { hrefOn } from '@/lib/sections';
 import { useSession } from '../session/SessionProvider';
+import { useSections } from '../session/SectionsProvider';
 import { CloseIcon, MenuIcon, PhoneIcon } from '../icons';
 
-export function MobileNav({ phone, homeLoan = false }: { phone: string; homeLoan?: boolean }) {
+export function MobileNav({ phone }: { phone: string }) {
+  const on = useSections();
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -68,7 +71,7 @@ export function MobileNav({ phone, homeLoan = false }: { phone: string; homeLoan
                   Home
                 </Link>
               </li>
-              {NAV_LINKS.filter((l) => homeLoan || l.href !== '/home-loan').map((l) => (
+              {NAV_LINKS.filter((l) => hrefOn(l.href, on)).map((l) => (
                 <li key={l.href}>
                   <Link
                     href={l.href}

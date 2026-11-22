@@ -8,6 +8,7 @@ import {
   getSettings,
 } from '@/lib/api';
 import { SITE_URL } from '@/lib/site';
+import { hrefOn, sectionsOn } from '@/lib/sections';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,44 +27,49 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
   const now = new Date();
   const url = (p: string) => `${SITE_URL}${p}`;
+  // Pages of switched-off site sections (Admin → Settings → Site sections) stay out.
+  const on = sectionsOn(settings);
+  const open = (e: { url: string }) => hrefOn(e.url.slice(SITE_URL.length) || '/', on);
 
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: url('/'), lastModified: now, changeFrequency: 'daily', priority: 1 },
-    { url: url('/properties'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: url('/buy'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: url('/rent'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: url('/commercial'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: url('/projects'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
-    ...(settings.homeLoan?.enabled
-      ? [{ url: url('/home-loan'), changeFrequency: 'weekly' as const, priority: 0.7 }]
-      : []),
-    { url: url('/agents'), changeFrequency: 'weekly', priority: 0.5 },
-    { url: url('/builders'), changeFrequency: 'weekly', priority: 0.5 },
-    { url: url('/locations'), changeFrequency: 'weekly', priority: 0.6 },
-    { url: url('/post-property'), changeFrequency: 'monthly', priority: 0.6 },
-    { url: url('/about'), changeFrequency: 'monthly', priority: 0.4 },
-    { url: url('/contact'), changeFrequency: 'monthly', priority: 0.5 },
-    { url: url('/faq'), changeFrequency: 'monthly', priority: 0.4 },
-    { url: url('/blog'), lastModified: now, changeFrequency: 'daily', priority: 0.6 },
-    { url: url('/privacy-policy'), changeFrequency: 'yearly', priority: 0.1 },
-    { url: url('/terms-and-conditions'), changeFrequency: 'yearly', priority: 0.1 },
-    { url: url('/cookie-policy'), changeFrequency: 'yearly', priority: 0.1 },
-  ];
+  const staticPages: MetadataRoute.Sitemap = (
+    [
+      { url: url('/'), lastModified: now, changeFrequency: 'daily', priority: 1 },
+      { url: url('/properties'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+      { url: url('/buy'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+      { url: url('/rent'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+      { url: url('/commercial'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+      { url: url('/projects'), lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+      { url: url('/home-loan'), changeFrequency: 'weekly', priority: 0.7 },
+      { url: url('/agents'), changeFrequency: 'weekly', priority: 0.5 },
+      { url: url('/builders'), changeFrequency: 'weekly', priority: 0.5 },
+      { url: url('/locations'), changeFrequency: 'weekly', priority: 0.6 },
+      { url: url('/post-property'), changeFrequency: 'monthly', priority: 0.6 },
+      { url: url('/about'), changeFrequency: 'monthly', priority: 0.4 },
+      { url: url('/contact'), changeFrequency: 'monthly', priority: 0.5 },
+      { url: url('/faq'), changeFrequency: 'monthly', priority: 0.4 },
+      { url: url('/blog'), lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+      { url: url('/privacy-policy'), changeFrequency: 'yearly', priority: 0.1 },
+      { url: url('/terms-and-conditions'), changeFrequency: 'yearly', priority: 0.1 },
+      { url: url('/cookie-policy'), changeFrequency: 'yearly', priority: 0.1 },
+    ] satisfies MetadataRoute.Sitemap
+  ).filter(open);
 
-  const locationPages: MetadataRoute.Sitemap = cities.flatMap((c) =>
-    ['/buy', '/rent'].flatMap((root) => [
-      ...((c.publishedCount ?? 0) > 0 || c.intro
-        ? [{ url: url(`${root}/${c.slug}`), changeFrequency: 'daily' as const, priority: 0.8 }]
-        : []),
-      ...c.localities
-        .filter((l) => (l.publishedCount ?? 0) > 0 || l.intro)
-        .map((l) => ({
-          url: url(`${root}/${c.slug}/${l.slug}`),
-          changeFrequency: 'daily' as const,
-          priority: 0.7,
-        })),
-    ]),
-  );
+  const locationPages: MetadataRoute.Sitemap = cities
+    .flatMap((c) =>
+      ['/buy', '/rent'].flatMap((root) => [
+        ...((c.publishedCount ?? 0) > 0 || c.intro
+          ? [{ url: url(`${root}/${c.slug}`), changeFrequency: 'daily' as const, priority: 0.8 }]
+          : []),
+        ...c.localities
+          .filter((l) => (l.publishedCount ?? 0) > 0 || l.intro)
+          .map((l) => ({
+            url: url(`${root}/${c.slug}/${l.slug}`),
+            changeFrequency: 'daily' as const,
+            priority: 0.7,
+          })),
+      ]),
+    )
+    .filter(open);
 
   const listingPages: MetadataRoute.Sitemap = properties.map((p) => ({
     url: url(`/properties/${p.slug}`),

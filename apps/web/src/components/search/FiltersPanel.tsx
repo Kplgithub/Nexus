@@ -25,6 +25,7 @@ import {
 import { toQueryString } from '@/lib/search-params';
 import { AREA_STEPS, priceLabel, priceSteps } from './options';
 import { CloseIcon, FilterIcon } from '../icons';
+import { useSections } from '../session/SectionsProvider';
 
 const RESIDENTIAL_AMENITIES: Amenity[] = [
   'lift',
@@ -77,10 +78,36 @@ export function FiltersPanel({
   const steps = priceSteps(deal || undefined);
   const localities = cities.find((c) => c.slug === city)?.localities ?? [];
 
+  const on = useSections();
   const isResidential = category === 'residential';
-  const types = category
-    ? PROPERTY_TYPES[category]
-    : [...PROPERTY_TYPES.residential, ...PROPERTY_TYPES.commercial];
+  // Choices from switched-off site sections are left out (Admin → Settings → Site sections).
+  const types = (
+    category
+      ? PROPERTY_TYPES[category]
+      : [...PROPERTY_TYPES.residential, ...PROPERTY_TYPES.commercial]
+  ).filter(
+    (t) =>
+      (t !== 'pg' || on.pg) &&
+      (t !== 'plot' || on.plot) &&
+      (on.commercial || !(PROPERTY_TYPES.commercial as readonly string[]).includes(t)),
+  );
+  const commercialPage = fixed.category === 'commercial';
+  const dealOptions = (
+    [
+      ['', 'Any'],
+      ['sale', 'Buy'],
+      ['rent', 'Rent'],
+    ] as const
+  ).filter(([v]) => commercialPage || !v || (v === 'sale' ? on.buy : on.rent));
+  const categoryOptions = (
+    [
+      ['', 'All'],
+      ['residential', 'Residential'],
+      ['commercial', 'Commercial'],
+    ] as const
+  ).filter(([v]) => !v || (v === 'commercial' ? on.commercial : on.buy || on.rent));
+  const showPlot = on.plot && deal !== 'rent' && category !== 'commercial';
+  const showPg = on.pg && deal !== 'sale' && category !== 'commercial';
   const amenities =
     category === 'commercial'
       ? COMMERCIAL_AMENITIES
@@ -148,7 +175,7 @@ export function FiltersPanel({
       withPhotos: fd.get('withPhotos') === 'true' || undefined,
       rera: deal !== 'rent' && fd.get('rera') === 'true' ? true : undefined,
       plotApproval:
-        deal !== 'rent' && category !== 'commercial' && fd.get('plotApproval')
+        showPlot && fd.get('plotApproval')
           ? ([fd.get('plotApproval')] as PropertySearch['plotApproval'])
           : undefined,
       pgGender:
@@ -206,17 +233,11 @@ export function FiltersPanel({
         </div>
 
         <div className="space-y-5">
-          {!fixed.listingType && (
+          {!fixed.listingType && dealOptions.length > 2 && (
             <fieldset>
               <legend className="field-label">Looking to</legend>
               <div className="grid grid-cols-3 gap-1 rounded-lg bg-surface p-1 text-sm">
-                {(
-                  [
-                    ['', 'Any'],
-                    ['sale', 'Buy'],
-                    ['rent', 'Rent'],
-                  ] as const
-                ).map(([v, label]) => (
+                {dealOptions.map(([v, label]) => (
                   <label
                     key={v}
                     className={`cursor-pointer rounded-md px-2 py-2 text-center font-medium ${deal === v ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-muted'}`}
@@ -235,17 +256,11 @@ export function FiltersPanel({
               </div>
             </fieldset>
           )}
-          {!fixed.category && (
+          {!fixed.category && categoryOptions.length > 2 && (
             <fieldset>
               <legend className="field-label">Category</legend>
               <div className="grid grid-cols-3 gap-1 rounded-lg bg-surface p-1 text-sm">
-                {(
-                  [
-                    ['', 'All'],
-                    ['residential', 'Residential'],
-                    ['commercial', 'Commercial'],
-                  ] as const
-                ).map(([v, label]) => (
+                {categoryOptions.map(([v, label]) => (
                   <label
                     key={v}
                     className={`cursor-pointer rounded-md px-2 py-2 text-center font-medium ${category === v ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-muted'}`}
@@ -465,7 +480,7 @@ export function FiltersPanel({
             </div>
           )}
 
-          {deal !== 'rent' && category !== 'commercial' && (
+          {showPlot && (
             <div>
               <label htmlFor="f-plot" className="field-label">
                 Plot approved by
@@ -486,7 +501,7 @@ export function FiltersPanel({
             </div>
           )}
 
-          {deal !== 'sale' && category !== 'commercial' && (
+          {showPg && (
             <div>
               <label htmlFor="f-pg" className="field-label">
                 PG / hostel for
@@ -637,7 +652,7 @@ export function FiltersPanel({
                 RERA registered
               </label>
             )}
-            {deal !== 'sale' && category !== 'commercial' && (
+            {showPg && (
               <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft">
                 <input
                   type="checkbox"

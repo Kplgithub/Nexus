@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SHOW_LOCALITY_LINKS } from '@/lib/site';
+import { hrefOn, sectionsOn } from '@/lib/sections';
 import { formatIndianPhone, whatsappLink, type City, type SiteSettings } from '@nexus/shared';
 import {
   FacebookIcon,
@@ -33,6 +34,8 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
       .map((l) => ({ ...l, city: c })),
   );
   const socials = SOCIAL.filter((s) => settings.social[s.key]);
+  const on = sectionsOn(settings);
+  const shown = (links: [string, string][]) => links.filter(([href]) => hrefOn(href, on));
 
   const property: [string, string][] = [
     [`/buy?city=${citySlug}`, `Property for sale in ${cityName}`],
@@ -55,12 +58,8 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
   const services: [string, string][] = [
     ['/post-property', 'Post property'],
     ['/agents', 'Find an agent'],
-    ...(settings.homeLoan?.enabled
-      ? ([
-          ['/home-loan', 'Home loan'],
-          ['/home-loan#calculators', 'EMI calculator'],
-        ] as [string, string][])
-      : []),
+    ['/home-loan', 'Home loan'],
+    ['/home-loan#calculators', 'EMI calculator'],
     ['/search', 'AI search'],
     ['/buy?view=map', 'Map search'],
   ];
@@ -159,9 +158,12 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
         </div>
 
         <div className="grid gap-6">
-          <InlineLinks title={`Properties in ${cityName}`} links={property} />
-          <InlineLinks title={`New projects in ${cityName}`} links={projects} />
-          <InlineLinks title="Property services" links={services} />
+          <InlineLinks title={`Properties in ${cityName}`} links={shown(property)} />
+          <InlineLinks
+            title={on.projects ? `New projects in ${cityName}` : `Homes in ${cityName}`}
+            links={shown(projects)}
+          />
+          <InlineLinks title="Property services" links={shown(services)} />
         </div>
       </div>
 
@@ -202,6 +204,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
 }
 
 function InlineLinks({ title, links }: { title: string; links: [string, string][] }) {
+  if (!links.length) return null;
   return (
     <nav aria-label={title}>
       <h2 className="font-sans text-base font-semibold">{title}</h2>

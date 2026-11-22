@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { hrefOn } from '@/lib/sections';
+import { useSections } from '../session/SectionsProvider';
 
 type Group = { title: string; links: [string, string][] };
 
@@ -92,8 +94,21 @@ function groups(city: string, name: string): Record<'buy' | 'rent', Group[]> {
 }
 
 export function PropertyOptions({ city, cityName }: { city: string; cityName: string }) {
-  const [tab, setTab] = useState<'buy' | 'rent'>('buy');
-  const all = groups(city, cityName);
+  const on = useSections();
+  const full = groups(city, cityName);
+  // Only links of switched-on site sections, and no empty groups or tabs.
+  const all = Object.fromEntries(
+    (['buy', 'rent'] as const).map((t) => [
+      t,
+      full[t]
+        .map((g) => ({ ...g, links: g.links.filter(([href]) => hrefOn(href, on)) }))
+        .filter((g) => g.links.length > 0),
+    ]),
+  ) as Record<'buy' | 'rent', Group[]>;
+  const tabs = (['buy', 'rent'] as const).filter((t) => on[t] && all[t].length > 0);
+  const [picked, setTab] = useState<'buy' | 'rent'>('buy');
+  const tab = tabs.includes(picked) ? picked : tabs[0];
+  if (!tab) return null;
   return (
     <section className="py-8 sm:py-10" aria-labelledby="options-heading">
       <div className="container-page">
@@ -112,7 +127,7 @@ export function PropertyOptions({ city, cityName }: { city: string; cityName: st
           aria-label="Buy or rent"
           className="mt-5 flex gap-6 border-b border-line"
         >
-          {(['buy', 'rent'] as const).map((t) => (
+          {tabs.map((t) => (
             <button
               key={t}
               type="button"
@@ -129,7 +144,7 @@ export function PropertyOptions({ city, cityName }: { city: string; cityName: st
             </button>
           ))}
         </div>
-        {(['buy', 'rent'] as const).map((t) => (
+        {tabs.map((t) => (
           <div
             key={t}
             role="tabpanel"

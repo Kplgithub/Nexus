@@ -8,7 +8,8 @@ import {
   projectSearchSchema,
   type ProjectCard,
 } from '@nexus/shared';
-import { getLocations, searchProjects } from '@/lib/api';
+import { getLocations, getSettings, searchProjects } from '@/lib/api';
+import { sectionsOn } from '@/lib/sections';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { ProjectGrid } from '@/components/project/ProjectCard';
 import { Breadcrumbs, EmptyState, JsonLd, Pagination } from '@/components/ui';
@@ -44,7 +45,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 export default async function ProjectsPage({ searchParams }: Props) {
   const raw = await searchParams;
   const s = parse(raw);
-  const cities = await getLocations();
+  const [cities, settings] = await Promise.all([getLocations(), getSettings()]);
+  const on = sectionsOn(settings);
   const city = cities.find((c) => c.slug === (s.city ?? 'jaipur')) ?? cities[0];
   const qs = new URLSearchParams();
   for (const k of KEYS) {
@@ -179,9 +181,11 @@ export default async function ProjectsPage({ searchParams }: Props) {
               <Link href="/projects" className="btn btn-outline">
                 Clear filters
               </Link>
-              <Link href="/buy" className="btn btn-primary">
-                See resale properties
-              </Link>
+              {on.buy && (
+                <Link href="/buy" className="btn btn-primary">
+                  See resale properties
+                </Link>
+              )}
             </>
           }
         >

@@ -26,6 +26,7 @@ import {
   searchProperties,
 } from '@/lib/api';
 import { websiteJsonLd } from '@/lib/seo';
+import { hrefOn, sectionsOn } from '@/lib/sections';
 import { HeroSearch } from '@/components/search/HeroSearch';
 import { HomeCard, SeeAllCard } from './HomeCard';
 import { JsonLd } from '@/components/ui';
@@ -75,14 +76,26 @@ export async function HomeView({
   const citySlug = city?.slug ?? 'jaipur';
   const inCity = `city=${encodeURIComponent(citySlug)}`;
   const [settings, home] = await Promise.all([getSettings(), getHome(citySlug)]);
+  const on = sectionsOn(settings);
+  /** Links to "all listings": /buy, or /rent when Buy is switched off. */
+  const browse = (qs: string) => {
+    const root = on.buy ? '/buy' : on.rent ? '/rent' : on.commercial ? '/commercial' : null;
+    return root ? `${root}?${qs}` : null;
+  };
 
   const [ownerTotal, budgetTotal, projects, owners, agents, posts] = await Promise.all([
     total(`${inCity}&postedBy=owner`),
     total(`${inCity}&listingType=sale&maxPrice=5000000`),
-    safe(() => searchProjects(`${inCity}&limit=1`), {
-      items: [],
-      meta: { total: 0 },
-    } as unknown as Awaited<ReturnType<typeof searchProjects>>),
+    safe(
+      async () => {
+        if (!on.projects) throw new Error('New projects switched off');
+        return searchProjects(`${inCity}&limit=1`);
+      },
+      {
+        items: [],
+        meta: { total: 0 },
+      } as unknown as Awaited<ReturnType<typeof searchProjects>>,
+    ),
     safe(() => searchProperties(`${inCity}&postedBy=owner&limit=12&sort=newest`), {
       items: [] as Card[],
       meta: { total: 0 },
@@ -150,7 +163,7 @@ export async function HomeView({
             <HeroSearch cities={cities} defaultCity={citySlug} />
           </div>
           <dl className="mx-auto mt-5 flex max-w-4xl flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-white/75">
-            {home.counts.sale > 0 && (
+            {home.counts.sale > 0 && on.buy && (
               <div>
                 <dt className="sr-only">For sale</dt>
                 <dd>
@@ -161,7 +174,7 @@ export async function HomeView({
                 </dd>
               </div>
             )}
-            {home.counts.rent > 0 && (
+            {home.counts.rent > 0 && on.rent && (
               <div>
                 <dt className="sr-only">For rent</dt>
                 <dd>
@@ -172,7 +185,7 @@ export async function HomeView({
                 </dd>
               </div>
             )}
-            {home.projects.length > 0 && (
+            {home.projects.length > 0 && on.projects && (
               <div>
                 <dt className="sr-only">New projects</dt>
                 <dd>
@@ -229,7 +242,7 @@ export async function HomeView({
             href: `/rent?${inCity}`,
             img: TILE_IMAGES.rent,
           },
-        ]}
+        ].filter((t) => hrefOn(t.href, on))}
       />
 
       {settings.home.showFeatured && home.featured.length > 0 && (
@@ -243,20 +256,22 @@ export async function HomeView({
       )}
 
       <div className="bg-surface">
-        <PropertyTypes city={citySlug} cityName={cityName} />
+        <PropertyTypes city={citySlug} cityName={cityName} on={on} />
       </div>
 
-      {owners.items.length > 0 && (
+      {owners.items.length > 0 && browse(`${inCity}&postedBy=owner`) && (
         <Rail
           id="owner"
           eyebrow="Direct from owners"
           title="Homes listed by owners"
-          href={`/buy?${inCity}&postedBy=owner`}
+          href={browse(`${inCity}&postedBy=owner`)!}
           items={owners.items}
         />
       )}
 
-      {city && <TopLocalities city={city} />}
+      {city && browse('') && (
+        <TopLocalities city={city} root={on.buy ? '/buy' : on.rent ? '/rent' : '/commercial'} />
+      )}
 
       <WideBanners banners={middle} />
 
@@ -275,7 +290,7 @@ export async function HomeView({
       )}
 
       <div className="bg-surface">
-        <AdviceTools />
+        <AdviceTools on={on} />
         <BannerGrid banners={lower} title="Offers & updates" />
       </div>
 
