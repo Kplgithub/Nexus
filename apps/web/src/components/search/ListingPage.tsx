@@ -198,9 +198,7 @@ export async function ListingPage({
             Hinglish
           </p>
           {/* No entrance animation on the heading: it is the LCP element on phones. */}
-          <h1 className="mt-3 text-[1.9rem] leading-tight text-white sm:text-[2.4rem]">
-            {h1}
-          </h1>
+          <h1 className="mt-3 text-[1.9rem] leading-tight text-white sm:text-[2.4rem]">{h1}</h1>
           {lead && (
             <p className="mt-2 line-clamp-2 max-w-3xl leading-relaxed text-white/75 sm:line-clamp-none">
               {lead}
