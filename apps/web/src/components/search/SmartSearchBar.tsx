@@ -56,7 +56,7 @@ export function SmartSearchBar({
   return (
     <form
       role="search"
-      aria-label="AI property search"
+      aria-label="Property search"
       action="/search"
       onSubmit={(e) => {
         e.preventDefault();
@@ -80,8 +80,8 @@ export function SmartSearchBar({
             maxLength={200}
             placeholder={
               deal === 'sale'
-                ? 'Ask AI: 3 BHK flat in Jagatpura under 60 lakh'
-                : 'Ask AI: 2bhk furnished vaishali nagar 15000 tak'
+                ? 'Try: 3 BHK flat in Jagatpura under 60 lakh'
+                : 'Try: 2bhk furnished vaishali nagar 15000 tak'
             }
             autoComplete="off"
             enterKeyHint="search"
@@ -97,7 +97,7 @@ export function SmartSearchBar({
             ) : (
               <SearchIcon size={16} />
             )}
-            <span className="hidden sm:inline">{pending ? 'Searching…' : 'AI search'}</span>
+            <span className="hidden sm:inline">{pending ? 'Searching…' : 'Search'}</span>
             <span className="sr-only sm:hidden">Search</span>
           </button>
         </div>

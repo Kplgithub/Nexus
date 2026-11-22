@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
+import { Honeypot, honeypotValue } from './Honeypot';
 import { CheckIcon } from '../icons';
 import { useOptionalSession } from '../session/SessionProvider';
 
@@ -76,7 +77,7 @@ export function EnquiryForm({
           projectId,
           sourcePage,
           consent: true,
-          website: String(fd.get('website') ?? ''),
+          website: honeypotValue(fd),
           elapsedMs: openedAt.current ? Date.now() - openedAt.current : undefined,
         },
       });
@@ -208,11 +209,7 @@ export function EnquiryForm({
         />
       </div>
 
-      {/* Honeypot: hidden from people and assistive tech; bots tend to fill it. */}
-      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
-        <label htmlFor={`${uid}-website`}>Website</label>
-        <input id={`${uid}-website`} name="website" tabIndex={-1} autoComplete="off" />
-      </div>
+      <Honeypot id={`${uid}-hp`} />
 
       <div>
         <label className="flex items-start gap-2.5 text-sm text-ink-soft">
