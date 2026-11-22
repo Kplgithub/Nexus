@@ -55,6 +55,12 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
   const services: [string, string][] = [
     ['/post-property', 'Post property'],
     ['/agents', 'Find an agent'],
+    ...(settings.homeLoan?.enabled
+      ? ([
+          ['/home-loan', 'Home loan'],
+          ['/home-loan#calculators', 'EMI calculator'],
+        ] as [string, string][])
+      : []),
     ['/search', 'AI search'],
     ['/buy?view=map', 'Map search'],
   ];

@@ -24,11 +24,11 @@ export function Header({ settings, cities }: { settings: SiteSettings; cities: C
           </div>
         )}
 
-        <MegaMenu cities={cities} />
+        <MegaMenu cities={cities} homeLoan={settings.homeLoan?.enabled ?? false} />
 
         <div className="ml-auto flex items-center gap-2">
           <UserMenu />
-          <MobileNav phone={settings.phone} />
+          <MobileNav phone={settings.phone} homeLoan={settings.homeLoan?.enabled ?? false} />
         </div>
       </div>
     </header>

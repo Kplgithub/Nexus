@@ -8,7 +8,8 @@ import {
   formatINRShort,
   formatPriceRange,
 } from '@nexus/shared';
-import { getProject, searchProperties } from '@/lib/api';
+import { getProject, getSettings, searchProperties } from '@/lib/api';
+import { LoanCta } from '@/components/loan/LoanCta';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { absoluteUrl } from '@/lib/site';
 import { Gallery } from '@/components/property/Gallery';
@@ -50,7 +51,10 @@ export default async function ProjectPage({ params }: Props) {
   const { slug } = await params;
   const p = await getProject(slug);
   if (!p) notFound();
-  const units = await searchProperties(`project=${p.slug}&limit=6`).catch(() => null);
+  const [units, settings] = await Promise.all([
+    searchProperties(`project=${p.slug}&limit=6`).catch(() => null),
+    getSettings(),
+  ]);
   const builderName = p.builder.companyName || p.builder.name;
 
   const crumbs = [
@@ -329,7 +333,14 @@ export default async function ProjectPage({ params }: Props) {
               Starting price {formatINRShort(p.priceRange.min)}. Adjust to your unit.
             </p>
             <div className="mt-4">
-              <EmiCalculator price={p.priceRange.min} />
+              <EmiCalculator price={p.priceRange.min} rate={settings.homeLoan?.exampleRate} />
+              {settings.homeLoan?.enabled && (
+                <LoanCta
+                  propertyTitle={p.name}
+                  price={p.priceRange.min}
+                  sourcePage={`/projects/${p.slug}`}
+                />
+              )}
             </div>
           </section>
 

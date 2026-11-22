@@ -37,6 +37,7 @@ import { PropertyGrid } from '@/components/property/PropertyCard';
 import { ContactPanel } from '@/components/property/ContactPanel';
 import { SaveButton } from '@/components/property/SaveButton';
 import { EmiCalculator } from '@/components/property/EmiCalculator';
+import { LoanCta } from '@/components/loan/LoanCta';
 import { ReportListing } from '@/components/property/ReportListing';
 import { VideoTour } from '@/components/property/VideoTour';
 import { ViewBeacon } from '@/components/property/ViewBeacon';
@@ -499,7 +500,15 @@ export default async function PropertyPage({ params }: Props) {
                 Home loan EMI
               </h2>
               <div className="mt-4">
-                <EmiCalculator price={p.price} />
+                <EmiCalculator price={p.price} rate={settings.homeLoan?.exampleRate} />
+                {settings.homeLoan?.enabled && (
+                  <LoanCta
+                    propertyId={p.id}
+                    propertyTitle={p.title}
+                    price={p.price}
+                    sourcePage={`/properties/${p.slug}`}
+                  />
+                )}
               </div>
             </section>
           )}
