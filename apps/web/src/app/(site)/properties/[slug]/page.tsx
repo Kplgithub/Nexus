@@ -11,7 +11,9 @@ import {
   formatArea,
   formatINR,
   formatINRShort,
+  formatListingPrice,
   formatPrice,
+  isFreePrice,
   OWNERSHIP_LABELS,
   POSSESSION_LABELS,
   PREFERRED_TENANT_LABELS,
@@ -93,6 +95,7 @@ export default async function PropertyPage({ params }: Props) {
   const [{ property: p, similar }, settings] = await Promise.all([load(slug), getSettings()]);
   const insights = await getLocalityInsights(p.city.slug, p.locality.slug);
   const isSale = p.listingType === 'sale';
+  const free = isFreePrice(p.price);
   const dealRoot = isSale ? '/buy' : '/rent';
   const closed = p.status !== 'published';
 
@@ -159,7 +162,10 @@ export default async function PropertyPage({ params }: Props) {
   const row = (k: string, v: string | null | undefined): [string, string][] => (v ? [[k, v]] : []);
   const terms: [string, string][] = isSale
     ? [
-        ...row('Asking price', `${formatINR(p.price)}${p.priceNegotiable ? ' (negotiable)' : ''}`),
+        ...row(
+          'Asking price',
+          `${formatListingPrice(p.price)}${p.priceNegotiable && !free ? ' (negotiable)' : ''}`,
+        ),
         ...row('Price per sq ft', p.pricePerSqft ? `${formatINR(p.pricePerSqft)}` : null),
         ...row('Project', p.projectName),
         ...row('Transaction', p.transactionType ? TRANSACTION_LABELS[p.transactionType] : null),
@@ -178,7 +184,10 @@ export default async function PropertyPage({ params }: Props) {
         ),
       ]
     : [
-        ...row('Monthly rent', `${formatINR(p.price)}${p.priceNegotiable ? ' (negotiable)' : ''}`),
+        ...row(
+          'Monthly rent',
+          `${formatListingPrice(p.price)}${p.priceNegotiable && !free ? ' (negotiable)' : ''}`,
+        ),
         ...row(
           'Security deposit',
           p.securityDeposit !== null ? formatINR(p.securityDeposit) : null,
@@ -338,19 +347,21 @@ export default async function PropertyPage({ params }: Props) {
                 {formatPrice(p.price, p.listingType)}
               </p>
               <p className="mt-2 text-sm text-white/70">
-                {isSale
-                  ? [
-                      p.pricePerSqft ? `${formatINRShort(p.pricePerSqft)} per sq ft` : null,
-                      p.priceNegotiable ? 'Negotiable' : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ') || 'Price as listed by the poster'
-                  : [
-                      p.securityDeposit ? `Deposit ${formatINRShort(p.securityDeposit)}` : null,
-                      p.priceNegotiable ? 'Negotiable' : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ') || 'Per month'}
+                {free
+                  ? 'No price to pay'
+                  : isSale
+                    ? [
+                        p.pricePerSqft ? `${formatINRShort(p.pricePerSqft)} per sq ft` : null,
+                        p.priceNegotiable ? 'Negotiable' : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'Price as listed by the poster'
+                    : [
+                        p.securityDeposit ? `Deposit ${formatINRShort(p.securityDeposit)}` : null,
+                        p.priceNegotiable ? 'Negotiable' : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'Per month'}
               </p>
             </div>
             <div className="relative rounded-xl bg-white p-1">

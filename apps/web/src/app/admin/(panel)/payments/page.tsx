@@ -30,6 +30,7 @@ import { errMsg, useApi } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
 
 const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+const planPrice = (n: number) => (n === 0 ? 'Free' : rupees(n));
 const date = (iso: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -135,10 +136,10 @@ function Inner() {
                 )}
               </div>
               <p className="mt-1 text-2xl font-extrabold text-brand">
-                {rupees(p.price)}
+                {planPrice(p.price)}
                 <span className="text-sm font-semibold text-ink-muted">
                   {' '}
-                  / {p.durationDays} days
+                  {p.price === 0 ? '· on by itself' : `/ ${p.durationDays} days`}
                 </span>
               </p>
               {p.description && <p className="mt-1 text-sm text-ink-muted">{p.description}</p>}
@@ -652,13 +653,20 @@ function PlanForm({
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {num('price', 'Price in ₹ (with GST)', 1)}
+          {num('price', 'Price in ₹ (with GST, 0 = Free)', 0)}
           {num('durationDays', 'Valid for (days)', 1)}
           {num('listingLimit', 'Live listings at a time', 1)}
           {num('leadLimit', 'Leads (0 = unlimited)', 0)}
           {num('mrp', 'Cut price ₹ (0 = none)', 0, false)}
           {num('sortOrder', 'Order in popup (1 first)', 0, false)}
         </div>
+        {f.price.trim() === '0' && (
+          <p className="rounded-xl bg-accent-50 p-3 text-sm text-accent-700">
+            Free plan: it turns on by itself for the account types ticked below when they have no
+            paid plan. Only the live listings and leads limits apply. Validity, search position,
+            badge and auto refresh are for paid plans.
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="pl-rank" className="field-label">
@@ -780,7 +788,8 @@ function RecordPayment({
   const found = useApi<AdminWebsiteUser[]>(
     query ? `/admin/users?limit=6&q=${encodeURIComponent(query)}` : null,
   );
-  const usable = plans.filter((p) => !user || p.roles.includes(user.role));
+  // A free plan is on by itself; there is nothing to record.
+  const usable = plans.filter((p) => p.price > 0 && (!user || p.roles.includes(user.role)));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

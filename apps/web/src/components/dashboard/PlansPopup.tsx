@@ -496,8 +496,9 @@ export function PlansPopup({ delays = POPUP_DELAYS_MS }: { delays?: number[] }) 
     reload();
   });
 
+  // The free (₹0) plan is on by itself, so the popup only offers paid plans.
   const plans = (data?.plans ?? [])
-    .filter((p) => p.roles.includes(user?.role as ListingRole))
+    .filter((p) => p.price > 0 && p.roles.includes(user?.role as ListingRole))
     .slice(0, MAX_COMPARE_PLANS);
   const eligible = lister && !!data && !data.subscription && plans.length > 0 && !paid;
 

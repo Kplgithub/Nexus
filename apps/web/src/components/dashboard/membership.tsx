@@ -17,7 +17,8 @@ type RazorpayCtor = new (o: Record<string, unknown>) => {
   on: (e: string, cb: () => void) => void;
 };
 
-export const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+/** ₹599, or "Free" for a ₹0 plan. */
+export const rupees = (n: number) => (n === 0 ? 'Free' : `₹${n.toLocaleString('en-IN')}`);
 export const longDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 

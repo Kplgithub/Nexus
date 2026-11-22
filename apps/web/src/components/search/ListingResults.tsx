@@ -6,6 +6,8 @@ import {
   type City,
   type ListingType,
   type PropertySearch,
+  FREE_PRICE_LABEL,
+  isFreePrice,
 } from '@nexus/shared';
 import { searchProperties } from '@/lib/api';
 import { toApiQuery, toQueryString } from '@/lib/search-params';
@@ -71,7 +73,7 @@ export async function ListingResults({
     .filter((p) => p.location)
     .map((p) => ({
       ...p.location!,
-      label: formatINRShort(p.price),
+      label: isFreePrice(p.price) ? FREE_PRICE_LABEL : formatINRShort(p.price),
       title: p.title,
       href: `/properties/${p.slug}`,
     }));
