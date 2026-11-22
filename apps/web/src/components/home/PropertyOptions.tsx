@@ -6,7 +6,7 @@ import { useState } from 'react';
 type Group = { title: string; links: [string, string][] };
 
 /** City-level search links, grouped like a portal's "property options" block. No locality pages. */
-function groups(city: string, name: string): Record<'buy' | 'rent', Group[]> {
+function groups(city: string, name: string, farms: boolean): Record<'buy' | 'rent', Group[]> {
   const b = `/buy?city=${city}`;
   const r = `/rent?city=${city}`;
   return {
@@ -36,6 +36,12 @@ function groups(city: string, name: string): Record<'buy' | 'rent', Group[]> {
         links: [
           [`${b}&propertyType=plot`, `Plots for sale in ${name}`],
           [`${b}&propertyType=plot&plotApproval=jda`, `JDA approved plots`],
+          ...(farms
+            ? ([
+                [`${b}&propertyType=farmhouse`, `Farmhouses for sale in ${name}`],
+                [`${b}&propertyType=farm-land`, `Farm land for sale in ${name}`],
+              ] as [string, string][])
+            : []),
           [`${b}&propertyType=office`, `Offices for sale in ${name}`],
           [`${b}&propertyType=shop`, `Shops for sale in ${name}`],
         ],
@@ -91,9 +97,18 @@ function groups(city: string, name: string): Record<'buy' | 'rent', Group[]> {
   };
 }
 
-export function PropertyOptions({ city, cityName }: { city: string; cityName: string }) {
+export function PropertyOptions({
+  city,
+  cityName,
+  farms = true,
+}: {
+  city: string;
+  cityName: string;
+  /** Admin switch: farm links under Plots. */
+  farms?: boolean;
+}) {
   const [tab, setTab] = useState<'buy' | 'rent'>('buy');
-  const all = groups(city, cityName);
+  const all = groups(city, cityName, farms);
   return (
     <section className="py-8 sm:py-10" aria-labelledby="options-heading">
       <div className="container-page">

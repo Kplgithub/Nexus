@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   formatINR,
+  isFarmType,
   type BlogPostCard,
   type City,
   type HomeBanner,
@@ -592,6 +593,20 @@ const TYPES = [
     img: '1500382017468-9049fed747ef',
   },
   {
+    label: 'Farmhouses',
+    hint: 'Weekend homes on the outskirts',
+    q: 'buy',
+    t: 'farmhouse',
+    img: '1500076656116-558758c991c1',
+  },
+  {
+    label: 'Farm land',
+    hint: 'Krishi bhoomi in bigha and acre',
+    q: 'buy',
+    t: 'farm-land',
+    img: '1574943320219-553eb213f72d',
+  },
+  {
     label: 'Flats for rent',
     hint: 'Furnished and unfurnished',
     q: 'rent',
@@ -621,7 +636,17 @@ const TYPES = [
   },
 ] as const;
 
-export function PropertyTypes({ city, cityName }: { city: string; cityName: string }) {
+export function PropertyTypes({
+  city,
+  cityName,
+  farms = true,
+}: {
+  city: string;
+  cityName: string;
+  /** Admin switch: the Farmhouse and Farm land tiles. */
+  farms?: boolean;
+}) {
+  const tiles = TYPES.filter((x) => farms || !isFarmType(x.t));
   return (
     <section className="py-8 sm:py-10" aria-labelledby="types-heading">
       <div className="container-page">
@@ -631,8 +656,10 @@ export function PropertyTypes({ city, cityName }: { city: string; cityName: stri
           title="Find your kind of space"
           sub={`Homes, plots and workspaces across ${cityName}.`}
         />
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {TYPES.map((x) => (
+        <ul
+          className={`grid grid-cols-2 gap-3 sm:gap-4 ${tiles.length > 8 ? 'md:grid-cols-5' : 'sm:grid-cols-4'}`}
+        >
+          {tiles.map((x) => (
             <li key={x.label}>
               <Link
                 href={`/${x.q}?city=${city}&propertyType=${x.t}`}
@@ -642,7 +669,7 @@ export function PropertyTypes({ city, cityName }: { city: string; cityName: stri
                   src={`https://images.unsplash.com/photo-${x.img}?w=600&h=450&fit=crop&q=70&auto=format`}
                   alt=""
                   fill
-                  sizes="(min-width: 640px) 25vw, 50vw"
+                  sizes="(min-width: 768px) 20vw, (min-width: 640px) 25vw, 50vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <span

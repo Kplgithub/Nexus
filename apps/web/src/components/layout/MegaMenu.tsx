@@ -17,7 +17,7 @@ function qs(base: string, params: Record<string, string>) {
   return s ? `${base}?${s}` : base;
 }
 
-function menu(cities: City[], homeLoan: boolean): Item[] {
+function menu(cities: City[], homeLoan: boolean, farms: boolean): Item[] {
   const city = cities.length === 1 ? cities[0] : undefined;
   const top =
     city && SHOW_LOCALITY_LINKS
@@ -49,6 +49,12 @@ function menu(cities: City[], homeLoan: boolean): Item[] {
             { label: 'Villas', href: qs(buy, { propertyType: 'villa' }) },
             { label: 'Builder floors', href: qs(buy, { propertyType: 'builder-floor' }) },
             { label: 'Plots and land', href: qs(buy, { propertyType: 'plot' }) },
+            ...(farms
+              ? [
+                  { label: 'Farmhouses', href: qs(buy, { propertyType: 'farmhouse' }) },
+                  { label: 'Farm land', href: qs(buy, { propertyType: 'farm-land' }) },
+                ]
+              : []),
           ],
         },
         {
@@ -184,11 +190,20 @@ function menu(cities: City[], homeLoan: boolean): Item[] {
   ];
 }
 
-export function MegaMenu({ cities, homeLoan = false }: { cities: City[]; homeLoan?: boolean }) {
+export function MegaMenu({
+  cities,
+  homeLoan = false,
+  farms = false,
+}: {
+  cities: City[];
+  homeLoan?: boolean;
+  /** Admin switch: farm links in the Buy menu. */
+  farms?: boolean;
+}) {
   return (
     <nav aria-label="Main" className="relative ml-4 hidden xl:block">
       <ul className="flex items-center gap-0.5">
-        {menu(cities, homeLoan).map((item) =>
+        {menu(cities, homeLoan, farms).map((item) =>
           item.cols ? (
             <li key={item.href} className="group">
               <div className="flex items-center">

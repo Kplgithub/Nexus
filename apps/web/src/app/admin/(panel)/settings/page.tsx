@@ -2,7 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { DEFAULT_HOME_LOAN, LOAN_RATES_STALE_DAYS, type SiteSettings } from '@nexus/shared';
+import {
+  DEFAULT_FARMS,
+  DEFAULT_HOME_LOAN,
+  LOAN_RATES_STALE_DAYS,
+  type FarmSettings,
+  type SiteSettings,
+} from '@nexus/shared';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
 import { BannerEditor } from '@/components/admin/BannerEditor';
 import { errMsg, useApi } from '@/components/admin/useApi';
@@ -26,6 +32,7 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
     ...initial,
     home: { ...initial.home, banners: initial.home.banners ?? [] },
     homeLoan: { ...DEFAULT_HOME_LOAN, ...(initial.homeLoan ?? {}) },
+    farms: { ...DEFAULT_FARMS, ...(initial.farms ?? {}) },
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
@@ -226,6 +233,12 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
         error={errors['homeLoan.lenders']?.[0] ?? errors['homeLoan']?.[0]}
       />
 
+      <FarmSettingsCard
+        value={s.farms}
+        disabled={disabled}
+        onChange={(farms) => setS({ ...s, farms })}
+      />
+
       <section className="card grid gap-4 p-5 md:grid-cols-2">
         <h2 className="text-lg font-semibold md:col-span-2">Leads</h2>
         {input(
@@ -253,6 +266,129 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
         </button>
       )}
     </form>
+  );
+}
+
+/** An on/off switch styled like the home loan one. */
+function Switch({
+  checked,
+  disabled,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <span className="relative inline-flex shrink-0">
+      <input
+        type="checkbox"
+        role="switch"
+        aria-label={label}
+        className="peer sr-only"
+        disabled={disabled}
+        checked={checked}
+        onChange={(ev) => onChange(ev.target.checked)}
+      />
+      <span
+        aria-hidden
+        className={`relative h-7 w-12 rounded-full transition ${checked ? 'bg-success' : 'bg-line-strong'} peer-focus-visible:ring-2 peer-focus-visible:ring-brand`}
+      >
+        <span
+          className={`absolute top-1 size-5 rounded-full bg-white shadow transition-all ${checked ? 'left-6' : 'left-1'}`}
+        />
+      </span>
+    </span>
+  );
+}
+
+const FARM_PLACES: { key: Exclude<keyof FarmSettings, 'enabled'>; title: string; text: string }[] =
+  [
+    {
+      key: 'homepage',
+      title: 'Homepage',
+      text: 'Farms tab in the search box, Farmhouses and Farm land tiles',
+    },
+    {
+      key: 'menu',
+      title: 'Menu and footer',
+      text: 'Buy menu links, the mobile menu and the “Farms in Jaipur” footer link',
+    },
+    {
+      key: 'popularSearches',
+      title: 'Popular searches',
+      text: 'Farm links in the homepage quick links',
+    },
+    {
+      key: 'filters',
+      title: 'Search filters',
+      text: 'Farm types, bigha / acre land area, land use and water filters',
+    },
+    {
+      key: 'postProperty',
+      title: 'Post Property',
+      text: 'Owners, agents and builders can pick Farmhouse or Farm Land',
+    },
+    {
+      key: 'listings',
+      title: 'Farm listings on the website',
+      text: 'Farm listing pages, search results and sitemap. Off hides them, nothing is deleted.',
+    },
+  ];
+
+function FarmSettingsCard({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: FarmSettings;
+  disabled: boolean;
+  onChange: (v: FarmSettings) => void;
+}) {
+  const set = (patch: Partial<FarmSettings>) => onChange({ ...value, ...patch });
+  return (
+    <section id="farms" className="card scroll-mt-24 space-y-3 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">Farm properties</h2>
+          <p className="mt-1 max-w-2xl text-sm text-ink-muted">
+            One main switch for Farmhouse and Farm Land. Off hides every farm place on the website.
+            Farm listings already posted stay safe and come back when you switch it on.
+          </p>
+        </div>
+        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3">
+          <span className="text-sm font-semibold">
+            {value.enabled ? 'On, live on the website' : 'Off, hidden from the website'}
+          </span>
+          <Switch
+            checked={value.enabled}
+            disabled={disabled}
+            onChange={(enabled) => set({ enabled })}
+            label="Farm properties on the website"
+          />
+        </label>
+      </div>
+      <ul className={`divide-y divide-line ${value.enabled ? '' : 'opacity-50'}`}>
+        {FARM_PLACES.map((p) => (
+          <li key={p.key}>
+            <label className="flex cursor-pointer items-center gap-4 py-3">
+              <span className="flex-1">
+                <span className="block font-medium">{p.title}</span>
+                <span className="block text-sm text-ink-muted">{p.text}</span>
+              </span>
+              <Switch
+                checked={value[p.key]}
+                disabled={disabled || !value.enabled}
+                onChange={(v) => set({ [p.key]: v })}
+                label={p.title}
+              />
+            </label>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
