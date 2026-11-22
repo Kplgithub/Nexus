@@ -2,12 +2,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   formatINR,
+  isFarmType,
   type BlogPostCard,
   type City,
   type HomeBanner,
   type ProfileCard,
 } from '@nexus/shared';
 import { getLocalityInsights } from '@/lib/api';
+import { hrefOn, type SectionsOn } from '@/lib/sections';
 import { Carousel } from '../Carousel';
 import { JaipurFacade } from '../art/JaipurFacade';
 import { Avatar } from '../profile/ProfilePages';
@@ -115,6 +117,17 @@ function SmartLink({
   );
 }
 
+/* ---------------- Grids that stay full when a site section is off ---------------- */
+
+const LG_COLS = ['', 'lg:grid-cols-1', 'lg:grid-cols-2', 'lg:grid-cols-3', 'lg:grid-cols-4'];
+
+/** Large screens: one column per tile up to four. */
+export const lgCols = (n: number) => LG_COLS[Math.min(Math.max(n, 1), 4)];
+
+/** Two columns on phones: an odd last tile takes the whole row instead of leaving a hole. */
+export const phoneSpan = (i: number, n: number) =>
+  n % 2 === 1 && i === n - 1 ? 'col-span-2 lg:col-span-1' : '';
+
 /* ---------------- Photo tiles with counts ---------------- */
 
 const u = (id: string) =>
@@ -139,9 +152,9 @@ export const TILE_IMAGES = {
 export function CountTiles({ tiles, banner }: { tiles: CountTile[]; banner?: HomeBanner }) {
   return (
     <section aria-label="Browse property" className="container-page pt-6 sm:pt-8">
-      <ul className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+      <ul className={`grid grid-cols-2 gap-2.5 sm:gap-4 ${lgCols(tiles.length)}`}>
         {tiles.map((t, i) => (
-          <li key={t.label}>
+          <li key={t.label} className={phoneSpan(i, tiles.length)}>
             <Link
               href={t.href}
               className="nx-lift group flex items-center gap-2.5 rounded-2xl border border-line bg-white p-2 sm:gap-3 sm:p-2.5"
@@ -352,7 +365,7 @@ function BannerCard({ b, wide = false }: { b: HomeBanner; wide?: boolean }) {
 
 /* ---------------- Top localities ---------------- */
 
-export async function TopLocalities({ city }: { city: City }) {
+export async function TopLocalities({ city, root = '/buy' }: { city: City; root?: string }) {
   const top = [...city.localities]
     .filter((l) => (l.publishedCount ?? 0) > 0)
     .sort((a, b) => (b.publishedCount ?? 0) - (a.publishedCount ?? 0))
@@ -384,7 +397,7 @@ export async function TopLocalities({ city }: { city: City }) {
             return (
               <Link
                 key={l.slug}
-                href={`/buy?city=${city.slug}&locality=${l.slug}`}
+                href={`${root}?city=${city.slug}&locality=${l.slug}`}
                 className="group flex h-full flex-col gap-3 rounded-xl bg-white/[0.07] p-4 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/[0.12]"
               >
                 <span className="flex items-center gap-2">
@@ -448,7 +461,10 @@ const TOOLS = [
   },
 ];
 
-export function AdviceTools() {
+export function AdviceTools({ on }: { on: SectionsOn }) {
+  const tools = TOOLS.map((t) =>
+    t.href === '/buy?view=map' && !on.buy && on.rent ? { ...t, href: '/rent?view=map' } : t,
+  ).filter((t) => hrefOn(t.href, on));
   return (
     <section className="py-8 sm:py-10" aria-labelledby="tools-heading">
       <div className="container-page">
@@ -457,9 +473,9 @@ export function AdviceTools() {
           eyebrow="Smart tools"
           title="Search smarter, decide faster"
         />
-        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          {TOOLS.map(({ title, text, href, Icon }) => (
-            <li key={title}>
+        <ul className={`grid grid-cols-2 gap-3 sm:gap-4 ${lgCols(tools.length)}`}>
+          {tools.map(({ title, text, href, Icon }, i) => (
+            <li key={title} className={phoneSpan(i, tools.length)}>
               <Link href={href} className="card nx-lift flex h-full flex-col p-4">
                 <span className="grid size-10 place-items-center rounded-xl bg-brand-50 text-brand">
                   <Icon size={20} />
@@ -592,6 +608,20 @@ const TYPES = [
     img: '1500382017468-9049fed747ef',
   },
   {
+    label: 'Farmhouses',
+    hint: 'Weekend homes on the outskirts',
+    q: 'buy',
+    t: 'farmhouse',
+    img: '1500076656116-558758c991c1',
+  },
+  {
+    label: 'Farm land',
+    hint: 'Krishi bhoomi in bigha and acre',
+    q: 'buy',
+    t: 'farm-land',
+    img: '1574943320219-553eb213f72d',
+  },
+  {
     label: 'Flats for rent',
     hint: 'Furnished and unfurnished',
     q: 'rent',
@@ -621,7 +651,49 @@ const TYPES = [
   },
 ] as const;
 
-export function PropertyTypes({ city, cityName }: { city: string; cityName: string }) {
+/**
+ * Wide tiles fill the last row when switched-off sections leave fewer than 8 types:
+ * 2 columns on phones, 4 from small screens up. With farm tiles (more than 8) the grid
+ * has 5 columns from medium screens and only the phone row is balanced.
+ */
+function typeSpan(i: number, n: number): { li: string; tile: string } {
+  const phoneWide = n % 2 === 1 && i === n - 1;
+  if (n > 8) {
+    return {
+      li: phoneWide ? 'col-span-2 md:col-span-1' : '',
+      tile: phoneWide ? 'aspect-[8/3] md:aspect-[4/3]' : 'aspect-[4/3]',
+    };
+  }
+  const r = n % 4;
+  const lastRow = i >= n - r;
+  const smSpan = r === 1 && lastRow ? 4 : (r === 2 && lastRow) || (r === 3 && i === n - 1) ? 2 : 1;
+  const li = [
+    phoneWide ? 'col-span-2' : '',
+    { 1: phoneWide ? 'sm:col-span-1' : '', 2: 'sm:col-span-2', 4: 'sm:col-span-4' }[smSpan],
+  ];
+  const tile = [
+    phoneWide ? 'aspect-[8/3]' : 'aspect-[4/3]',
+    { 1: phoneWide ? 'sm:aspect-[4/3]' : '', 2: 'sm:aspect-[8/3]', 4: 'sm:aspect-[16/3]' }[smSpan],
+  ];
+  return { li: li.filter(Boolean).join(' '), tile: tile.filter(Boolean).join(' ') };
+}
+
+export function PropertyTypes({
+  city,
+  cityName,
+  on,
+  farms = true,
+}: {
+  city: string;
+  cityName: string;
+  on: SectionsOn;
+  /** Admin switch: the Farmhouse and Farm land tiles. */
+  farms?: boolean;
+}) {
+  const types = TYPES.filter((x) => farms || !isFarmType(x.t)).filter((x) =>
+    hrefOn(`/${x.q}?propertyType=${x.t}`, on),
+  );
+  if (!types.length) return null;
   return (
     <section className="py-8 sm:py-10" aria-labelledby="types-heading">
       <div className="container-page">
@@ -631,18 +703,20 @@ export function PropertyTypes({ city, cityName }: { city: string; cityName: stri
           title="Find your kind of space"
           sub={`Homes, plots and workspaces across ${cityName}.`}
         />
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {TYPES.map((x) => (
-            <li key={x.label}>
+        <ul
+          className={`grid grid-cols-2 gap-3 sm:gap-4 ${types.length > 8 ? 'md:grid-cols-5' : 'sm:grid-cols-4'}`}
+        >
+          {types.map((x, i) => (
+            <li key={x.label} className={typeSpan(i, types.length).li}>
               <Link
                 href={`/${x.q}?city=${city}&propertyType=${x.t}`}
-                className="nx-lift group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-brand-900"
+                className={`nx-lift group relative block overflow-hidden rounded-2xl bg-brand-900 ${typeSpan(i, types.length).tile}`}
               >
                 <Image
                   src={`https://images.unsplash.com/photo-${x.img}?w=600&h=450&fit=crop&q=70&auto=format`}
                   alt=""
                   fill
-                  sizes="(min-width: 640px) 25vw, 50vw"
+                  sizes="(min-width: 768px) 20vw, (min-width: 640px) 25vw, 50vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <span

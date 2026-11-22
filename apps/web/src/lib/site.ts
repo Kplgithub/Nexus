@@ -1,4 +1,4 @@
-import type { SiteSettings } from '@nexus/shared';
+import { DEFAULT_FARMS, DEFAULT_SITE_SECTIONS, type SiteSettings } from '@nexus/shared';
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(
   /\/$/,
@@ -38,7 +38,10 @@ export const FALLBACK_SETTINGS: SiteSettings = {
   allowInternationalEnquiries: false,
   featurePrices: { days7: 49, days30: 99 },
   homeLoan: { enabled: false, lenders: [], ratesCheckedAt: null, exampleRate: 8.5 },
+  sections: { ...DEFAULT_SITE_SECTIONS },
+  sectionOffAction: 'redirect',
   invoice: { legalName: '', address: '', state: 'Rajasthan', sacCode: '' },
+  farms: { ...DEFAULT_FARMS },
 };
 
 export const absoluteUrl = (path = '/') => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;

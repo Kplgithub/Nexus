@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import type { ListingType } from '@nexus/shared';
 import { getLocations, getSettings, smartSearch } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo';
+import { hrefOn, sectionsOn } from '@/lib/sections';
 import { toQueryString } from '@/lib/search-params';
 import { parseSmartQuery } from '@/lib/smart-search';
 import {
@@ -71,6 +72,7 @@ export default async function SmartSearchPage({ searchParams }: Props) {
     redirect(parseSmartQuery(text, { city: city?.slug, localities: city?.localities ?? [] }).path);
   }
   const settings = await getSettings();
+  const on = sectionsOn(settings);
   const dropped = new Set((params.drop ?? '').split(',').filter(Boolean));
   const withDrop = (key: string) =>
     smartSearchHref({ ...params, page: undefined, drop: [...dropped, key].join(',') });
@@ -88,7 +90,14 @@ export default async function SmartSearchPage({ searchParams }: Props) {
             dark
             items={[
               { name: 'Home', href: '/' },
-              { name: deal === 'sale' ? 'Buy' : 'Rent', href: deal === 'sale' ? '/buy' : '/rent' },
+              ...(on[deal === 'sale' ? 'buy' : 'rent']
+                ? [
+                    {
+                      name: deal === 'sale' ? 'Buy' : 'Rent',
+                      href: deal === 'sale' ? '/buy' : '/rent',
+                    },
+                  ]
+                : []),
               {
                 name: 'AI search',
                 href: smartSearchHref({
@@ -143,14 +152,16 @@ export default async function SmartSearchPage({ searchParams }: Props) {
                     )}
                   </li>
                 ))}
-                <li>
-                  <Link
-                    href={filtersHref(result)}
-                    className="px-1.5 text-xs text-white/80 underline hover:text-white"
-                  >
-                    {result.hinglish ? 'Filters badlein' : 'Edit filters'}
-                  </Link>
-                </li>
+                {hrefOn(filtersHref(result), on) && (
+                  <li>
+                    <Link
+                      href={filtersHref(result)}
+                      className="px-1.5 text-xs text-white/80 underline hover:text-white"
+                    >
+                      {result.hinglish ? 'Filters badlein' : 'Edit filters'}
+                    </Link>
+                  </li>
+                )}
               </ul>
             )}
             {dropped.size > 0 && (
@@ -170,7 +181,7 @@ export default async function SmartSearchPage({ searchParams }: Props) {
       </header>
 
       <div className="container-page pb-12 pt-8">
-        {result.projectsPath && (
+        {result.projectsPath && on.projects && (
           <p className="mb-4 rounded-xl border border-brand-100 bg-brand-50 p-3 text-sm">
             Looking for new projects?{' '}
             <Link href={result.projectsPath} className="font-semibold text-brand underline">
@@ -182,7 +193,16 @@ export default async function SmartSearchPage({ searchParams }: Props) {
         {result.items.length === 0 ? (
           <div className="card p-8 text-center">
             <p className="text-lg font-semibold">{result.summary}</p>
-            <Link href={deal === 'sale' ? '/buy' : '/rent'} className="btn btn-primary mt-4">
+            <Link
+              href={
+                hrefOn(deal === 'sale' ? '/buy' : '/rent', on)
+                  ? deal === 'sale'
+                    ? '/buy'
+                    : '/rent'
+                  : '/properties'
+              }
+              className="btn btn-primary mt-4"
+            >
               Browse all properties
             </Link>
           </div>

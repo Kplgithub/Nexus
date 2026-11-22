@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import {
   formatINRShort,
+  farmOn,
   type Category,
   type City,
   type ListingType,
@@ -9,7 +10,7 @@ import {
   FREE_PRICE_LABEL,
   isFreePrice,
 } from '@nexus/shared';
-import { searchProperties } from '@/lib/api';
+import { getSettings, searchProperties } from '@/lib/api';
 import { toApiQuery, toQueryString } from '@/lib/search-params';
 import { EmptyState, Pagination } from '../ui';
 import { PropertyGrid } from '../property/PropertyCard';
@@ -46,6 +47,7 @@ export async function ListingResults({
   const pageSize = view === 'map' ? MAP_PAGE_SIZE : PAGE_SIZE;
   let result: Awaited<ReturnType<typeof searchProperties>> | null = null;
   let failed = false;
+  const farmsOn = farmOn((await getSettings()).farms, 'filters');
   try {
     result = await searchProperties(toApiQuery(search, pageSize));
   } catch {
@@ -132,6 +134,7 @@ export async function ListingResults({
           fixed={fixed}
           resultCount={total}
           view={view}
+          farmsOn={farmsOn}
         />
       </aside>
 

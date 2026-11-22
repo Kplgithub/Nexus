@@ -6,10 +6,13 @@ import { useEffect, useRef, useState } from 'react';
 import {
   PROPERTY_STATUS_LABELS,
   PROPERTY_TYPE_LABELS,
+  farmOn,
   formatArea,
   formatPrice,
+  isFarmType,
   type City,
   type OwnListing,
+  type SiteSettings,
 } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 import {
@@ -67,6 +70,8 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
+  // Admin can switch new farm listings off from Settings.
+  const [farmsAllowed, setFarmsAllowed] = useState(true);
   const [restored, setRestored] = useState(() => !listing && readDraft() !== null);
   const top = useRef<HTMLDivElement>(null);
 
@@ -80,6 +85,12 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
       })
       .catch(() => setCities([]));
   }, [listing]);
+
+  useEffect(() => {
+    apiFetch<SiteSettings>('/settings')
+      .then(({ data }) => setFarmsAllowed(farmOn(data.farms, 'postProperty')))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!listing) writeDraft(f);
@@ -321,6 +332,7 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
               step={step}
               uploadPath="/me/uploads"
               showBusinessHints={user?.role === 'builder'}
+              farmsAllowed={farmsAllowed}
             />
           ) : (
             <section>
@@ -441,7 +453,8 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
 
 /** Rough completeness score shown while posting; photos and a real description count most. */
 export function listingStrength(f: ListingFormState): number {
-  const residential = f.category === 'residential' && f.propertyType !== 'plot';
+  const residential =
+    f.category === 'residential' && f.propertyType !== 'plot' && !isFarmType(f.propertyType);
   const checks: [boolean, number][] = [
     [!!f.localitySlug, 15],
     [Number(f.price) > 0, 15],

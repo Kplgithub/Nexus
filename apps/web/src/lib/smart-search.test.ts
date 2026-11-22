@@ -57,4 +57,14 @@ describe('parseSmartQuery', () => {
   it('falls back to a plain sale search', () => {
     expect(parseSmartQuery('something nice', ctx).path).toBe('/buy/jaipur?category=residential');
   });
+
+  it('sends farm searches to buy with farm types', () => {
+    expect(parseSmartQuery('farmhouse on Ajmer Road', ctx).path).toBe(
+      '/buy/jaipur/ajmer-road?category=residential&propertyType=farmhouse',
+    );
+    expect(parseSmartQuery(' farm', ctx).path).toBe(
+      '/buy/jaipur?category=residential&propertyType=farmhouse%2Cfarm-land',
+    );
+    expect(parseSmartQuery('kheti ki zameen', ctx).path).toContain('propertyType=farm-land');
+  });
 });

@@ -23,6 +23,10 @@ export type SmartQuery = {
 };
 
 const TYPE_WORDS: [RegExp, PropertyType, string][] = [
+  [/\bfarm ?houses?\b/, 'farmhouse', 'Farmhouse'],
+  [/\b(farm ?lands?|kheti|khet|krishi|agricultural land)\b/, 'farm-land', 'Farm land'],
+  // "farm" alone: both farmhouses and farm land (see FARM_BOTH below).
+  [/\bfarms?\b/, 'farmhouse', 'Farm'],
   [/\b(flat|flats|apartment|apartments)\b/, 'apartment', 'Apartment'],
   [/\b(villa|villas|bungalow|bungalows)\b/, 'villa', 'Villa'],
   [/\b(independent house|house|houses|kothi|makaan|makan|ghar)\b/, 'independent-house', 'House'],
@@ -119,20 +123,25 @@ export function parseSmartQuery(
   const understood: string[] = [];
 
   let type: PropertyType | undefined;
+  let farmBoth = false;
   for (const [re, t, label] of TYPE_WORDS) {
     if (re.test(text)) {
       type = t;
+      farmBoth = label === 'Farm';
       understood.push(label);
       break;
     }
   }
+  const farm = type === 'farmhouse' || type === 'farm-land';
 
   const wantsProject = /\b(new project|new projects|under construction|launch|pre-?launch)\b/.test(
     text,
   );
   const rentWords = /\b(rent|rental|lease|kiraye|kiraya|kiraaye|to let|tolet)\b/.test(text);
   const buyWords = /\b(buy|sale|purchase|kharid|khareed|resale)\b/.test(text);
-  let listingType: ListingType = type === 'pg' || (rentWords && !buyWords) ? 'rent' : 'sale';
+  // Farms are sold only.
+  let listingType: ListingType =
+    !farm && (type === 'pg' || (rentWords && !buyWords)) ? 'rent' : 'sale';
 
   const bhk = text.match(/\b(\d)\s*(?:bhk|bed|beds|bedroom|bedrooms|rk)\b/);
   const bedrooms = bhk ? Number(bhk[1]) : undefined;
@@ -140,7 +149,8 @@ export function parseSmartQuery(
 
   let { min, max } = priceRange(text);
   // A bare "25k" on a sale search is almost always monthly rent.
-  if (!rentWords && !buyWords && max && max < 2 * LAKH && type !== 'plot') listingType = 'rent';
+  if (!rentWords && !buyWords && max && max < 2 * LAKH && type !== 'plot' && !farm)
+    listingType = 'rent';
   if (min && max && min > max) [min, max] = [max, min];
 
   const furnishing: FurnishingStatus | undefined = /\bsemi[- ]?furnished\b/.test(text)
@@ -217,7 +227,7 @@ export function parseSmartQuery(
   const path = city ? (locality ? `${root}/${city}/${locality.slug}` : `${root}/${city}`) : root;
   const qs = toQueryString({
     category: 'residential',
-    propertyType: type ? [type] : undefined,
+    propertyType: farmBoth ? ['farmhouse', 'farm-land'] : type ? [type] : undefined,
     bedrooms,
     minPrice: min,
     maxPrice: max,

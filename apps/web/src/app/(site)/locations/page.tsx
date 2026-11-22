@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getLocations } from '@/lib/api';
+import { getLocations, getSettings } from '@/lib/api';
+import { sectionsOn } from '@/lib/sections';
 import { SHOW_LOCALITY_LINKS } from '@/lib/site';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { Breadcrumbs, EmptyState, JsonLd } from '@/components/ui';
@@ -12,7 +13,8 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function LocationsPage() {
-  const cities = await getLocations();
+  const [cities, settings] = await Promise.all([getLocations(), getSettings()]);
+  const on = sectionsOn(settings);
   const crumbs = [
     { name: 'Home', href: '/' },
     { name: 'Locations', href: '/locations' },
@@ -44,12 +46,16 @@ export default async function LocationsPage() {
                   <p className="text-sm text-ink-muted">{c.state}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Link href={`/buy/${c.slug}`} className="btn btn-outline btn-sm">
-                    Buy in {c.name}
-                  </Link>
-                  <Link href={`/rent/${c.slug}`} className="btn btn-outline btn-sm">
-                    Rent in {c.name}
-                  </Link>
+                  {on.buy && (
+                    <Link href={`/buy/${c.slug}`} className="btn btn-outline btn-sm">
+                      Buy in {c.name}
+                    </Link>
+                  )}
+                  {on.rent && (
+                    <Link href={`/rent/${c.slug}`} className="btn btn-outline btn-sm">
+                      Rent in {c.name}
+                    </Link>
+                  )}
                 </div>
               </div>
               {c.intro && <p className="mt-4 max-w-3xl text-ink-soft">{c.intro}</p>}
@@ -64,18 +70,22 @@ export default async function LocationsPage() {
                       >
                         <span className="font-medium">{l.name}</span>
                         <span className="flex gap-3 text-sm">
-                          <Link
-                            href={`/buy/${c.slug}/${l.slug}`}
-                            className="text-brand hover:underline"
-                          >
-                            Buy
-                          </Link>
-                          <Link
-                            href={`/rent/${c.slug}/${l.slug}`}
-                            className="text-brand hover:underline"
-                          >
-                            Rent
-                          </Link>
+                          {on.buy && (
+                            <Link
+                              href={`/buy/${c.slug}/${l.slug}`}
+                              className="text-brand hover:underline"
+                            >
+                              Buy
+                            </Link>
+                          )}
+                          {on.rent && (
+                            <Link
+                              href={`/rent/${c.slug}/${l.slug}`}
+                              className="text-brand hover:underline"
+                            >
+                              Rent
+                            </Link>
+                          )}
                         </span>
                       </li>
                     ))}

@@ -6,6 +6,8 @@ import {
   PROJECT_UNIT_TYPES,
   PROPERTY_TYPES,
   PROPERTY_TYPE_LABELS,
+  FARM_TYPES,
+  isFarmType,
   type City,
   type ListingType,
   type PropertyType,
@@ -15,16 +17,30 @@ import { SMART_EXAMPLES, parseSmartQuery } from '@/lib/smart-search';
 import { smartSearchHref } from '@/lib/smart-search-types';
 import { priceLabel, priceSteps } from './options';
 import { FilterIcon, SearchIcon, SparklesIcon } from '../icons';
+import { useSections } from '../session/SectionsProvider';
+import type { SectionsOn } from '@/lib/sections';
 
-type Tab = 'sale' | 'rent' | 'projects' | 'pg' | 'plot' | 'commercial';
+type Tab = 'sale' | 'rent' | 'projects' | 'pg' | 'plot' | 'farm' | 'commercial';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'sale', label: 'Buy' },
   { id: 'rent', label: 'Rent' },
   { id: 'projects', label: 'New projects' },
   { id: 'pg', label: 'PG' },
   { id: 'plot', label: 'Plots' },
+  { id: 'farm', label: 'Farms' },
   { id: 'commercial', label: 'Commercial' },
 ];
+/** Each tab shows only while its site sections are on (Admin → Settings → Site sections). */
+const TAB_ON: Record<Tab, (on: SectionsOn) => boolean> = {
+  sale: (on) => on.buy,
+  rent: (on) => on.rent,
+  projects: (on) => on.projects,
+  pg: (on) => on.pg && on.rent,
+  plot: (on) => on.plot && on.buy,
+  farm: (on) => on.buy,
+  commercial: (on) => on.commercial,
+};
+
 /** Tabs that fix the property type, so the type picker is hidden. */
 const FIXED_TYPE: Partial<Record<Tab, PropertyType>> = { pg: 'pg', plot: 'plot' };
 const ACTION: Record<Tab, string> = {
@@ -33,6 +49,7 @@ const ACTION: Record<Tab, string> = {
   projects: '/projects',
   pg: '/rent',
   plot: '/buy',
+  farm: '/buy',
   commercial: '/commercial',
 };
 
@@ -43,6 +60,7 @@ const TAB_HINT: Record<Tab, string> = {
   projects: ' new project',
   pg: ' pg',
   plot: ' plot',
+  farm: ' farm',
   commercial: ' commercial',
 };
 const DEAL_WORDS = /\b(rent|rental|lease|buy|sale|purchase|kiraye|kiraya)\b/i;
@@ -70,16 +88,32 @@ function useTypedExample(active: boolean) {
 }
 
 const RESIDENTIAL: readonly PropertyType[] = PROPERTY_TYPES.residential;
+const HOMES: readonly PropertyType[] = RESIDENTIAL.filter((t) => !isFarmType(t));
 const COMMERCIAL: readonly PropertyType[] = PROPERTY_TYPES.commercial;
 
 /**
  * Home-page search. Cities and localities are exactly the ones the admin has
  * added. Works as a plain GET form without JavaScript.
  */
-export function HeroSearch({ cities, defaultCity }: { cities: City[]; defaultCity?: string }) {
+export function HeroSearch({
+  cities,
+  defaultCity,
+  farms = true,
+}: {
+  cities: City[];
+  defaultCity?: string;
+  /** Admin switch for the Farms tab. */
+  farms?: boolean;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [tab, setTab] = useState<Tab>('sale');
+  const on = useSections();
+  const tabs = useMemo(
+    () => TABS.filter((t) => TAB_ON[t.id](on) && (farms || t.id !== 'farm')),
+    [on, farms],
+  );
+  const [picked, setTab] = useState<Tab>('sale');
+  const tab: Tab = tabs.some((t) => t.id === picked) ? picked : (tabs[0]?.id ?? 'sale');
   const [city, setCity] = useState(
     cities.some((c) => c.slug === defaultCity) ? defaultCity! : (cities[0]?.slug ?? ''),
   );
@@ -90,7 +124,7 @@ export function HeroSearch({ cities, defaultCity }: { cities: City[]; defaultCit
   const typed = useTypedExample(mode === 'smart' && !text && !focused);
   // Quick picks for the chosen city (Jaipur's are the ones people search most there).
   const topLocality = cities.find((c) => c.slug === city)?.localities[0]?.name;
-  const popular =
+  const popularAll =
     city === 'jaipur' || !city
       ? ['2 BHK for rent', '3 BHK flat to buy', 'Villa in Vaishali Nagar', 'JDA plot', 'Girls PG']
       : [
@@ -100,13 +134,30 @@ export function HeroSearch({ cities, defaultCity }: { cities: City[]; defaultCit
           'Plot for sale',
           'Girls PG',
         ];
+  const popular = popularAll.filter((q) =>
+    /pg/i.test(q)
+      ? on.pg && on.rent
+      : /plot/i.test(q)
+        ? on.plot && on.buy
+        : /rent/i.test(q)
+          ? on.rent
+          : on.buy,
+  );
   const localities = [...(cities.find((c) => c.slug === city)?.localities ?? [])].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
   const listingType: ListingType =
     tab === 'commercial' ? deal : tab === 'rent' || tab === 'pg' ? 'rent' : 'sale';
   const types: readonly string[] =
-    tab === 'commercial' ? COMMERCIAL : tab === 'projects' ? PROJECT_UNIT_TYPES : RESIDENTIAL;
+    tab === 'commercial'
+      ? COMMERCIAL
+      : tab === 'projects'
+        ? PROJECT_UNIT_TYPES
+        : tab === 'farm'
+          ? FARM_TYPES
+          : (farms && tab === 'sale' ? RESIDENTIAL : HOMES).filter(
+              (t) => (t !== 'pg' || on.pg) && (t !== 'plot' || on.plot),
+            );
   const fixedType = FIXED_TYPE[tab];
   const steps = priceSteps(listingType);
 
@@ -189,7 +240,11 @@ export function HeroSearch({ cities, defaultCity }: { cities: City[]; defaultCit
     const path = city ? (locality ? `${root}/${city}/${locality}` : `${root}/${city}`) : root;
     const qs = toQueryString({
       category: 'residential',
-      propertyType: propertyType ? [propertyType] : undefined,
+      propertyType: propertyType
+        ? [propertyType]
+        : tab === 'farm'
+          ? ['farmhouse', 'farm-land']
+          : undefined,
       maxPrice,
     });
     start(() => router.push(`${path}${qs ? `?${qs}` : ''}`));
@@ -210,7 +265,7 @@ export function HeroSearch({ cities, defaultCity }: { cities: City[]; defaultCit
           aria-label="What are you looking for"
           className="nx-scroll-x -mb-px flex min-w-0 flex-1 gap-1 overflow-x-auto"
         >
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.id}
               type="button"

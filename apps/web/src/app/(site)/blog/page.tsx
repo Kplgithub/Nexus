@@ -152,7 +152,7 @@ export default async function BlogPage({ searchParams }: Props) {
                     All articles
                   </Link>
                 )}
-                <Link href="/buy" className="btn btn-primary">
+                <Link href="/properties" className="btn btn-primary">
                   Browse properties
                 </Link>
               </>

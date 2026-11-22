@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import {
   PROPERTY_STATUS_LABELS,
+  SITE_SECTION_INFO,
   PROPERTY_TYPE_LABELS,
   formatPrice,
   type OwnListing,
@@ -197,6 +198,13 @@ function Listings() {
                 </div>
               </div>
 
+              {p.sectionOff && (
+                <p className="mx-4 mb-4 rounded-lg bg-surface p-3 text-sm text-ink-soft">
+                  <strong>{SITE_SECTION_INFO[p.sectionOff].label} listings are paused</strong> on
+                  NEXUS Estate for now, so this listing is hidden from the website. It is not
+                  deleted and shows again as soon as the section reopens.
+                </p>
+              )}
               {p.status === 'rejected' && p.moderationNote && (
                 <p className="mx-4 mb-4 rounded-lg bg-danger-50 p-3 text-sm text-danger">
                   <strong>What to fix:</strong> {p.moderationNote}

@@ -1,9 +1,10 @@
-import type { City, SiteSettings } from '@nexus/shared';
+import { farmOn, type City, type SiteSettings } from '@nexus/shared';
 import { Logo } from './Logo';
 import { MobileNav } from './MobileNav';
 import { MegaMenu } from './MegaMenu';
 import { UserMenu } from './UserMenu';
 import { CityMenu } from './CityMenu';
+import { sectionsOn } from '@/lib/sections';
 
 export function Header({ settings, cities }: { settings: SiteSettings; cities: City[] }) {
   return (
@@ -24,11 +25,15 @@ export function Header({ settings, cities }: { settings: SiteSettings; cities: C
           </div>
         )}
 
-        <MegaMenu cities={cities} homeLoan={settings.homeLoan?.enabled ?? false} />
+        <MegaMenu
+          cities={cities}
+          on={sectionsOn(settings)}
+          farms={farmOn(settings.farms, 'menu')}
+        />
 
         <div className="ml-auto flex items-center gap-2">
           <UserMenu />
-          <MobileNav phone={settings.phone} homeLoan={settings.homeLoan?.enabled ?? false} />
+          <MobileNav phone={settings.phone} farms={farmOn(settings.farms, 'menu')} />
         </div>
       </div>
     </header>

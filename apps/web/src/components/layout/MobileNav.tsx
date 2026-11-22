@@ -6,10 +6,16 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { canListProperty, formatIndianPhone } from '@nexus/shared';
 import { NAV_LINKS, POST_PROPERTY_PATH } from '@/lib/site';
+import { hrefOn } from '@/lib/sections';
 import { useSession } from '../session/SessionProvider';
+import { useSections } from '../session/SectionsProvider';
 import { CloseIcon, MenuIcon, PhoneIcon } from '../icons';
 
-export function MobileNav({ phone, homeLoan = false }: { phone: string; homeLoan?: boolean }) {
+/** Shown after Buy while admin has farm menu links on. */
+const FARMS_LINK = { href: '/buy?propertyType=farmhouse,farm-land', label: 'Farms' };
+
+export function MobileNav({ phone, farms = false }: { phone: string; farms?: boolean }) {
+  const on = useSections();
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -68,17 +74,19 @@ export function MobileNav({ phone, homeLoan = false }: { phone: string; homeLoan
                   Home
                 </Link>
               </li>
-              {NAV_LINKS.filter((l) => homeLoan || l.href !== '/home-loan').map((l) => (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    aria-current={path === l.href ? 'page' : undefined}
-                    className="block rounded-lg px-3 py-3 text-lg font-medium hover:bg-surface aria-[current=page]:text-brand"
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
+              {NAV_LINKS.flatMap((l) => (farms && l.href === '/buy' ? [l, FARMS_LINK] : [l]))
+                .filter((l) => hrefOn(l.href, on))
+                .map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      aria-current={path === l.href ? 'page' : undefined}
+                      className="block rounded-lg px-3 py-3 text-lg font-medium hover:bg-surface aria-[current=page]:text-brand"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
               <li>
                 <Link
                   href="/faq"
