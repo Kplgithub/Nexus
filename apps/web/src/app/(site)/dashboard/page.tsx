@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import {
-  DEFAULT_PLAN,
   PROPERTY_STATUS_LABELS,
   USER_ROLE_LABELS,
   canListProperty,
@@ -285,7 +284,7 @@ function ListerOverview() {
                   href="/dashboard/plans"
                   className="btn mt-3.5 h-[38px] w-full justify-center bg-white text-brand-900 hover:bg-white/90"
                 >
-                  {sub ? 'See membership' : `Upgrade · ₹${DEFAULT_PLAN.price}/month`}
+                  {sub ? 'See membership' : 'Upgrade to Premium'}
                 </Link>
               </>
             ) : (

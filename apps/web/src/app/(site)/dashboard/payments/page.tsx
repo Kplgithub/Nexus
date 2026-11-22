@@ -1,10 +1,14 @@
 'use client';
 
+import Link from 'next/link';
 import type { Payment } from '@nexus/shared';
 import { useApi } from '@/components/admin/useApi';
 import { Pill } from '@/components/dashboard/DashboardShell';
 import { MembershipHeader, longDate, rupees } from '@/components/dashboard/membership';
-import { BoltIcon, CrownIcon } from '@/components/icons';
+import { BoltIcon, CrownIcon, DownloadIcon } from '@/components/icons';
+
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
 const PAY_LABEL: Record<Payment['status'], string> = {
   created: 'Not finished',
@@ -51,13 +55,26 @@ export default function PaymentsPage() {
                     )}
                   </p>
                   <p className="truncate text-xs text-ink-muted">
-                    {longDate(p.paidAt ?? p.createdAt)}
-                    {p.paymentId && ` · ${p.paymentId}`}
+                    Paid {longDate(p.paidAt ?? p.createdAt)}
+                    {p.invoiceNo && ` · ${p.invoiceNo}`}
                   </p>
+                  {p.status === 'paid' && p.startsAt && p.endsAt && (
+                    <p className="truncate text-xs font-semibold text-ink-soft">
+                      Valid {shortDate(p.startsAt)} – {longDate(p.endsAt)}
+                    </p>
+                  )}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <b className="tabular text-sm">{rupees(p.amount)}</b>
                   <Pill status={PAY_TONE[p.status]} label={PAY_LABEL[p.status]} />
+                  {(p.status === 'paid' || p.status === 'refunded') && (
+                    <Link
+                      href={`/invoice/${p.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-brand hover:underline"
+                    >
+                      <DownloadIcon size={13} /> Invoice
+                    </Link>
+                  )}
                 </div>
               </li>
             );

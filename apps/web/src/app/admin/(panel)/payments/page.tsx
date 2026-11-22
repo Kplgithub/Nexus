@@ -155,6 +155,7 @@ function Inner() {
       </section>
 
       <FeaturedPrices />
+      <InvoiceDetails />
 
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -328,6 +329,124 @@ function FeaturedPrices() {
   );
 }
 
+/** Business details printed on every invoice. With a GSTIN the invoice shows GST. */
+function InvoiceDetails() {
+  const { toast } = useAdmin();
+  const settings = useApi<SiteSettings>('/admin/settings');
+  const cur = settings.data?.invoice;
+  const [form, setForm] = useState<Record<string, string> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const v = form ?? {
+    legalName: cur?.legalName ?? '',
+    gstin: cur?.gstin ?? '',
+    address: cur?.address ?? '',
+    state: cur?.state ?? 'Rajasthan',
+    sacCode: cur?.sacCode ?? '',
+  };
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm({ ...v, [k]: e.target.value });
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch('/admin/settings', { method: 'PATCH', body: { invoice: v } });
+      toast('Invoice details saved. New and old invoices show them now.');
+      setForm(null);
+      settings.reload();
+    } catch (err) {
+      toast(errMsg(err), 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!cur) return <Skeleton className="mb-8 h-40" />;
+  return (
+    <section className="mb-8">
+      <h2 className="mb-3 font-sans text-lg font-bold">Invoice details</h2>
+      <form className="card grid gap-4 p-4 md:grid-cols-2" onSubmit={save}>
+        <div>
+          <label htmlFor="inv-name" className="field-label">
+            Registered business name
+          </label>
+          <input
+            id="inv-name"
+            className="field"
+            maxLength={120}
+            placeholder="As on your GST certificate"
+            value={v.legalName}
+            onChange={set('legalName')}
+          />
+        </div>
+        <div>
+          <label htmlFor="inv-gstin" className="field-label">
+            GSTIN
+          </label>
+          <input
+            id="inv-gstin"
+            className="field uppercase"
+            maxLength={15}
+            placeholder="15 characters, e.g. 08ABCDE1234F1Z5"
+            value={v.gstin}
+            onChange={set('gstin')}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label htmlFor="inv-address" className="field-label">
+            Business address
+          </label>
+          <textarea
+            id="inv-address"
+            className="field"
+            rows={2}
+            maxLength={300}
+            placeholder="Full address as on your GST certificate"
+            value={v.address}
+            onChange={set('address')}
+          />
+        </div>
+        <div>
+          <label htmlFor="inv-state" className="field-label">
+            GST state
+          </label>
+          <input
+            id="inv-state"
+            className="field"
+            maxLength={60}
+            value={v.state}
+            onChange={set('state')}
+          />
+        </div>
+        <div>
+          <label htmlFor="inv-sac" className="field-label">
+            SAC code (optional)
+          </label>
+          <input
+            id="inv-sac"
+            className="field"
+            inputMode="numeric"
+            maxLength={8}
+            placeholder="Ask your CA"
+            value={v.sacCode}
+            onChange={set('sacCode')}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-3 md:col-span-2">
+          <button type="submit" className="btn btn-primary" disabled={busy || !form}>
+            {busy ? 'Saving…' : 'Save invoice details'}
+          </button>
+          <p className="text-sm text-ink-muted">
+            {cur.gstin
+              ? 'Invoices are GST tax invoices. Prices include 18% GST.'
+              : 'Without a GSTIN, users get a payment receipt with no GST.'}
+          </p>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 function PaymentRow({ p, onDone }: { p: Payment; onDone: () => void }) {
   const { toast } = useAdmin();
   const [busy, setBusy] = useState(false);
@@ -360,7 +479,17 @@ function PaymentRow({ p, onDone }: { p: Payment; onDone: () => void }) {
       <td>
         <StatusPill status={p.status} label={STATUS_LABELS[p.status]} />
       </td>
-      <td className="text-right">
+      <td className="whitespace-nowrap text-right">
+        {(p.status === 'paid' || p.status === 'refunded') && (
+          <a
+            href={`/invoice/${p.id}?admin=1`}
+            target="_blank"
+            rel="noopener"
+            className="btn btn-ghost btn-sm"
+          >
+            Invoice
+          </a>
+        )}
         {p.status === 'paid' && (
           <button
             type="button"

@@ -16,7 +16,7 @@ import { SectionTitle, useDashboardData } from '@/components/dashboard/Dashboard
 import {
   MembershipHeader,
   PayMessage,
-  longDate as date,
+  PlanValidity,
   rupees,
   useCheckout,
 } from '@/components/dashboard/membership';
@@ -120,6 +120,11 @@ function MyPlan() {
   // The first plan (admin sort order, then price) is the one we recommend.
   const recommendedId = plans[0]?.id;
   const savedListing = savedId ? usage && usage.awaitingPlan > 0 : false;
+  // Renew the plan they have (or last had), if it is still on sale; else the recommended one.
+  const lastPlanId =
+    sub?.plan.id ??
+    data?.payments.find((p) => p.kind !== 'featured' && p.status === 'paid')?.plan.id;
+  const renewPlan = plans.find((p) => p.id === lastPlanId) ?? plans[0];
 
   return (
     <div className="space-y-8">
@@ -127,10 +132,28 @@ function MyPlan() {
         title={sub ? 'Your plan' : 'Choose your plan'}
         text={
           sub
-            ? `${sub.plan.name} is active till ${date(sub.endsAt)}.`
+            ? `${sub.plan.name} is active. Renew any time; new days add on at the end.`
             : 'Start free. Go Premium when you need more.'
         }
       />
+      {data && (
+        <PlanValidity
+          sub={sub ?? null}
+          payments={data.payments}
+          busy={!!renewPlan && busy === renewPlan.id}
+          onRenew={
+            renewPlan && data.onlineEnabled
+              ? () =>
+                  void pay(
+                    renewPlan.id,
+                    `/me/plans/${renewPlan.id}/checkout`,
+                    undefined,
+                    `Payment received. ${renewPlan.name} is renewed.`,
+                  )
+              : undefined
+          }
+        />
+      )}
       {savedListing && (
         <div className="flex items-center gap-4 rounded-2xl border border-success/30 bg-success-50 p-5">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-success text-lg font-bold text-white">
