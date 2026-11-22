@@ -106,16 +106,11 @@ export default async function BlogPage({ searchParams }: Props) {
           <p className="nx-rise mt-5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
             <SparklesIcon size={14} className="text-accent" /> NEXUS Insights
           </p>
-          <h1
-            className="nx-rise mt-3 max-w-3xl text-[1.9rem] leading-tight text-white sm:text-[2.6rem]"
-            style={{ '--i': 1 } as React.CSSProperties}
-          >
+          {/* No entrance animation on the heading: it is the LCP element on phones. */}
+          <h1 className="mt-3 max-w-3xl text-[1.9rem] leading-tight text-white sm:text-[2.6rem]">
             {heading}
           </h1>
-          <p
-            className="nx-rise mt-3 max-w-2xl text-[1.0625rem] leading-relaxed text-white/75"
-            style={{ '--i': 2 } as React.CSSProperties}
-          >
+          <p className="mt-3 max-w-2xl text-[1.0625rem] leading-relaxed text-white/75">
             {DESCRIPTION}
           </p>
           <nav aria-label="Blog categories" className="nx-scroll-x -mx-1 mt-6">

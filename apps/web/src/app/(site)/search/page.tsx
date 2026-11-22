@@ -113,7 +113,7 @@ export default async function SmartSearchPage({ searchParams }: Props) {
             <span className="text-accent">AI search</span>
             <span className="text-white/80">· English, Hindi ya Hinglish</span>
           </p>
-          <h1 className="nx-rise mt-3 text-[1.7rem] leading-tight text-white sm:text-[2.2rem]">
+          <h1 className="mt-3 text-[1.7rem] leading-tight text-white sm:text-[2.2rem]">
             {result.hinglish ? 'Aapke liye best matches' : 'Best matches for you'}
           </h1>
           <div className="nx-rise mt-4" style={{ '--i': 1 } as React.CSSProperties}>
