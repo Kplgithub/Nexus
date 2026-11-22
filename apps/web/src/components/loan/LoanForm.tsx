@@ -12,6 +12,7 @@ import {
   type LoanPurpose,
 } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
+import { Honeypot, honeypotValue } from '../forms/Honeypot';
 import { CheckIcon, CloseIcon, LockIcon } from '../icons';
 import { useOptionalSession } from '../session/SessionProvider';
 
@@ -119,7 +120,7 @@ export function LoanForm({
           propertyId,
           sourcePage,
           consent: true,
-          website: String(fd.get('website') ?? ''),
+          website: honeypotValue(fd),
           elapsedMs: openedAt.current ? Date.now() - openedAt.current : undefined,
           loan: {
             amount: loanAmount,
@@ -278,13 +279,7 @@ export function LoanForm({
         onChange={(v) => setPurpose(v as LoanPurpose)}
       />
 
-      {/* Honeypot: hidden from people, filled by bots. */}
-      <div aria-hidden className="absolute -left-[9999px] h-0 overflow-hidden">
-        <label>
-          Website
-          <input name="website" tabIndex={-1} autoComplete="off" />
-        </label>
-      </div>
+      <Honeypot id={`${uid}-hp`} />
 
       <label className="mt-4 flex items-start gap-2.5 text-xs leading-relaxed text-ink-muted">
         <input
