@@ -17,6 +17,7 @@ import { absoluteUrl } from '@/lib/site';
 import { BadgeCheckIcon, ImageIcon, MapPinIcon, PhoneIcon, WhatsAppIcon } from '../icons';
 import { DemoBadge } from '../ui';
 import { SaveButton } from './SaveButton';
+import { PartnerBadge, refreshedLabel } from './plan-perks';
 import type { SmartMatch } from '@/lib/smart-search-types';
 
 function postedAgo(iso: string | null) {
@@ -123,6 +124,7 @@ export function PropertyRow({
                 Featured
               </span>
             )}
+            {p.partnerBadge && !closed && <PartnerBadge />}
             {closed && (
               <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-semibold text-white">
                 {p.status === 'sold' ? 'Sold' : 'Rented out'}
@@ -179,7 +181,12 @@ export function PropertyRow({
           ))}
         </dl>
         <p className="mt-auto pt-3 text-xs text-ink-muted">
-          {[postedAgo(p.publishedAt), `By ${poster}`].filter(Boolean).join(' · ')}
+          {[
+            (!closed && refreshedLabel(p.refreshedAt, p.publishedAt)) || postedAgo(p.publishedAt),
+            `By ${poster}`,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
       </div>
 

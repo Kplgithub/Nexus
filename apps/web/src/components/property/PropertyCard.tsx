@@ -15,6 +15,7 @@ import {
 import { BadgeCheckIcon, ChevronRight, ImageIcon, MapPinIcon } from '../icons';
 import { DemoBadge } from '../ui';
 import { SaveButton } from './SaveButton';
+import { PartnerBadge, RefreshedChip, refreshedLabel } from './plan-perks';
 
 /** One listing in a grid: photo first, then price, then the facts people scan for. */
 export function PropertyCard({
@@ -35,6 +36,7 @@ export function PropertyCard({
   const H = headingLevel;
   const href = `/properties/${p.slug}`;
   const closed = p.status !== 'published';
+  const updated = closed ? null : refreshedLabel(p.refreshedAt, p.publishedAt);
   const facts = [
     p.bedrooms ? `${p.bedrooms} BHK` : PROPERTY_TYPE_LABELS[p.propertyType],
     formatArea(p.areaValue, p.areaUnit),
@@ -83,6 +85,7 @@ export function PropertyCard({
                 Featured
               </span>
             )}
+            {p.partnerBadge && !closed && <PartnerBadge />}
             {closed && (
               <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-semibold text-white">
                 {p.status === 'sold' ? 'Sold' : 'Rented out'}
@@ -146,6 +149,11 @@ export function PropertyCard({
             {p.locality.name}, {p.city.name}
           </span>
         </p>
+        {updated && (
+          <p className="mt-2">
+            <RefreshedChip label={updated} />
+          </p>
+        )}
         <ul className="mb-3 mt-3 flex flex-wrap gap-1.5 text-[0.8125rem] text-ink-soft">
           {facts.map((f) => (
             <li key={f} className="rounded-md bg-brand-50/70 px-2 py-1">

@@ -345,6 +345,11 @@ export const BoltIcon = (p: P) => (
     <path d="M13 2 4 14h7l-1 8 9-12h-7Z" />
   </svg>
 );
+export const DownloadIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 4v11m-5-5 5 5 5-5M5 20h14" />
+  </svg>
+);
 export const ReceiptIcon = (p: P) => (
   <svg {...base(p)}>
     <path d="M6 3h12v18l-3-2-3 2-3-2-3 2ZM9 8h6M9 12h6" />

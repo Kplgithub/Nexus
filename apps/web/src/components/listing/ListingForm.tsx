@@ -1195,6 +1195,8 @@ export function ListingPreview({
       location: f.location,
       plotApproval: f.propertyType === 'plot' ? f.plotApproval || null : null,
       pgGender: f.propertyType === 'pg' ? f.pgGender || null : null,
+      partnerBadge: false,
+      refreshedAt: null,
     }),
     [f, city, id, isDemo],
   );

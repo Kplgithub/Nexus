@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
           '/admin/',
           '/api/',
           '/dashboard',
+          '/invoice/',
           // Served at `/` to visitors from other cities; never a page of its own.
           '/homecity/',
           '/login',

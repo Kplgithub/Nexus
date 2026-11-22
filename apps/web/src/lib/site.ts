@@ -38,6 +38,7 @@ export const FALLBACK_SETTINGS: SiteSettings = {
   allowInternationalEnquiries: false,
   featurePrices: { days7: 49, days30: 99 },
   homeLoan: { enabled: false, lenders: [], ratesCheckedAt: null, exampleRate: 8.5 },
+  invoice: { legalName: '', address: '', state: 'Rajasthan', sacCode: '' },
 };
 
 export const absoluteUrl = (path = '/') => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import type { CheckoutOrder } from '@nexus/shared';
+import type { CheckoutOrder, MySubscription, Payment } from '@nexus/shared';
 import { errMsg } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
 
@@ -143,5 +143,82 @@ export function MembershipHeader({ title, text }: { title: string; text?: string
         })}
       </nav>
     </header>
+  );
+}
+
+const DAY_MS = 86_400_000;
+/** Days left before a plan ends, shown as soon as 7 or fewer remain. */
+export const RENEW_WARN_DAYS = 7;
+
+/**
+ * When the user's paid plan time runs out, counting a renewal paid early (it starts when the
+ * current plan ends). `ended` is set when they had a plan and it is over.
+ */
+export function planValidity(sub: MySubscription, payments: Payment[], now = Date.now()) {
+  const ends = payments
+    .filter((p) => p.kind !== 'featured' && p.status === 'paid' && p.endsAt)
+    .map((p) => new Date(p.endsAt!).getTime());
+  const last = ends.length ? Math.max(...ends) : null;
+  if (sub) {
+    const till = Math.max(last ?? 0, new Date(sub.endsAt).getTime());
+    return { till, daysLeft: Math.max(0, Math.ceil((till - now) / DAY_MS)), ended: false };
+  }
+  if (last && last <= now) return { till: last, daysLeft: 0, ended: true };
+  return null;
+}
+
+/** The "Valid till" box on Plan & usage: green while active, orange near the end, red after. */
+export function PlanValidity({
+  sub,
+  payments,
+  onRenew,
+  busy,
+}: {
+  sub: MySubscription;
+  payments: Payment[];
+  onRenew?: () => void;
+  busy?: boolean;
+}) {
+  const v = planValidity(sub, payments);
+  if (!v) return null;
+  const soon = !v.ended && v.daysLeft <= RENEW_WARN_DAYS;
+  const tone = v.ended
+    ? 'border-danger/30 bg-danger-50'
+    : soon
+      ? 'border-accent/40 bg-accent-50'
+      : 'border-success/30 bg-success-50';
+  const dateText = longDate(new Date(v.till).toISOString());
+  return (
+    <div
+      className={`flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border p-4 sm:p-5 ${tone}`}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-ink-muted">
+          {v.ended ? 'Plan ended' : 'Valid till'}
+        </p>
+        <p className="text-2xl font-bold leading-tight text-brand-900 sm:text-[1.7rem]">
+          {dateText}
+        </p>
+        <p
+          className={`mt-0.5 text-sm font-semibold ${v.ended ? 'text-danger' : soon ? 'text-accent-700' : 'text-success'}`}
+        >
+          {v.ended
+            ? 'Renew to get your Premium benefits back.'
+            : v.daysLeft === 0
+              ? 'Ends today'
+              : `${v.daysLeft} ${v.daysLeft === 1 ? 'day' : 'days'} left${soon ? ' · renew so your listings stay live' : ''}`}
+        </p>
+      </div>
+      {(soon || v.ended) && onRenew && (
+        <button
+          type="button"
+          className="btn btn-accent w-full sm:w-auto"
+          disabled={busy}
+          onClick={onRenew}
+        >
+          {busy ? 'Opening…' : v.ended ? 'Renew plan' : 'Renew now'}
+        </button>
+      )}
+    </div>
   );
 }
