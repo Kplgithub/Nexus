@@ -27,7 +27,7 @@ const ROLES = [
     Icon: HomeIcon,
     title: 'Owner',
     points: [
-      `Fill in your property, then Premium at ₹${DEFAULT_PLAN.price}/month to publish`,
+      'Fill in your property, then take Premium to publish',
       'Your number stays hidden unless you choose to show it',
       'Enquiries arrive in your dashboard as leads',
     ],
