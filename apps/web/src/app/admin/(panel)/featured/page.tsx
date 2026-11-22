@@ -124,7 +124,12 @@ export default function FeaturedPage() {
         </p>
       )}
       {loading && !data && <Skeleton className="h-48 w-full" />}
-      {data && (
+      {data && data.length === 0 && (
+        <section className="card px-4 py-8 text-center text-ink-muted">
+          Nothing is featured right now.
+        </section>
+      )}
+      {data && data.length > 0 && (
         <section className="card overflow-x-auto">
           <table className="adm-table min-w-[40rem]">
             <thead>
@@ -137,13 +142,6 @@ export default function FeaturedPage() {
               </tr>
             </thead>
             <tbody>
-              {data.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-ink-muted">
-                    Nothing is featured right now.
-                  </td>
-                </tr>
-              )}
               {data.map((f) => {
                 const left = daysLeft(f.featuredUntil);
                 return (
