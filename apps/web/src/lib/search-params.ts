@@ -29,6 +29,8 @@ const KEYS = [
   'withPhotos',
   'rera',
   'plotApproval',
+  'farmLandUse',
+  'farmWater',
   'pgGender',
   'pgFood',
   'postedWithin',
@@ -48,7 +50,12 @@ export function parseSearch(
     const v = raw[k];
     if (v === undefined) continue;
     input[k] = Array.isArray(v)
-      ? k === 'propertyType' || k === 'furnishing' || k === 'amenities' || k === 'plotApproval'
+      ? k === 'propertyType' ||
+        k === 'furnishing' ||
+        k === 'amenities' ||
+        k === 'plotApproval' ||
+        k === 'farmLandUse' ||
+        k === 'farmWater'
         ? v.join(',')
         : v[0]
       : v;
@@ -98,6 +105,8 @@ export function toQueryString(
   put('withPhotos', s.withPhotos);
   put('rera', s.rera);
   put('plotApproval', s.plotApproval);
+  put('farmLandUse', s.farmLandUse);
+  put('farmWater', s.farmWater);
   put('pgGender', s.pgGender);
   put('pgFood', s.pgFood);
   put('postedWithin', s.postedWithin);

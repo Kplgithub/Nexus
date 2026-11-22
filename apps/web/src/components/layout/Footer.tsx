@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { SHOW_LOCALITY_LINKS } from '@/lib/site';
-import { formatIndianPhone, whatsappLink, type City, type SiteSettings } from '@nexus/shared';
+import {
+  farmOn,
+  formatIndianPhone,
+  whatsappLink,
+  type City,
+  type SiteSettings,
+} from '@nexus/shared';
 import {
   FacebookIcon,
   InstagramIcon,
@@ -39,6 +45,12 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
     [`/rent?city=${citySlug}`, `Property for rent in ${cityName}`],
     [`/buy?city=${citySlug}&propertyType=apartment`, `Flats in ${cityName}`],
     [`/buy?city=${citySlug}&propertyType=plot`, `Plots in ${cityName}`],
+    ...(farmOn(settings.farms, 'menu')
+      ? ([[`/buy?city=${citySlug}&propertyType=farmhouse,farm-land`, `Farms in ${cityName}`]] as [
+          string,
+          string,
+        ][])
+      : []),
     [`/rent?city=${citySlug}&propertyType=pg`, `PG in ${cityName}`],
     ['/commercial', `Commercial property in ${cityName}`],
     ...localities.map((l): [string, string] => [

@@ -1,7 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { Category, City, DealSeo, ListingType, Locality } from '@nexus/shared';
+import {
+  farmOn,
+  isFarmType,
+  type Category,
+  type City,
+  type DealSeo,
+  type ListingType,
+  type Locality,
+} from '@nexus/shared';
 import { getCity, getLocalityInsights, getLocations, getSettings } from '@/lib/api';
 import { hasUserFilters, parseSearch, type RawSearchParams } from '@/lib/search-params';
 import { breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
@@ -151,6 +159,20 @@ export async function ListingPage({
 
   const copy = pageCopy(scope, city, locality);
   const lead = copy.intro || intro;
+  // A farm-only search gets its own heading, while farm listings are switched on.
+  const farmTypes =
+    search.propertyType?.length && farmOn(settings.farms, 'listings')
+      ? search.propertyType.every((t) => isFarmType(t))
+      : false;
+  const h1 = farmTypes
+    ? `${
+        search.propertyType!.length > 1
+          ? 'Farmhouses & Farm Land'
+          : search.propertyType![0] === 'farmhouse'
+            ? 'Farmhouses'
+            : 'Farm Land'
+      } for Sale${copy.place ? ` in ${copy.place}` : ''}`
+    : copy.h1;
 
   // Locality chips: within a city page, its localities; on a deal root with one city, that city's.
   const chipCity = city ?? (scope.deal && cities.length === 1 ? cities[0] : undefined);
@@ -179,7 +201,7 @@ export async function ListingPage({
             className="nx-rise mt-3 text-[1.9rem] leading-tight text-white sm:text-[2.4rem]"
             style={{ '--i': 1 } as React.CSSProperties}
           >
-            {copy.h1}
+            {h1}
           </h1>
           {lead && (
             <p
