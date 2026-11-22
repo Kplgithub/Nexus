@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { REPORT_REASONS, REPORT_REASON_LABELS, type ReportReason } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
+import { Honeypot, honeypotValue } from '../forms/Honeypot';
 import { CloseIcon, InfoIcon } from '../icons';
 
 /** "Report this listing" link and dialog. Reports go to the admin review queue. */
@@ -28,7 +29,7 @@ export function ReportListing({ propertyId }: { propertyId: string }) {
           propertyId,
           reason,
           details: String(fd.get('details') ?? ''),
-          website: String(fd.get('website') ?? ''),
+          website: honeypotValue(fd),
         },
       });
       setState('done');
@@ -115,14 +116,7 @@ export function ReportListing({ propertyId }: { propertyId: string }) {
                 placeholder="e.g. I called and the owner said it was rented last month."
               />
             </div>
-            <input
-              type="text"
-              name="website"
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden
-              className="hidden"
-            />
+            <Honeypot id="report-hp" />
             {error && (
               <p role="alert" className="text-sm text-danger">
                 {error}
