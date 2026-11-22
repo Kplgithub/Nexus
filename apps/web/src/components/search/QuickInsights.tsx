@@ -71,7 +71,7 @@ export function QuickInsights({ items, total }: { items: PropertyCard[]; total: 
         <span className="nx-pulse inline-block size-2 rounded-full text-accent" aria-hidden>
           <span className="block size-2 rounded-full bg-accent" />
         </span>
-        AI quick insights
+        Quick insights
         <span className="font-normal text-ink-muted">
           · based on the {items.length} {items.length === 1 ? 'listing' : 'listings'} shown
           {total > items.length ? ` of ${total}` : ''}

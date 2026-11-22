@@ -84,7 +84,7 @@ function fullMenu(cities: City[], farms: boolean): Item[] {
         },
       ],
       promo: {
-        title: 'Ask NEXUS AI',
+        title: 'Search in your words',
         text: 'Type "3 BHK under 80 lakh in Jagatpura" and we find it.',
       },
     },

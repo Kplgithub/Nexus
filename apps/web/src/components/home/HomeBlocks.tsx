@@ -436,7 +436,7 @@ export async function TopLocalities({ city, root = '/buy' }: { city: City; root?
 
 const TOOLS = [
   {
-    title: 'AI search',
+    title: 'Smart search',
     text: 'Type what you need in your own words, in English or Hindi, and see matching homes.',
     href: '/search',
     Icon: SparklesIcon,

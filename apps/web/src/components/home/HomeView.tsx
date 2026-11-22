@@ -147,7 +147,7 @@ export async function HomeView({
           <div className="mx-auto max-w-3xl text-center">
             <p className="nx-glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-white/90">
               <SparklesIcon size={14} className="text-accent" />
-              <span className="nx-ai-text font-bold">NEXUS AI search</span>
+              <span className="nx-ai-text font-bold">NEXUS smart search</span>
               <span className="hidden text-white/60 sm:inline">· just type what you need</span>
             </p>
             <h1 className="mt-3 text-[1.75rem] leading-[1.1] sm:text-[2.25rem] lg:text-[2.6rem]">
