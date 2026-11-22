@@ -6,21 +6,16 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { canListProperty, formatIndianPhone } from '@nexus/shared';
 import { NAV_LINKS, POST_PROPERTY_PATH } from '@/lib/site';
+import { hrefOn } from '@/lib/sections';
 import { useSession } from '../session/SessionProvider';
+import { useSections } from '../session/SectionsProvider';
 import { CloseIcon, MenuIcon, PhoneIcon } from '../icons';
 
 /** Shown after Buy while admin has farm menu links on. */
 const FARMS_LINK = { href: '/buy?propertyType=farmhouse,farm-land', label: 'Farms' };
 
-export function MobileNav({
-  phone,
-  homeLoan = false,
-  farms = false,
-}: {
-  phone: string;
-  homeLoan?: boolean;
-  farms?: boolean;
-}) {
+export function MobileNav({ phone, farms = false }: { phone: string; farms?: boolean }) {
+  const on = useSections();
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -79,8 +74,8 @@ export function MobileNav({
                   Home
                 </Link>
               </li>
-              {NAV_LINKS.filter((l) => homeLoan || l.href !== '/home-loan')
-                .flatMap((l) => (farms && l.href === '/buy' ? [l, FARMS_LINK] : [l]))
+              {NAV_LINKS.flatMap((l) => (farms && l.href === '/buy' ? [l, FARMS_LINK] : [l]))
+                .filter((l) => hrefOn(l.href, on))
                 .map((l) => (
                   <li key={l.href}>
                     <Link

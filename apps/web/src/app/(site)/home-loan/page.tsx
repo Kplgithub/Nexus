@@ -10,6 +10,7 @@ import { PropertyCard, PropertyGridSkeleton } from '@/components/property/Proper
 import { BlogCard } from '@/components/blog/BlogCard';
 import { LoanForm } from '@/components/loan/LoanForm';
 import { LoanCalculators } from '@/components/loan/LoanCalculators';
+import { hrefOn, sectionsOn } from '@/lib/sections';
 import { GuideTabs, RatesTable, ScrollToFormButton } from '@/components/loan/LoanBits';
 import {
   ArrowRight,
@@ -252,6 +253,8 @@ const STEPS = [
 export default async function HomeLoanPage() {
   const settings = await getSettings();
   if (!settings.homeLoan.enabled) notFound();
+  // Budget links and the for-sale rail need the Buy section (Admin → Settings → Site sections).
+  const on = sectionsOn(settings);
   const { lenders: all, ratesCheckedAt, exampleRate } = settings.homeLoan;
   const lenders = all.filter((l) => l.active).sort((a, b) => a.rateFrom - b.rateFrom);
   const lowest = lenders[0]?.rateFrom;
@@ -417,69 +420,78 @@ export default async function HomeLoanPage() {
           </ul>
         </section>
 
-        <section className="pt-14 sm:pt-16">
-          <div className="grid items-center gap-6 rounded-3xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-5 sm:p-7 lg:grid-cols-[0.9fr_1.6fr]">
-            <div>
-              <h2 className="text-2xl sm:text-[1.75rem]">Homes in Jaipur within your budget</h2>
-              <p className="mt-2 text-sm text-ink-soft">
-                Your budget is the loan plus your own down payment. Pick a range to see live
-                listings.
-              </p>
+        {on.buy && (
+          <section className="pt-14 sm:pt-16">
+            <div className="grid items-center gap-6 rounded-3xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-5 sm:p-7 lg:grid-cols-[0.9fr_1.6fr]">
+              <div>
+                <h2 className="text-2xl sm:text-[1.75rem]">Homes in Jaipur within your budget</h2>
+                <p className="mt-2 text-sm text-ink-soft">
+                  Your budget is the loan plus your own down payment. Pick a range to see live
+                  listings.
+                </p>
+              </div>
+              <ul className="grid gap-2.5 sm:grid-cols-2">
+                {(
+                  [
+                    [
+                      'Flats up to ₹30 Lakh',
+                      '/buy?city=jaipur&propertyType=apartment&maxPrice=3000000',
+                    ],
+                    [
+                      'Flats ₹30 – 60 Lakh',
+                      '/buy?city=jaipur&propertyType=apartment&minPrice=3000000&maxPrice=6000000',
+                    ],
+                    [
+                      'Homes ₹60 Lakh – 1 Cr',
+                      '/buy?city=jaipur&minPrice=6000000&maxPrice=10000000',
+                    ],
+                    ['Plots up to ₹50 Lakh', '/buy?city=jaipur&propertyType=plot&maxPrice=5000000'],
+                  ] as const
+                )
+                  .filter(([, href]) => hrefOn(href, on))
+                  .map(([l, href]) => (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className="flex items-center justify-between gap-2 rounded-xl border border-line bg-white px-4 py-3.5 font-semibold transition hover:border-brand-100 hover:text-brand"
+                      >
+                        {l}
+                        <ArrowRight size={18} className="text-brand" />
+                      </Link>
+                    </li>
+                  ))}
+              </ul>
             </div>
-            <ul className="grid gap-2.5 sm:grid-cols-2">
-              {(
-                [
-                  [
-                    'Flats up to ₹30 Lakh',
-                    '/buy?city=jaipur&propertyType=apartment&maxPrice=3000000',
-                  ],
-                  [
-                    'Flats ₹30 – 60 Lakh',
-                    '/buy?city=jaipur&propertyType=apartment&minPrice=3000000&maxPrice=6000000',
-                  ],
-                  ['Homes ₹60 Lakh – 1 Cr', '/buy?city=jaipur&minPrice=6000000&maxPrice=10000000'],
-                  ['Plots up to ₹50 Lakh', '/buy?city=jaipur&propertyType=plot&maxPrice=5000000'],
-                ] as const
-              ).map(([l, href]) => (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className="flex items-center justify-between gap-2 rounded-xl border border-line bg-white px-4 py-3.5 font-semibold transition hover:border-brand-100 hover:text-brand"
-                  >
-                    {l}
-                    <ArrowRight size={18} className="text-brand" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+          </section>
+        )}
 
-        <section className="pt-14 sm:pt-16">
-          <SectionHeading
-            eyebrow="For sale in Jaipur"
-            title="Homes for sale, with EMI shown"
-            intro={`EMI shown for 80% of the price over 20 years at ${exampleRate.toFixed(2)}%, as an example.`}
-            action={
-              <Link
-                href="/buy?city=jaipur"
-                className="inline-flex items-center gap-1 font-semibold text-brand hover:underline"
-              >
-                See all <ArrowRight size={16} />
-              </Link>
-            }
-          />
-          <Suspense
-            fallback={
-              <PropertyGridSkeleton
-                count={4}
-                className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
-              />
-            }
-          >
-            <SaleRail rate={exampleRate} />
-          </Suspense>
-        </section>
+        {on.buy && (
+          <section className="pt-14 sm:pt-16">
+            <SectionHeading
+              eyebrow="For sale in Jaipur"
+              title="Homes for sale, with EMI shown"
+              intro={`EMI shown for 80% of the price over 20 years at ${exampleRate.toFixed(2)}%, as an example.`}
+              action={
+                <Link
+                  href="/buy?city=jaipur"
+                  className="inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+                >
+                  See all <ArrowRight size={16} />
+                </Link>
+              }
+            />
+            <Suspense
+              fallback={
+                <PropertyGridSkeleton
+                  count={4}
+                  className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+                />
+              }
+            >
+              <SaleRail rate={exampleRate} />
+            </Suspense>
+          </section>
+        )}
 
         <section className="pt-14 sm:pt-16">
           <SectionHeading

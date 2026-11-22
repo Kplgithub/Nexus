@@ -3,7 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { BLOG_CATEGORY_LABELS, type BlogPostCard, type PublicBlogPost } from '@nexus/shared';
-import { getBlogPost } from '@/lib/api';
+import { getBlogPost, getSettings } from '@/lib/api';
+import { sectionsOn } from '@/lib/sections';
 import { absoluteUrl } from '@/lib/site';
 import { blogPostingJsonLd, breadcrumbJsonLd, pageMetadata } from '@/lib/seo';
 import { BlogCard, BlogMeta, canOptimise } from '@/components/blog/BlogCard';
@@ -76,7 +77,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const { post: p, related } = await load(slug);
+  const [{ post: p, related }, settings] = await Promise.all([load(slug), getSettings()]);
+  const on = sectionsOn(settings);
   const url = absoluteUrl(`/blog/${p.slug}`);
   const crumbs = [
     { name: 'Home', href: '/' },
@@ -190,15 +192,19 @@ export default async function BlogPostPage({ params }: Props) {
               Verified homes, plots and offices with direct owner and builder contact.
             </p>
             <div className="relative mt-5 grid gap-2">
-              <Link href="/buy" className="btn btn-accent justify-start">
-                <HomeIcon size={18} /> Buy a property
-              </Link>
-              <Link
-                href="/rent"
-                className="btn justify-start bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20"
-              >
-                <KeyIcon size={18} /> Rent a home
-              </Link>
+              {on.buy && (
+                <Link href="/buy" className="btn btn-accent justify-start">
+                  <HomeIcon size={18} /> Buy a property
+                </Link>
+              )}
+              {on.rent && (
+                <Link
+                  href="/rent"
+                  className="btn justify-start bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20"
+                >
+                  <KeyIcon size={18} /> Rent a home
+                </Link>
+              )}
               <Link
                 href="/post-property"
                 className="btn justify-start bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20"

@@ -63,6 +63,7 @@ import { PinPicker } from '../map/Map';
 import { ImageManager } from '../admin/ImageManager';
 import { PropertyCard } from '../property/PropertyCard';
 import { BuildingIcon, CheckIcon, HomeIcon, KeyIcon } from '../icons';
+import { useSections } from '../session/SectionsProvider';
 
 /* ------------------------------------------------------------------ */
 /* Form state                                                          */
@@ -448,6 +449,33 @@ export function ListingFields({
       ? Math.round(priceNum / toSqft(areaNum, f.areaUnit))
       : null;
 
+  // Switched-off site sections (Admin → Settings → Site sections) can't take new listings.
+  const on = useSections();
+  const dealOn = (t: ListingType) => (t === 'sale' ? on.buy : on.rent) || on.commercial;
+  const categoryOn = (c: 'residential' | 'commercial', t: ListingType = f.listingType) =>
+    c === 'commercial' ? on.commercial : t === 'sale' ? on.buy : on.rent;
+  const typeOn = (t: string) => (t !== 'pg' || on.pg) && (t !== 'plot' || on.plot);
+  const isNew = !f.title;
+  useEffect(() => {
+    if (!isNew) return;
+    const deal = dealOn(f.listingType) ? f.listingType : (['sale', 'rent'] as const).find(dealOn);
+    if (!deal) return;
+    const category = categoryOn(f.category, deal)
+      ? f.category
+      : (['residential', 'commercial'] as const).find((c) => categoryOn(c, deal));
+    if (!category) return;
+    const type =
+      category === f.category && typeOn(f.propertyType)
+        ? f.propertyType
+        : (PROPERTY_TYPES[category].find((t) => typeOn(t) && !(t === 'pg' && deal === 'sale')) as
+            | PropertyType
+            | undefined);
+    if (!type) return;
+    if (deal !== f.listingType || category !== f.category || type !== f.propertyType)
+      setF((s) => ({ ...s, listingType: deal, category, propertyType: type }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, on, f.listingType, f.category, f.propertyType]);
+
   return (
     <div className="space-y-6">
       {show('basics') && (
@@ -455,53 +483,59 @@ export function ListingFields({
           <fieldset>
             <legend className="field-label">I want to</legend>
             <div className="grid gap-3 sm:grid-cols-2">
-              {(['sale', 'rent'] as const).map((t) => (
-                <Choice
-                  key={t}
-                  name="listingType"
-                  checked={f.listingType === t}
-                  onChange={() => set('listingType', t)}
-                  title={t === 'sale' ? 'Sell' : 'Rent out'}
-                  text={
-                    t === 'sale'
-                      ? 'Find a buyer'
-                      : isFarm
-                        ? 'Not available for farms'
-                        : 'Find a tenant'
-                  }
-                  Icon={t === 'sale' ? HomeIcon : KeyIcon}
-                  disabled={t === 'rent' && isFarm}
-                />
-              ))}
+              {(['sale', 'rent'] as const)
+                .filter((t) => dealOn(t) || f.listingType === t)
+                .map((t) => (
+                  <Choice
+                    key={t}
+                    name="listingType"
+                    checked={f.listingType === t}
+                    onChange={() => set('listingType', t)}
+                    title={t === 'sale' ? 'Sell' : 'Rent out'}
+                    text={
+                      t === 'sale'
+                        ? 'Find a buyer'
+                        : isFarm
+                          ? 'Not available for farms'
+                          : 'Find a tenant'
+                    }
+                    Icon={t === 'sale' ? HomeIcon : KeyIcon}
+                    disabled={t === 'rent' && isFarm}
+                  />
+                ))}
             </div>
             {err('listingType') && <p className="field-error">{err('listingType')}</p>}
           </fieldset>
           <fieldset className="mt-6">
             <legend className="field-label">Property category</legend>
             <div className="grid gap-3 sm:grid-cols-2">
-              {(['residential', 'commercial'] as const).map((c) => (
-                <Choice
-                  key={c}
-                  name="category"
-                  checked={f.category === c}
-                  onChange={() =>
-                    setF((s) => ({
-                      ...s,
-                      category: c,
-                      propertyType: PROPERTY_TYPES[c][0] as PropertyType,
-                    }))
-                  }
-                  Icon={c === 'residential' ? HomeIcon : BuildingIcon}
-                  title={c === 'residential' ? 'Residential' : 'Commercial'}
-                  text={
-                    c === 'residential'
-                      ? farmsAllowed
-                        ? 'Flat, house, villa, plot, farm'
-                        : 'Flat, house, villa, plot'
-                      : 'Office, shop, showroom'
-                  }
-                />
-              ))}
+              {(['residential', 'commercial'] as const)
+                .filter((c) => categoryOn(c) || f.category === c)
+                .map((c) => (
+                  <Choice
+                    key={c}
+                    name="category"
+                    checked={f.category === c}
+                    onChange={() =>
+                      setF((s) => ({
+                        ...s,
+                        category: c,
+                        propertyType: (PROPERTY_TYPES[c].find(
+                          (t) => typeOn(t) && (!isFarmType(t) || farmsAllowed),
+                        ) ?? PROPERTY_TYPES[c][0]) as PropertyType,
+                      }))
+                    }
+                    Icon={c === 'residential' ? HomeIcon : BuildingIcon}
+                    title={c === 'residential' ? 'Residential' : 'Commercial'}
+                    text={
+                      c === 'residential'
+                        ? farmsAllowed
+                          ? 'Flat, house, villa, plot, farm'
+                          : 'Flat, house, villa, plot'
+                        : 'Office, shop, showroom'
+                    }
+                  />
+                ))}
             </div>
           </fieldset>
           <fieldset className="mt-6">
@@ -509,7 +543,9 @@ export function ListingFields({
             <div className="flex flex-wrap gap-2">
               {PROPERTY_TYPES[f.category]
                 .filter((t) => !(t === 'pg' && sale))
-                .filter((t) => !isFarmType(t) || farmsAllowed || f.propertyType === t)
+                .filter(
+                  (t) => (typeOn(t) && (!isFarmType(t) || farmsAllowed)) || f.propertyType === t,
+                )
                 .map((t) => (
                   <button
                     key={t}

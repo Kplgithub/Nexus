@@ -4,6 +4,7 @@ import { MobileNav } from './MobileNav';
 import { MegaMenu } from './MegaMenu';
 import { UserMenu } from './UserMenu';
 import { CityMenu } from './CityMenu';
+import { sectionsOn } from '@/lib/sections';
 
 export function Header({ settings, cities }: { settings: SiteSettings; cities: City[] }) {
   return (
@@ -26,17 +27,13 @@ export function Header({ settings, cities }: { settings: SiteSettings; cities: C
 
         <MegaMenu
           cities={cities}
-          homeLoan={settings.homeLoan?.enabled ?? false}
+          on={sectionsOn(settings)}
           farms={farmOn(settings.farms, 'menu')}
         />
 
         <div className="ml-auto flex items-center gap-2">
           <UserMenu />
-          <MobileNav
-            phone={settings.phone}
-            homeLoan={settings.homeLoan?.enabled ?? false}
-            farms={farmOn(settings.farms, 'menu')}
-          />
+          <MobileNav phone={settings.phone} farms={farmOn(settings.farms, 'menu')} />
         </div>
       </div>
     </header>

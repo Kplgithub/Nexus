@@ -6,9 +6,11 @@ import { useApi } from '@/components/admin/useApi';
 import { SectionTitle } from '@/components/dashboard/DashboardShell';
 import { PropertyGrid } from '@/components/property/PropertyCard';
 import { useSession } from '@/components/session/SessionProvider';
+import { useSections } from '@/components/session/SectionsProvider';
 
 export default function SavedPage() {
   const { savedIds } = useSession();
+  const on = useSections();
   const { data, error, loading } = useApi<PropertyCard[]>('/me/saved');
   // Hide cards the visitor un-saved on this page without refetching.
   const items = data?.filter((p) => savedIds.has(p.id)) ?? [];
@@ -22,12 +24,21 @@ export default function SavedPage() {
         <div className="rounded-2xl border border-dashed border-line-strong p-10 text-center">
           <p className="font-semibold">Nothing saved yet</p>
           <div className="mt-4 flex justify-center gap-2">
-            <Link href="/buy" className="btn btn-outline btn-sm">
-              Browse for sale
-            </Link>
-            <Link href="/rent" className="btn btn-outline btn-sm">
-              Browse rentals
-            </Link>
+            {on.buy && (
+              <Link href="/buy" className="btn btn-outline btn-sm">
+                Browse for sale
+              </Link>
+            )}
+            {on.rent && (
+              <Link href="/rent" className="btn btn-outline btn-sm">
+                Browse rentals
+              </Link>
+            )}
+            {!on.buy && !on.rent && (
+              <Link href="/properties" className="btn btn-outline btn-sm">
+                Browse properties
+              </Link>
+            )}
           </div>
         </div>
       )}

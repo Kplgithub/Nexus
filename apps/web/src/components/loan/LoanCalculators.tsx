@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useId, useState } from 'react';
 import { emi, formatINR, formatINRShort, type LoanLender } from '@nexus/shared';
 import { pickLoanOffer } from './LoanForm';
+import { useSections } from '../session/SectionsProvider';
 
 const TABS = [
   ['emi', 'EMI'],
@@ -317,6 +318,7 @@ function EligibilityTab({
   city: string;
 }) {
   const id = useId();
+  const on = useSections();
   const [income, setIncome] = useState(90_000);
   const [existing, setExisting] = useState(0);
   const [yrs, setYrs] = useState(20);
@@ -385,12 +387,14 @@ function EligibilityTab({
           />
           {loan > 0 ? (
             <div className="mt-5 grid w-full gap-2">
-              <Link
-                href={`/buy?city=${city}&maxPrice=${budget}`}
-                className="btn btn-outline bg-white"
-              >
-                See homes up to {formatINRShort(budget)}
-              </Link>
+              {on.buy && (
+                <Link
+                  href={`/buy?city=${city}&maxPrice=${budget}`}
+                  className="btn btn-outline bg-white"
+                >
+                  See homes up to {formatINRShort(budget)}
+                </Link>
+              )}
               <button
                 type="button"
                 className="btn btn-primary"

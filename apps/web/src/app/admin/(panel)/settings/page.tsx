@@ -5,12 +5,14 @@ import { useState } from 'react';
 import {
   DEFAULT_FARMS,
   DEFAULT_HOME_LOAN,
+  DEFAULT_SITE_SECTIONS,
   LOAN_RATES_STALE_DAYS,
   type FarmSettings,
   type SiteSettings,
 } from '@nexus/shared';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
 import { BannerEditor } from '@/components/admin/BannerEditor';
+import { SiteSectionsPanel } from '@/components/admin/SiteSectionsPanel';
 import { errMsg, useApi } from '@/components/admin/useApi';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
 import { loanRatesStale } from '@/lib/site';
@@ -34,6 +36,25 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
     homeLoan: { ...DEFAULT_HOME_LOAN, ...(initial.homeLoan ?? {}) },
     farms: { ...DEFAULT_FARMS, ...(initial.farms ?? {}) },
   });
+  // What is saved on the server right now; the site section switches save on their own.
+  const [live, setLive] = useState({
+    sections: { ...DEFAULT_SITE_SECTIONS, ...(initial.sections ?? {}) },
+    sectionOffAction: initial.sectionOffAction ?? 'redirect',
+    homeLoan: { ...DEFAULT_HOME_LOAN, ...(initial.homeLoan ?? {}) },
+  });
+  const takeSaved = (data: SiteSettings) => {
+    setLive({
+      sections: data.sections,
+      sectionOffAction: data.sectionOffAction,
+      homeLoan: data.homeLoan,
+    });
+    setS((cur) => ({
+      ...cur,
+      sections: data.sections,
+      sectionOffAction: data.sectionOffAction,
+      homeLoan: { ...cur.homeLoan, enabled: data.homeLoan.enabled },
+    }));
+  };
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const disabled = !can('admin');
@@ -47,12 +68,20 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
         method: 'PATCH',
         body: {
           ...s,
+          // The site section switches save themselves; never send a stale copy back.
+          sections: undefined,
+          sectionOffAction: undefined,
           home: { ...s.home, heroImageUrl: s.home.heroImageUrl ?? '' },
           email: s.email ?? '',
           enquiryNotificationEmail: s.enquiryNotificationEmail ?? '',
         },
       });
       setS(data);
+      setLive({
+        sections: data.sections,
+        sectionOffAction: data.sectionOffAction,
+        homeLoan: data.homeLoan,
+      });
       toast('Settings saved. The public site updates within a minute.');
     } catch (err) {
       if (err instanceof ApiClientError && err.details) setErrors(err.details);
@@ -93,6 +122,7 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
           Only admins can change settings.
         </p>
       )}
+      <SiteSectionsPanel live={live} disabled={disabled} onSaved={takeSaved} toast={toast} />
       <section className="card grid gap-4 p-5 md:grid-cols-2">
         <h2 className="text-lg font-semibold md:col-span-2">Business details</h2>
         {input('businessName', 'Business name', s.businessName, (v) =>

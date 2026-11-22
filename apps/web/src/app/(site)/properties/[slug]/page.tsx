@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound, permanentRedirect } from 'next/navigation';
+import { notFound, permanentRedirect, redirect } from 'next/navigation';
+import { sectionFallback, sectionsOn } from '@/lib/sections';
 import {
   AMENITY_LABELS,
   AREA_UNIT_LABELS,
@@ -76,6 +77,12 @@ async function load(slug: string) {
   const res = await getProperty(slug);
   if (!res) notFound();
   if (res.redirectTo) permanentRedirect(`/properties/${res.redirectTo}`);
+  if (res.sectionOff) {
+    // Switched-off section: hidden, not deleted. Temporary redirect so it can come back.
+    const settings = await getSettings();
+    if (settings.sectionOffAction === 'not-found') notFound();
+    redirect(sectionFallback(res.sectionOff, sectionsOn(settings)));
+  }
   return res as { property: PublicProperty; similar: NonNullable<typeof res.similar> };
 }
 

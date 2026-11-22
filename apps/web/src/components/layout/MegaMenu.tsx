@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SHOW_LOCALITY_LINKS } from '@/lib/site';
+import { ALL_ON, hrefOn, type SectionsOn } from '@/lib/sections';
 import type { City } from '@nexus/shared';
 import { NavLink } from './NavLink';
 import { ChevronDown, SparklesIcon } from '../icons';
@@ -17,7 +18,7 @@ function qs(base: string, params: Record<string, string>) {
   return s ? `${base}?${s}` : base;
 }
 
-function menu(cities: City[], homeLoan: boolean, farms: boolean): Item[] {
+function fullMenu(cities: City[], farms: boolean): Item[] {
   const city = cities.length === 1 ? cities[0] : undefined;
   const top =
     city && SHOW_LOCALITY_LINKS
@@ -183,27 +184,39 @@ function menu(cities: City[], homeLoan: boolean, farms: boolean): Item[] {
         text: 'Offices, shops and showrooms on the main roads, with direct contact.',
       },
     },
-    ...(homeLoan ? [{ label: 'Home loan', href: '/home-loan' }] : []),
+    { label: 'Home loan', href: '/home-loan' },
     { label: 'Agents', href: '/agents' },
     { label: 'Locations', href: '/locations' },
     { label: 'Blog', href: '/blog' },
   ];
 }
 
+/** The menu without anything from a switched-off site section, and no empty columns. */
+function menu(cities: City[], on: SectionsOn, farms: boolean): Item[] {
+  return fullMenu(cities, farms)
+    .filter((item) => hrefOn(item.href, on))
+    .map((item) => {
+      const cols = item.cols
+        ?.map((c) => ({ ...c, links: c.links.filter((l) => hrefOn(l.href, on)) }))
+        .filter((c) => c.links.length > 0);
+      return { ...item, cols: cols?.length ? cols : undefined };
+    });
+}
+
 export function MegaMenu({
   cities,
-  homeLoan = false,
+  on = ALL_ON,
   farms = false,
 }: {
   cities: City[];
-  homeLoan?: boolean;
+  on?: SectionsOn;
   /** Admin switch: farm links in the Buy menu. */
   farms?: boolean;
 }) {
   return (
     <nav aria-label="Main" className="relative ml-4 hidden xl:block">
       <ul className="flex items-center gap-0.5">
-        {menu(cities, homeLoan, farms).map((item) =>
+        {menu(cities, on, farms).map((item) =>
           item.cols ? (
             <li key={item.href} className="group">
               <div className="flex items-center">

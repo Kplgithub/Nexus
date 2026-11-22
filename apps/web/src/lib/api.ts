@@ -1,5 +1,6 @@
 import 'server-only';
 import type {
+  SiteSection,
   ApiResponse,
   AuthConfig,
   BlogPostCard,
@@ -80,8 +81,15 @@ export async function smartSearch(p: SmartParams) {
 }
 
 export type DetailResponse =
-  | { property: PublicProperty; similar: PropertyCard[]; redirectTo?: undefined }
-  | { redirectTo: string; property?: undefined; similar?: undefined };
+  | {
+      property: PublicProperty;
+      similar: PropertyCard[];
+      redirectTo?: undefined;
+      sectionOff?: undefined;
+    }
+  | { redirectTo: string; property?: undefined; similar?: undefined; sectionOff?: undefined }
+  /** The listing's site section is switched off in Admin → Settings → Site sections. */
+  | { sectionOff: SiteSection; property?: undefined; similar?: undefined; redirectTo?: undefined };
 
 export async function getProperty(slug: string): Promise<DetailResponse | null> {
   try {
