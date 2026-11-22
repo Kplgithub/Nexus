@@ -213,6 +213,7 @@ export function PropertyEditor({ property }: { property?: AdminProperty }) {
         cities={cities ?? []}
         uploadPath="/admin/uploads"
         showBusinessHints
+        allowFree
       />
 
       <Group title="Preview">
@@ -297,8 +298,10 @@ export function PropertyEditor({ property }: { property?: AdminProperty }) {
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur lg:left-[248px]">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <p className="text-sm text-ink-muted">
-            {Number(f.price) > 0 ? formatPrice(Number(f.price), f.listingType) : 'No price set'} ·{' '}
-            {dirty ? 'Unsaved changes' : 'All changes saved'}
+            {f.price !== '' && Number(f.price) >= 0
+              ? formatPrice(Number(f.price), f.listingType)
+              : 'No price set'}{' '}
+            · {dirty ? 'Unsaved changes' : 'All changes saved'}
           </p>
           <div className="flex gap-2">
             <button type="submit" className="btn btn-outline" disabled={saving}>

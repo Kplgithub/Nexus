@@ -304,6 +304,8 @@ export function userPayload(f: ListingFormState) {
 export function adminPayload(f: ListingFormState, statusOverride?: string) {
   return {
     ...userPayload(f),
+    // Admins may list at ₹0 ("Free"), so a blank price must stay blank rather than become 0.
+    price: num(f.price),
     ...(f.slug ? { slug: f.slug } : {}),
     status: statusOverride ?? f.status,
     listingVisibility: f.listingVisibility,
@@ -384,6 +386,7 @@ export function ListingFields({
   step,
   uploadPath,
   showBusinessHints,
+  allowFree,
   farmsAllowed = true,
 }: {
   f: ListingFormState;
@@ -393,6 +396,8 @@ export function ListingFields({
   step?: StepId;
   uploadPath: string;
   showBusinessHints?: boolean;
+  /** Admin only: ₹0 is allowed and shown as "Free". */
+  allowFree?: boolean;
   /** Admin can switch new farm listings off; an existing farm listing stays editable. */
   farmsAllowed?: boolean;
 }) {
@@ -715,9 +720,9 @@ export function ListingFields({
               hint={
                 priceNum
                   ? `${formatPrice(priceNum, f.listingType)}${perSqft ? ` · ${formatINR(perSqft)}/sq ft` : ''}${perLand ? ` · ${formatPrice(perLand.amount, 'sale')} per ${perLand.unit}` : ''}`
-                  : sale
-                    ? 'Total price in rupees, e.g. 6500000'
-                    : 'Rent per month in rupees'
+                  : allowFree && priceNum === 0
+                    ? 'Shows as "Free" on the site'
+                    : `${sale ? 'Total price in rupees, e.g. 6500000' : 'Rent per month in rupees'}${allowFree ? '. Enter 0 to show it as Free' : ''}`
               }
             >
               <input

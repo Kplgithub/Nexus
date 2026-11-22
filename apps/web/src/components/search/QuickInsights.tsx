@@ -13,8 +13,11 @@ export function QuickInsights({ items, total }: { items: PropertyCard[]; total: 
     : items.every((p) => p.listingType === 'sale')
       ? 'sale'
       : null;
-  const prices = items.map((p) => p.price).sort((a, b) => a - b);
-  const median = prices[Math.floor(prices.length / 2)]!;
+  const prices = items
+    .map((p) => p.price)
+    .filter((n) => n > 0)
+    .sort((a, b) => a - b);
+  const median = prices[Math.floor(prices.length / 2)] ?? 0;
   const perSqft = items
     .map((p) => p.pricePerSqft)
     .filter((n): n is number => typeof n === 'number' && n > 0)
@@ -26,12 +29,13 @@ export function QuickInsights({ items, total }: { items: PropertyCard[]; total: 
   const [topLocality, topCount] = [...byLocality.entries()].sort((a, b) => b[1] - a[1])[0]!;
 
   const facts = [
-    deal && {
-      Icon: TrendingUpIcon,
-      label: 'Price range',
-      value: `${formatINRShort(prices[0]!)} – ${formatINRShort(prices.at(-1)!)}${deal === 'rent' ? ' /mo' : ''}`,
-      hint: `Typical ${formatPrice(median, deal)}`,
-    },
+    deal &&
+      prices.length > 0 && {
+        Icon: TrendingUpIcon,
+        label: 'Price range',
+        value: `${formatINRShort(prices[0]!)} – ${formatINRShort(prices.at(-1)!)}${deal === 'rent' ? ' /mo' : ''}`,
+        hint: `Typical ${formatPrice(median, deal)}`,
+      },
     deal === 'sale' &&
       perSqft.length > 0 && {
         Icon: SparklesIcon,

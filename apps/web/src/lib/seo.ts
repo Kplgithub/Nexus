@@ -7,6 +7,7 @@ import {
   type PublicBlogPost,
   type PublicProperty,
   type SiteSettings,
+  isFreePrice,
 } from '@nexus/shared';
 import { SITE_NOINDEX, SITE_URL, absoluteUrl } from './site';
 
@@ -61,9 +62,11 @@ export function propertyDescription(p: PublicProperty | PropertyCard): string {
     PROPERTY_TYPE_LABELS[p.propertyType],
     p.bedrooms ? `${p.bedrooms} BHK` : null,
     `for ${p.listingType === 'rent' ? 'rent' : 'sale'} in ${p.locality.name}, ${p.city.name}`,
-    p.listingType === 'rent'
-      ? `at ${formatINR(p.price)} per month`
-      : `priced at ${formatINRShort(p.price)}`,
+    isFreePrice(p.price)
+      ? 'free of cost'
+      : p.listingType === 'rent'
+        ? `at ${formatINR(p.price)} per month`
+        : `priced at ${formatINRShort(p.price)}`,
   ].filter(Boolean);
   return `${parts.join(' ')}. View photos, details and enquire with NEXUS Estate.`;
 }

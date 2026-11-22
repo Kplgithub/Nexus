@@ -585,12 +585,14 @@ async function SaleRail({ rate }: { rate: number }) {
       {items.map((p, i) => (
         <li key={p.id} className="flex w-[82%] shrink-0 snap-start flex-col sm:w-auto">
           <PropertyCard p={p} index={i} />
-          <p className="-mt-3 rounded-b-2xl border border-t-0 border-line bg-accent-50 px-4 pb-2.5 pt-5 text-sm">
-            EMI from{' '}
-            <b className="tabular text-accent-700">
-              {formatINR(emi(Math.round(p.price * 0.8), rate, 20))}/mo
-            </b>
-          </p>
+          {p.price > 0 && (
+            <p className="-mt-3 rounded-b-2xl border border-t-0 border-line bg-accent-50 px-4 pb-2.5 pt-5 text-sm">
+              EMI from{' '}
+              <b className="tabular text-accent-700">
+                {formatINR(emi(Math.round(p.price * 0.8), rate, 20))}/mo
+              </b>
+            </p>
+          )}
         </li>
       ))}
     </ul>

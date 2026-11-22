@@ -27,7 +27,7 @@ export function AiSummary({
           : `${Math.abs(diff)}% ${diff < 0 ? 'below' : 'above'} the ${p.locality.name} typical`,
       detail: `${formatINRShort(p.pricePerSqft)}/sq ft here vs ${formatINRShort(median)}/sq ft typical, from ${insights.sale.count} live listings.`,
     };
-  } else if (insights && !isSale && p.bedrooms) {
+  } else if (insights && !isSale && p.bedrooms && p.price > 0) {
     const same = insights.rent.medianRentByBhk.find((r) => r.bedrooms === p.bedrooms);
     if (same && insights.rent.count >= 2) {
       const diff = Math.round(((p.price - same.rent) / same.rent) * 100);

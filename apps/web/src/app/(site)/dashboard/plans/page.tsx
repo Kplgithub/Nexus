@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import {
-  FREE_LEADS_PER_MONTH,
-  LISTING_LIMITS,
   SEARCH_RANKS,
   type MySubscription,
   type Payment,
@@ -21,7 +19,6 @@ import {
   rupees,
   useCheckout,
 } from '@/components/dashboard/membership';
-import { useSession } from '@/components/session/SessionProvider';
 
 type Res = {
   plans: Plan[];
@@ -99,7 +96,6 @@ function MyPlan() {
   const router = useRouter();
   const savedId = params.get('saved');
   const oldFeatureLink = params.get('feature');
-  const { user } = useSession();
   const { data, error, reload } = useApi<Res>('/me/plans');
   const dash = useDashboardData();
   const { pay, busy, msg } = useCheckout(() => {
@@ -114,18 +110,18 @@ function MyPlan() {
 
   const sub = data?.subscription;
   const usage = data?.usage;
-  const role = user?.role ?? 'individual';
-  const freeListings = LISTING_LIMITS[role];
-  const freeLeads = FREE_LEADS_PER_MONTH[role];
   const plans = data?.plans ?? [];
   // Admin's "Most chosen" plan, else the first plan (admin order, then price).
-  const recommendedId = plans.find((p) => p.recommended)?.id ?? plans[0]?.id;
+  // The admin's free (₹0) plan is on by itself; only paid plans can be bought.
+  const paidPlans = plans.filter((p) => p.price > 0);
+  const hasFreePlan = plans.length > paidPlans.length;
+  const recommendedId = plans.find((p) => p.recommended)?.id ?? paidPlans[0]?.id;
   const savedListing = savedId ? usage && usage.awaitingPlan > 0 : false;
   // Renew the plan they have (or last had), if it is still on sale; else the recommended one.
   const lastPlanId =
     sub?.plan.id ??
     data?.payments.find((p) => p.kind !== 'featured' && p.status === 'paid')?.plan.id;
-  const renewPlan = plans.find((p) => p.id === lastPlanId) ?? plans[0];
+  const renewPlan = paidPlans.find((p) => p.id === lastPlanId) ?? paidPlans[0];
 
   return (
     <div className="space-y-8">
@@ -185,7 +181,8 @@ function MyPlan() {
         {data && (
           <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 pt-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-3">
             {plans.map((p) => {
-              const isActive = sub?.plan.id === p.id;
+              const free = p.price === 0;
+              const isActive = sub ? sub.plan.id === p.id : free;
               const highlight = isActive || (!sub && p.id === recommendedId);
               return (
                 <article
@@ -204,9 +201,11 @@ function MyPlan() {
                     <span className="font-display text-5xl leading-none text-brand-900">
                       {rupees(p.price)}
                     </span>
-                    <span className="pb-1 font-semibold text-ink-muted">
-                      / {period(p.durationDays)}
-                    </span>
+                    {!free && (
+                      <span className="pb-1 font-semibold text-ink-muted">
+                        / {period(p.durationDays)}
+                      </span>
+                    )}
                   </p>
                   <p className="mt-1 min-h-[2.5rem] text-sm text-ink-muted">
                     {p.description || 'Owners, agents and builders'}
@@ -218,65 +217,54 @@ function MyPlan() {
                     <Feature>
                       <b>{p.leadLimit > 0 ? p.leadLimit : 'Unlimited'}</b> leads with number
                     </Feature>
-                    {p.featuredListings > 0 && (
+                    {!free && p.featuredListings > 0 && (
                       <Feature>
                         <b>{p.featuredListings}</b> featured listings for {p.featuredDays} days
                       </Feature>
                     )}
                     <Feature>
-                      <b>{SEARCH_RANKS[p.searchRank] ?? 'Normal'}</b> position on search
+                      <b>{free ? 'Normal' : (SEARCH_RANKS[p.searchRank] ?? 'Normal')}</b> position
+                      on search
                     </Feature>
-                    <Feature on={p.partnerBadge}>Premium Partner badge</Feature>
-                    <Feature on={p.autoRefreshDays > 0}>
-                      {p.autoRefreshDays > 0
+                    <Feature on={!free && p.partnerBadge}>Premium Partner badge</Feature>
+                    <Feature on={!free && p.autoRefreshDays > 0}>
+                      {!free && p.autoRefreshDays > 0
                         ? `Auto refresh every ${p.autoRefreshDays} days`
                         : 'Auto refresh'}
                     </Feature>
                     <Feature>Instant lead alert on email</Feature>
                     <Feature>Views and leads per listing</Feature>
                   </ul>
-                  <button
-                    type="button"
-                    className={`btn mt-auto w-full py-3.5 ${highlight ? 'btn-accent' : 'btn-outline'}`}
-                    disabled={!data.onlineEnabled || busy !== null}
-                    onClick={() =>
-                      void pay(
-                        p.id,
-                        `/me/plans/${p.id}/checkout`,
-                        undefined,
-                        `Payment received. ${p.name} is now active.`,
-                      )
-                    }
-                  >
-                    {busy === p.id
-                      ? 'Opening…'
-                      : isActive
-                        ? `Renew for ${rupees(p.price)}`
-                        : `${sub ? 'Switch' : 'Upgrade'} for ${rupees(p.price)}`}
-                  </button>
+                  {free ? (
+                    <span className="btn btn-outline mt-auto w-full cursor-default py-3.5">
+                      {sub
+                        ? 'On again when your paid plan ends'
+                        : 'Your current plan · on by itself'}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`btn mt-auto w-full py-3.5 ${highlight ? 'btn-accent' : 'btn-outline'}`}
+                      disabled={!data.onlineEnabled || busy !== null}
+                      onClick={() =>
+                        void pay(
+                          p.id,
+                          `/me/plans/${p.id}/checkout`,
+                          undefined,
+                          `Payment received. ${p.name} is now active.`,
+                        )
+                      }
+                    >
+                      {busy === p.id
+                        ? 'Opening…'
+                        : isActive
+                          ? `Renew for ${rupees(p.price)}`
+                          : `${sub ? 'Switch' : 'Upgrade'} for ${rupees(p.price)}`}
+                    </button>
+                  )}
                 </article>
               );
             })}
-
-            <article
-              className={`flex w-[82%] shrink-0 snap-center flex-col rounded-3xl border border-line bg-white p-6 sm:w-auto ${sub ? 'opacity-70' : ''}`}
-            >
-              <p className="text-xs font-bold tracking-[0.08em] text-ink-muted">FREE</p>
-              <p className="mt-2 font-display text-5xl leading-none text-brand-900">₹0</p>
-              <p className="mt-1 min-h-[2.5rem] text-sm text-ink-muted">
-                {freeListings > 0 ? 'Agents and builders' : 'Not for owners'}
-              </p>
-              <ul className="mb-6 mt-4 space-y-3 text-[0.95rem]">
-                <Feature on={freeListings > 0}>{freeListings} properties</Feature>
-                <Feature on={freeLeads > 0}>{freeLeads} leads a month with number</Feature>
-                <Feature on={false}>Premium Partner badge</Feature>
-                <Feature on={false}>Auto refresh</Feature>
-                {role === 'individual' && <Feature on={false}>Owners cannot list on Free</Feature>}
-              </ul>
-              <span className="btn btn-outline mt-auto w-full cursor-default pt-3">
-                {sub ? 'Free plan' : 'Your current plan'}
-              </span>
-            </article>
 
             {plans.length === 0 && (
               <p className="rounded-3xl border border-dashed border-line-strong p-6 text-sm text-ink-muted">
@@ -287,7 +275,7 @@ function MyPlan() {
         )}
         {data && plans.length > 1 && (
           <p className="mt-1 text-center text-xs text-ink-muted sm:hidden">
-            Swipe to see all {plans.length + 1} plans
+            Swipe to see all {plans.length} plans
           </p>
         )}
         <p className="mt-4 text-center text-sm text-ink-muted">
@@ -300,7 +288,7 @@ function MyPlan() {
           <SectionTitle title="What you have used" />
           <div className="grid gap-3 sm:grid-cols-3">
             <UsageBar
-              label={sub ? 'Listings live now' : 'Free listings posted'}
+              label={sub || hasFreePlan ? 'Listings live now' : 'Free listings posted'}
               used={usage.listings.used}
               limit={usage.listings.limit}
               note={
@@ -310,7 +298,7 @@ function MyPlan() {
                   </span>
                 ) : (
                   <span className="text-ink-muted">
-                    {sub
+                    {sub || hasFreePlan
                       ? 'Unlist, sell or rent one to free a place'
                       : 'Deleting a listing does not free a slot'}
                   </span>
