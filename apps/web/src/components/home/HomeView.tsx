@@ -1,3 +1,4 @@
+import { InCityButton } from './InCityButton';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { BlogPostCard, City, PropertyCard as Card, ProfileCard } from '@nexus/shared';
@@ -156,7 +157,10 @@ export async function HomeView({
               className="nx-glass mx-auto mt-4 flex w-fit max-w-full items-center gap-2 rounded-2xl px-3.5 sm:rounded-full py-1.5 text-xs text-white/90 sm:text-sm"
             >
               <MapPinIcon size={14} className="shrink-0 text-accent" />
-              <span>We are coming to your city soon. Meanwhile, explore homes in {cityName}.</span>
+              <span>
+                We are coming to your city soon. Meanwhile, explore homes in {cityName}.{' '}
+                <InCityButton slug={citySlug} name={cityName} />
+              </span>
             </p>
           )}
           <div className="mx-auto mt-5 max-w-4xl sm:mt-6">

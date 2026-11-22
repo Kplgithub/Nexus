@@ -10,8 +10,13 @@ import {
 } from '@/lib/sections';
 import type { SectionOffAction, SiteSettings } from '@nexus/shared';
 
-/** Where the visitor's IP placed them: an index into the geo table, or "x" for unknown. */
-const GEO_COOKIE = 'nexus_geo';
+/**
+ * Where the visitor's IP placed them: an index into the geo table, or "x" for unknown.
+ * Renamed from `nexus_geo` when mobile-network IPs stopped counting as a city, so guesses
+ * saved by the old table (e.g. a Jaipur phone placed in Mumbai) are made again.
+ */
+const GEO_COOKIE = 'nexus_place';
+const OLD_GEO_COOKIE = 'nexus_geo';
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
 const BOTS =
@@ -150,6 +155,7 @@ async function cityHome(req: NextRequest) {
       path: '/',
     });
   }
+  if (req.cookies.get(OLD_GEO_COOKIE)) res.cookies.delete(OLD_GEO_COOKIE);
   const shown = target && target !== 'soon' ? target : main.slug;
   if (req.cookies.get(HOME_CITY_COOKIE)?.value !== shown) {
     res.cookies.set(HOME_CITY_COOKIE, shown, { maxAge: YEAR, sameSite: 'lax', path: '/' });

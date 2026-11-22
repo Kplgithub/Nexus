@@ -16,7 +16,7 @@ function readCookie(name: string) {
 const noSubscribe = () => () => {};
 
 /** Saves the visitor's city and reloads the home page for it (a full load, not the router cache). */
-function saveCity(slug: string) {
+export function saveCity(slug: string) {
   document.cookie = `${CITY_COOKIE}=${slug}; path=/; max-age=${365 * 24 * 3600}; samesite=lax`;
   // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- the router would reuse its cached home page
   window.location.href = '/';
