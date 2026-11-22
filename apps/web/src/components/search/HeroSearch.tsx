@@ -294,7 +294,7 @@ export function HeroSearch({
             </>
           ) : (
             <>
-              <SparklesIcon size={14} className="text-accent-700" /> AI search
+              <SparklesIcon size={14} className="text-accent-700" /> Smart search
             </>
           )}
         </button>
@@ -341,7 +341,7 @@ export function HeroSearch({
             >
               {smart ? (
                 <>
-                  <span className="font-semibold text-accent-700">AI understood:</span>
+                  <span className="font-semibold text-accent-700">We understood:</span>
                   {smart.understood.map((u) => (
                     <span
                       key={u}
@@ -499,7 +499,7 @@ export function HeroSearch({
               onClick={() => setMode('smart')}
               className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand sm:hidden"
             >
-              <SparklesIcon size={14} /> Describe it instead (AI search)
+              <SparklesIcon size={14} /> Describe it instead (smart search)
             </button>
           </>
         )}

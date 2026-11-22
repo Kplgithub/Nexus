@@ -69,7 +69,7 @@ export function AiSummary({
         <span className="nx-pulse inline-block size-2 rounded-full text-accent" aria-hidden>
           <span className="block size-2 rounded-full bg-accent" />
         </span>
-        <SparklesIcon size={16} /> AI summary
+        <SparklesIcon size={16} /> Quick summary
       </h2>
       {check && (
         <div className="mt-3 flex items-start gap-3">

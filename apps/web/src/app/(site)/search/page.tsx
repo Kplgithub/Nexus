@@ -99,7 +99,7 @@ export default async function SmartSearchPage({ searchParams }: Props) {
                   ]
                 : []),
               {
-                name: 'AI search',
+                name: 'Smart search',
                 href: smartSearchHref({
                   q: params.q,
                   deal: params.deal,
@@ -110,7 +110,7 @@ export default async function SmartSearchPage({ searchParams }: Props) {
           />
           <p className="nx-rise mt-5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
             <SparklesIcon size={14} className="text-accent" />
-            <span className="text-accent">AI search</span>
+            <span className="text-accent">Smart search</span>
             <span className="text-white/80">· English, Hindi ya Hinglish</span>
           </p>
           <h1 className="mt-3 text-[1.7rem] leading-tight text-white sm:text-[2.2rem]">
@@ -126,7 +126,7 @@ export default async function SmartSearchPage({ searchParams }: Props) {
             style={{ '--i': 2 } as React.CSSProperties}
           >
             <h2 className="flex items-center gap-1.5 font-sans text-xs font-bold uppercase tracking-wider text-orange-300">
-              <SparklesIcon size={13} /> {result.hinglish ? 'AI ne samjha' : 'AI understood'}
+              <SparklesIcon size={13} /> {result.hinglish ? 'Humne samjha' : 'We understood'}
             </h2>
             <p className="mt-1.5 text-[0.95rem] leading-relaxed text-white">{result.summary}</p>
             {result.understood && (
