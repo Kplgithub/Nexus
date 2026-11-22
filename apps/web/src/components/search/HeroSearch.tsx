@@ -76,16 +76,30 @@ const COMMERCIAL: readonly PropertyType[] = PROPERTY_TYPES.commercial;
  * Home-page search. Cities and localities are exactly the ones the admin has
  * added. Works as a plain GET form without JavaScript.
  */
-export function HeroSearch({ cities }: { cities: City[] }) {
+export function HeroSearch({ cities, defaultCity }: { cities: City[]; defaultCity?: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [tab, setTab] = useState<Tab>('sale');
-  const [city, setCity] = useState(cities[0]?.slug ?? '');
+  const [city, setCity] = useState(
+    cities.some((c) => c.slug === defaultCity) ? defaultCity! : (cities[0]?.slug ?? ''),
+  );
   const [deal, setDeal] = useState<ListingType>('sale');
   const [mode, setMode] = useState<'smart' | 'filters'>('smart');
   const [text, setText] = useState('');
   const [focused, setFocused] = useState(false);
   const typed = useTypedExample(mode === 'smart' && !text && !focused);
+  // Quick picks for the chosen city (Jaipur's are the ones people search most there).
+  const topLocality = cities.find((c) => c.slug === city)?.localities[0]?.name;
+  const popular =
+    city === 'jaipur' || !city
+      ? ['2 BHK for rent', '3 BHK flat to buy', 'Villa in Vaishali Nagar', 'JDA plot', 'Girls PG']
+      : [
+          '2 BHK for rent',
+          '3 BHK flat to buy',
+          topLocality ? `Villa in ${topLocality}` : 'Villa to buy',
+          'Plot for sale',
+          'Girls PG',
+        ];
   const localities = [...(cities.find((c) => c.slug === city)?.localities ?? [])].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
@@ -285,13 +299,7 @@ export function HeroSearch({ cities }: { cities: City[] }) {
               ) : (
                 <>
                   <span className="text-ink-muted">Popular:</span>
-                  {[
-                    '2 BHK for rent',
-                    '3 BHK flat to buy',
-                    'Villa in Vaishali Nagar',
-                    'JDA plot',
-                    'Girls PG',
-                  ].map((q) => (
+                  {popular.map((q) => (
                     <button
                       key={q}
                       type="button"

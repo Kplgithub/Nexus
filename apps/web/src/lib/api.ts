@@ -104,9 +104,10 @@ export type HomeSections = {
   projects: ProjectCard[];
 };
 
-export async function getHome(): Promise<HomeSections> {
+export async function getHome(city?: string): Promise<HomeSections> {
   try {
-    const data = (await get<HomeSections>('/home', { tags: ['properties'] })).data;
+    const path = city ? `/home?city=${encodeURIComponent(city)}` : '/home';
+    const data = (await get<HomeSections>(path, { tags: ['properties'] })).data;
     // Every section defaults to empty, so an older API (or a cached response) can't break the page.
     return {
       featured: data?.featured ?? [],
