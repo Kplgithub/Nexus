@@ -182,6 +182,22 @@ pm2 save && pm2 startup
 
 With PM2, export the same variables (e.g. via `pm2 ecosystem` file outside the repo), set `API_INTERNAL_URL=http://127.0.0.1:4000`, and keep the same Nginx config.
 
+### Zero-downtime website deploys (PM2)
+
+`.github/workflows/deploy.yml` runs `deploy/scripts/web-release.sh` on the server on every push to `main`:
+
+1. `git fetch` in `DEPLOY_PATH` (only to get the code; the folder's own build is never touched).
+2. Unpack the commit into a new folder `<parent of DEPLOY_PATH>/nexus-web-releases/releases/<time>-<sha>`, link the website `.env*` files from `DEPLOY_PATH` (and `DEPLOY_PATH/apps/web`) into it, `pnpm install --frozen-lockfile`, `pnpm build`. The live site keeps serving the whole time.
+3. Start the new build on port 3100 and check `/`, `/robots.txt` and one JS file. If anything fails, stop here: nothing live changed.
+4. Point `nexus-web-releases/current` at the new folder and `pm2 reload nexus-web` (cluster mode: the new process starts listening before the old one stops, so port 3000 never closes). Check port 3000 again; if it fails, point `current` back to the previous release and reload again.
+5. Keep the last 3 releases (~150 MB each, ~800 MB for the first one).
+
+Old JS/CSS files from the previous release are copied into the new one, so a visitor who opened a page just before the switch does not get missing-file errors.
+
+**One-time switch-over (automatic):** the first run finds `nexus-web` still running in fork mode from `DEPLOY_PATH/apps/web`, deletes it and starts it from `nexus-web-releases/ecosystem.config.cjs` (written by the script). That single restart takes under a second; if it fails, the old in-place process is started again. Requirements: the deploy user can create `<parent of DEPLOY_PATH>/nexus-web-releases` (override with `RELEASES_DIR`), port 3100 is free on the server, about 1 GB of free disk, and any website environment variables live in `.env*` files (not only in the old PM2 process environment).
+
+Manual rollback: `ln -sfn <older release folder> nexus-web-releases/current && pm2 reload nexus-web`.
+
 ## Data retention and privacy
 
 Enquiries contain personal data. Suggested policy: review and delete or anonymise closed/spam enquiries older than 24 months; restrict CSV exports to the admin role (enforced) and delete exported files after use. Raw IPs are never stored (only a keyed hash).
