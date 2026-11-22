@@ -17,7 +17,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Configure SSH
         env:
@@ -28,34 +28,23 @@ jobs:
           printf '%s\n' "$KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
 
-      - name: Deploy to Server via SSH
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: deploy/scripts/web-release.sh
+          sparse-checkout-cone-mode: false
+
+      # Builds the new version in its own folder while the live site keeps
+      # running, tests it on a spare port, then swaps with `pm2 reload` (no
+      # downtime). On any failure the old version stays live or is put back.
+      # Details: deploy/scripts/web-release.sh and docs/DEPLOYMENT.md.
+      - name: Deploy to Server via SSH (zero downtime)
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          ssh -i ~/.ssh/id_deploy "$USER@$HOST" "
-            export PATH=\$PATH:/usr/bin:/usr/local/bin
-            set -euo pipefail
-            cd '$DEPLOY_PATH'
-            echo 'Fetching latest code...'
-            git fetch origin main
-            git reset --hard origin/main
-
-            echo 'Installing dependencies...'
-            pnpm install
-
-            echo 'Building frontend...'
-            pnpm build
-
-            echo 'Clearing cached API data (old listings must never show)...'
-            rm -rf apps/web/.next/cache/fetch-cache
-
-            echo 'Restarting nexus-web process...'
-            pm2 restart nexus-web
-
-            echo 'Waiting for service to be healthy...'
-            sleep 3
-            curl -fsS -o /dev/null http://127.0.0.1:3000
-            echo 'Deployment successful!'
-          "
+          # Copy the script up first (a script piped into `bash -s` can be eaten by
+          # commands inside it that read stdin, e.g. pnpm).
+          ssh -i ~/.ssh/id_deploy "$USER@$HOST" 'cat > /tmp/nexus-web-release.sh' < deploy/scripts/web-release.sh
+          ssh -i ~/.ssh/id_deploy "$USER@$HOST" \
+            "export PATH=\$PATH:/usr/bin:/usr/local/bin; DEPLOY_PATH='$DEPLOY_PATH' bash /tmp/nexus-web-release.sh < /dev/null"
