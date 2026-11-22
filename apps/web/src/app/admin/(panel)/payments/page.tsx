@@ -3,9 +3,13 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import {
+  AUTO_REFRESH_DAYS,
   LISTING_ROLES,
+  MAX_COMPARE_PLANS,
+  SEARCH_RANKS,
   USER_ROLE_LABELS,
   type AdminWebsiteUser,
+  type AutoRefreshDays,
   type Payment,
   type PaymentStatus,
   type PaymentSummary,
@@ -124,6 +128,11 @@ function Inner() {
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-sans text-base font-bold">{p.name}</h3>
                 {!p.active && <StatusPill status="inactive" label="Hidden" />}
+                {p.active && p.recommended && (
+                  <span className="rounded-full bg-accent-50 px-2 py-0.5 text-xs font-bold text-accent-700">
+                    Most chosen
+                  </span>
+                )}
               </div>
               <p className="mt-1 text-2xl font-extrabold text-brand">
                 {rupees(p.price)}
@@ -136,6 +145,11 @@ function Inner() {
               <ul className="mt-3 space-y-1 text-sm">
                 <li>{p.listingLimit} listings live at a time</li>
                 <li>{p.leadLimit > 0 ? `${p.leadLimit} leads` : 'Unlimited leads'}</li>
+                <li>
+                  Search: {SEARCH_RANKS[p.searchRank] ?? 'Normal'}
+                  {p.partnerBadge ? ' · Partner badge' : ''}
+                  {p.autoRefreshDays ? ` · Refresh ${p.autoRefreshDays}d` : ''}
+                </li>
                 <li className="text-ink-muted">
                   For: {p.roles.map((r) => USER_ROLE_LABELS[r]).join(', ')}
                 </li>
@@ -539,6 +553,12 @@ function PlanForm({
     durationDays: String(plan?.durationDays ?? 30),
     listingLimit: String(plan?.listingLimit ?? 25),
     leadLimit: String(plan?.leadLimit ?? 0),
+    mrp: String(plan?.mrp ?? 0),
+    sortOrder: String(plan?.sortOrder ?? 0),
+    searchRank: plan?.searchRank ?? 0,
+    partnerBadge: plan?.partnerBadge ?? false,
+    autoRefreshDays: (plan?.autoRefreshDays ?? 0) as AutoRefreshDays,
+    recommended: plan?.recommended ?? false,
     roles: plan?.roles ?? ([...LISTING_ROLES] as UserRole[]),
     active: plan?.active ?? true,
   });
@@ -554,6 +574,12 @@ function PlanForm({
       durationDays: Number(f.durationDays),
       listingLimit: Number(f.listingLimit),
       leadLimit: Number(f.leadLimit),
+      mrp: Number(f.mrp) || 0,
+      sortOrder: Number(f.sortOrder) || 0,
+      searchRank: f.searchRank,
+      partnerBadge: f.partnerBadge,
+      autoRefreshDays: f.autoRefreshDays,
+      recommended: f.recommended,
       roles: f.roles,
       active: f.active,
     };
@@ -573,9 +599,10 @@ function PlanForm({
   }
 
   const num = (
-    k: 'price' | 'durationDays' | 'listingLimit' | 'leadLimit',
+    k: 'price' | 'durationDays' | 'listingLimit' | 'leadLimit' | 'mrp' | 'sortOrder',
     label: string,
     min: number,
+    required = true,
   ) => (
     <div>
       <label htmlFor={`pl-${k}`} className="field-label">
@@ -586,7 +613,7 @@ function PlanForm({
         type="number"
         inputMode="numeric"
         className="field"
-        required
+        required={required}
         min={min}
         value={f[k]}
         onChange={(e) => setF({ ...f, [k]: e.target.value })}
@@ -629,7 +656,69 @@ function PlanForm({
           {num('durationDays', 'Valid for (days)', 1)}
           {num('listingLimit', 'Live listings at a time', 1)}
           {num('leadLimit', 'Leads (0 = unlimited)', 0)}
+          {num('mrp', 'Cut price ₹ (0 = none)', 0, false)}
+          {num('sortOrder', 'Order in popup (1 first)', 0, false)}
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="pl-rank" className="field-label">
+              Position on search
+            </label>
+            <select
+              id="pl-rank"
+              className="field"
+              value={f.searchRank}
+              onChange={(e) => setF({ ...f, searchRank: Number(e.target.value) })}
+            >
+              {SEARCH_RANKS.map((r, i) => (
+                <option key={r} value={i}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="pl-refresh" className="field-label">
+              Auto refresh
+            </label>
+            <select
+              id="pl-refresh"
+              className="field"
+              value={f.autoRefreshDays}
+              onChange={(e) =>
+                setF({ ...f, autoRefreshDays: Number(e.target.value) as AutoRefreshDays })
+              }
+            >
+              {AUTO_REFRESH_DAYS.map((d) => (
+                <option key={d} value={d}>
+                  {d === 0 ? 'Off' : `Every ${d} days`}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="space-y-2 text-sm">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={f.partnerBadge}
+              onChange={(e) => setF({ ...f, partnerBadge: e.target.checked })}
+            />
+            Premium Partner badge on listing cards
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={f.recommended}
+              onChange={(e) => setF({ ...f, recommended: e.target.checked })}
+            />
+            Mark as &ldquo;Most chosen&rdquo; (only one plan)
+          </label>
+        </div>
+        <p className="rounded-lg bg-surface p-3 text-xs text-ink-muted">
+          The plans popup on Post Property shows the first {MAX_COMPARE_PLANS} plans that are on, by
+          order. Search order: Featured, then Top, Higher, High, Normal.
+        </p>
         <fieldset>
           <legend className="field-label">Who can buy it</legend>
           <div className="flex flex-wrap gap-4 text-sm">

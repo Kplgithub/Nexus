@@ -6,6 +6,7 @@ import { Suspense, useEffect } from 'react';
 import {
   FREE_LEADS_PER_MONTH,
   LISTING_LIMITS,
+  SEARCH_RANKS,
   type MySubscription,
   type Payment,
   type Plan,
@@ -117,8 +118,8 @@ function MyPlan() {
   const freeListings = LISTING_LIMITS[role];
   const freeLeads = FREE_LEADS_PER_MONTH[role];
   const plans = data?.plans ?? [];
-  // The first plan (admin sort order, then price) is the one we recommend.
-  const recommendedId = plans[0]?.id;
+  // Admin's "Most chosen" plan, else the first plan (admin order, then price).
+  const recommendedId = plans.find((p) => p.recommended)?.id ?? plans[0]?.id;
   const savedListing = savedId ? usage && usage.awaitingPlan > 0 : false;
   // Renew the plan they have (or last had), if it is still on sale; else the recommended one.
   const lastPlanId =
@@ -222,8 +223,16 @@ function MyPlan() {
                         <b>{p.featuredListings}</b> featured listings for {p.featuredDays} days
                       </Feature>
                     )}
-                    <Feature>Premium badge</Feature>
-                    <Feature>Email and WhatsApp lead alert</Feature>
+                    <Feature>
+                      <b>{SEARCH_RANKS[p.searchRank] ?? 'Normal'}</b> position on search
+                    </Feature>
+                    <Feature on={p.partnerBadge}>Premium Partner badge</Feature>
+                    <Feature on={p.autoRefreshDays > 0}>
+                      {p.autoRefreshDays > 0
+                        ? `Auto refresh every ${p.autoRefreshDays} days`
+                        : 'Auto refresh'}
+                    </Feature>
+                    <Feature>Instant lead alert on email</Feature>
                     <Feature>Views and leads per listing</Feature>
                   </ul>
                   <button
@@ -260,8 +269,8 @@ function MyPlan() {
               <ul className="mb-6 mt-4 space-y-3 text-[0.95rem]">
                 <Feature on={freeListings > 0}>{freeListings} properties</Feature>
                 <Feature on={freeLeads > 0}>{freeLeads} leads a month with number</Feature>
-                <Feature on={false}>Premium badge</Feature>
-                <Feature on={false}>WhatsApp lead alert</Feature>
+                <Feature on={false}>Premium Partner badge</Feature>
+                <Feature on={false}>Auto refresh</Feature>
                 {role === 'individual' && <Feature on={false}>Owners cannot list on Free</Feature>}
               </ul>
               <span className="btn btn-outline mt-auto w-full cursor-default pt-3">
