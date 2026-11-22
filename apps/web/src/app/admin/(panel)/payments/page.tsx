@@ -198,8 +198,18 @@ function Inner() {
           </p>
         )}
         {payments.loading && !payments.data && <Skeleton className="h-48 w-full" />}
-        {payments.data && (
-          <div className="card overflow-x-auto">
+        {payments.data && payments.data.length === 0 && (
+          <div className="card px-4 py-8 text-center text-ink-muted">No payments yet.</div>
+        )}
+        {payments.data && payments.data.length > 0 && (
+          <ul className="space-y-3 md:hidden">
+            {payments.data.map((p) => (
+              <PaymentCard key={p.id} p={p} onDone={reloadAll} />
+            ))}
+          </ul>
+        )}
+        {payments.data && payments.data.length > 0 && (
+          <div className="card hidden overflow-x-auto md:block">
             <table className="adm-table min-w-[44rem]">
               <thead>
                 <tr>
@@ -213,13 +223,6 @@ function Inner() {
                 </tr>
               </thead>
               <tbody>
-                {payments.data.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-ink-muted">
-                      No payments yet.
-                    </td>
-                  </tr>
-                )}
                 {payments.data.map((p) => (
                   <PaymentRow key={p.id} p={p} onDone={reloadAll} />
                 ))}
@@ -463,8 +466,6 @@ function InvoiceDetails() {
 }
 
 function PaymentRow({ p, onDone }: { p: Payment; onDone: () => void }) {
-  const { toast } = useAdmin();
-  const [busy, setBusy] = useState(false);
   return (
     <tr>
       <td>
@@ -495,45 +496,114 @@ function PaymentRow({ p, onDone }: { p: Payment; onDone: () => void }) {
         <StatusPill status={p.status} label={STATUS_LABELS[p.status]} />
       </td>
       <td className="whitespace-nowrap text-right">
-        {(p.status === 'paid' || p.status === 'refunded') && (
-          <a
-            href={`/invoice/${p.id}?admin=1`}
-            target="_blank"
-            rel="noopener"
-            className="btn btn-ghost btn-sm"
-          >
-            Invoice
-          </a>
-        )}
-        {p.status === 'paid' && (
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm text-danger"
-            disabled={busy}
-            onClick={async () => {
-              if (
-                !window.confirm(
-                  `Mark ${rupees(p.amount)} as refunded? Their plan stops today. Send the money back yourself.`,
-                )
-              )
-                return;
-              setBusy(true);
-              try {
-                await apiFetch(`/admin/payments/${p.id}/refund`, { method: 'POST' });
-                toast('Marked as refunded. Their plan has ended.');
-                onDone();
-              } catch (err) {
-                toast(errMsg(err), 'error');
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Refund
-          </button>
-        )}
+        <PaymentActions p={p} onDone={onDone} />
       </td>
     </tr>
+  );
+}
+
+/** Phone layout: one card per payment, so nothing hides behind a sideways scroll. */
+function PaymentCard({ p, onDone }: { p: Payment; onDone: () => void }) {
+  return (
+    <li className="card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {p.user ? (
+            <Link
+              href={`/admin/users/${p.user.id}`}
+              className="block truncate font-semibold hover:text-brand"
+            >
+              {p.user.name}
+            </Link>
+          ) : (
+            <span className="text-ink-muted">Deleted user</span>
+          )}
+          <span className="block text-xs text-ink-muted">{date(p.paidAt ?? p.createdAt)}</span>
+        </div>
+        <StatusPill status={p.status} label={STATUS_LABELS[p.status]} />
+      </div>
+      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+        <div className="min-w-0">
+          <dt className="text-xs text-ink-muted">Plan</dt>
+          <dd>
+            {p.plan.name}
+            {p.property && (
+              <span className="block truncate text-xs text-ink-muted">{p.property.title}</span>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-ink-muted">Amount</dt>
+          <dd className="font-semibold">{rupees(p.amount)}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-xs text-ink-muted">How</dt>
+          <dd>
+            {p.method === 'online' ? 'Online' : 'Recorded'}
+            {(p.reference || p.paymentId) && (
+              <span className="block truncate text-xs text-ink-muted">
+                {p.reference || p.paymentId}
+              </span>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-ink-muted">Valid till</dt>
+          <dd>{p.status === 'paid' ? date(p.endsAt) : '—'}</dd>
+        </div>
+      </dl>
+      {(p.status === 'paid' || p.status === 'refunded') && (
+        <div className="mt-3 flex justify-end gap-1 border-t border-line pt-2">
+          <PaymentActions p={p} onDone={onDone} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function PaymentActions({ p, onDone }: { p: Payment; onDone: () => void }) {
+  const { toast } = useAdmin();
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      {(p.status === 'paid' || p.status === 'refunded') && (
+        <a
+          href={`/invoice/${p.id}?admin=1`}
+          target="_blank"
+          rel="noopener"
+          className="btn btn-ghost btn-sm"
+        >
+          Invoice
+        </a>
+      )}
+      {p.status === 'paid' && (
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm text-danger"
+          disabled={busy}
+          onClick={async () => {
+            if (
+              !window.confirm(
+                `Mark ${rupees(p.amount)} as refunded? Their plan stops today. Send the money back yourself.`,
+              )
+            )
+              return;
+            setBusy(true);
+            try {
+              await apiFetch(`/admin/payments/${p.id}/refund`, { method: 'POST' });
+              toast('Marked as refunded. Their plan has ended.');
+              onDone();
+            } catch (err) {
+              toast(errMsg(err), 'error');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Refund
+        </button>
+      )}
+    </>
   );
 }
 

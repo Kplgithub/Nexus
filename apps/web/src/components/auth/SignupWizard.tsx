@@ -14,6 +14,7 @@ import {
   type UserRole,
 } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
+import { Honeypot, honeypotValue } from '../forms/Honeypot';
 import { useSession } from '../session/SessionProvider';
 import {
   ArrowLeft,
@@ -105,7 +106,7 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
           reraNumber: s('reraNumber') || undefined,
           citySlug: s('citySlug') || undefined,
           acceptTerms: true,
-          website: s('website'),
+          website: honeypotValue(fd),
         },
       });
       if (data.verification.sent) {
@@ -346,10 +347,7 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
             )}
             {cities.length === 1 && <input type="hidden" name="citySlug" value={cities[0]!.slug} />}
 
-            <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
-              <label htmlFor="website">Website</label>
-              <input id="website" name="website" tabIndex={-1} autoComplete="off" />
-            </div>
+            <Honeypot />
 
             <div>
               <label className="flex items-start gap-2.5 text-sm text-ink-soft">
