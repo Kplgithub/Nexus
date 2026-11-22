@@ -21,7 +21,15 @@ set -euo pipefail
 
 : "${DEPLOY_PATH:?DEPLOY_PATH is required}"
 DEPLOY_PATH="$(cd "$DEPLOY_PATH" && pwd -P)"
-RELEASES_DIR="${RELEASES_DIR:-$(dirname "$DEPLOY_PATH")/nexus-web-releases}"
+# Next to DEPLOY_PATH when the deploy user may write there, else in its home.
+if [ -z "${RELEASES_DIR:-}" ]; then
+  if [ -w "$(dirname "$DEPLOY_PATH")" ]; then
+    RELEASES_DIR="$(dirname "$DEPLOY_PATH")/nexus-web-releases"
+  else
+    RELEASES_DIR="$HOME/nexus-web-releases"
+  fi
+fi
+echo "Releases folder: $RELEASES_DIR"
 APP_NAME="${APP_NAME:-nexus-web}"
 PORT="${PORT:-3000}"
 CHECK_PORT="${CHECK_PORT:-3100}"
