@@ -21,7 +21,9 @@ describe('geo lookup', () => {
 
   it('maps Indian IPs to the site city, including suburbs', () => {
     expect(cityFor('1.23.117.10')).toBe('jaipur');
-    expect(cityFor('1.39.239.10')).toBe('udaipur');
+    expect(cityFor('43.228.143.10')).toBe('udaipur');
+    // Vi (mobile) range: left out of the table, so it no longer counts as Udaipur.
+    expect(placeIndexForIp('1.39.239.10')).toBeNull();
     expect(placeAt(placeIndexForIp('182.76.32.10')!)?.name).toMatch(/Sanganer/);
     expect(cityFor('182.76.32.10')).toBe('jaipur');
   });
@@ -31,6 +33,13 @@ describe('geo lookup', () => {
     expect(placeAt(i!)?.name).toBe('Mumbai');
     expect(siteCityForPlace(i!, cities)).toBeNull();
     expect(siteCityForPlace(i!, [...cities, { slug: 'mumbai', name: 'Mumbai' }])).toBe('mumbai');
+  });
+
+  it("treats mobile-network IPs as unknown (national pools, not the visitor's city)", () => {
+    // Jio and Vi phones anywhere in India were placed in Navi Mumbai / Mumbai.
+    for (const ip of ['49.36.1.1', '157.38.1.1', '152.58.1.1', '27.62.1.1']) {
+      expect(placeIndexForIp(ip)).toBeNull();
+    }
   });
 
   it('returns nothing outside India or for private addresses', () => {
