@@ -96,7 +96,7 @@ export function Footer({ settings, cities }: { settings: SiteSettings; cities: C
             {settings.businessName} helps you buy, sell and rent homes, plots and commercial spaces
             in {cityName}. Every listing is reviewed by our team before it goes live.{' '}
             <Link href="/about" className="font-semibold text-brand hover:underline">
-              Read more
+              More about {settings.businessName}
             </Link>
           </p>
 
