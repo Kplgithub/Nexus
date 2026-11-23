@@ -223,7 +223,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   })).filter((g) => g.items.length);
 
   // The listing editor has its own fixed save bar at the bottom.
-  const editing = /^\/admin\/properties\/[^/]+$/.test(path);
+  const editing =
+    path.startsWith(ADMIN_PATH) && /^\/properties\/[^/]+$/.test(path.slice(ADMIN_PATH.length));
 
   const sidebar = (
     <div className="adm-side flex h-full flex-col text-[#c9d3ee]">
