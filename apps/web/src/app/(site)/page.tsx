@@ -11,11 +11,12 @@ export async function generateMetadata(): Promise<Metadata> {
   // Keyword first, brand once: `absolute` skips the "%s | NEXUS Estate" template,
   // which used to give "NEXUS Estate | ... | NEXUS Estate".
   const title = where
-    ? `Property${where}: Flats & Houses to Buy and Rent | NEXUS Estate`
+    ? `Property${where}: Buy & Rent Flats, Houses | NEXUS Estate`
     : 'NEXUS Estate | Buy, Rent & Sell Property';
   const meta = pageMetadata({
     title,
-    description: `Flats, houses, villas, plots, offices and shops for sale and rent${where}. Every listing is reviewed before it goes live. Owners, agents and builders can list property here.`,
+    // Kept under ~155 characters so Google shows it whole.
+    description: `Buy or rent flats, houses, plots, offices and shops${where}. Every listing is checked by our team before it goes live. Contact owners directly.`,
     path: '/',
   });
   return { ...meta, title: { absolute: title } };

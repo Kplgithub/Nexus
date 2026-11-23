@@ -1,4 +1,4 @@
-import { getLocations, getSettings } from '@/lib/api';
+import { getLocations, getSettings, getSitemapBlog } from '@/lib/api';
 import { sectionsOn } from '@/lib/sections';
 import { SITE_URL } from '@/lib/site';
 
@@ -10,7 +10,11 @@ export const revalidate = 3600;
  * reachable from the sitemap.
  */
 export async function GET() {
-  const [cities, settings] = await Promise.all([getLocations().catch(() => []), getSettings()]);
+  const [cities, settings, posts] = await Promise.all([
+    getLocations().catch(() => []),
+    getSettings(),
+    getSitemapBlog(),
+  ]);
   const on = sectionsOn(settings);
   const line = (show: boolean, text: string) => (show ? [text] : []);
   const cityLines = (
@@ -42,6 +46,13 @@ export async function GET() {
     )
     .join('\n');
 
+  // Latest guides (newest first), so answer engines can find them without the sitemap.
+  const blogLines = [...posts]
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 20)
+    .map((p) => `- ${SITE_URL}/blog/${p.slug}`)
+    .join('\n');
+
   const body = `# NEXUS Estate
 
 > NEXUS Estate (nexusestate.in) is a property portal for Jaipur, Rajasthan, India. People buy, rent and sell flats, independent houses, villas, plots, offices and shops. Listings come from owners, agents and builders and are reviewed by the NEXUS team before they go live. Owners, agents and builders post listings with a Premium plan; agents and builders get 5 free listings.
@@ -51,9 +62,10 @@ ${cityLines}
 
 ## Guides
 - [Blog](${SITE_URL}/blog): guides on buying, renting, legal checks (JDA, RERA, stamp duty) and Jaipur localities
+${blogLines}
 
 ## For owners, agents and builders
-- [Post property free](${SITE_URL}/post-property)
+- [Post your property](${SITE_URL}/post-property): sell or rent out a flat, house, plot or shop
 - [Agents](${SITE_URL}/agents)
 - [Builders](${SITE_URL}/builders)
 

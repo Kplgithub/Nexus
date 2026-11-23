@@ -11,6 +11,11 @@ import {
 } from '@nexus/shared';
 import { SITE_NOINDEX, SITE_URL, absoluteUrl } from './site';
 
+/** The root layout's title template adds this to every page title. */
+const BRAND_SUFFIX = ' | NEXUS Estate';
+/** Google shows roughly 60 characters of a title; past that it cuts or rewrites it. */
+const TITLE_MAX = 60;
+
 type MetaInput = {
   title: string;
   description: string;
@@ -30,13 +35,17 @@ export function pageMetadata({
   type = 'website',
 }: MetaInput): Metadata {
   const url = absoluteUrl(path);
+  // Keep the keyword title whole: when "<title> | NEXUS Estate" would pass ~60 characters,
+  // drop the brand suffix instead of letting Google cut the keywords.
+  const fullTitle: Metadata['title'] =
+    title.length + BRAND_SUFFIX.length > TITLE_MAX ? { absolute: title } : title;
   const ogImage = image
     ? image.startsWith('http')
       ? image
       : absoluteUrl(image)
     : absoluteUrl('/brand/og-default.png');
   return {
-    title,
+    title: fullTitle,
     description,
     alternates: { canonical: url },
     robots: SITE_NOINDEX || !index ? { index: false, follow: true } : { index: true, follow: true },
@@ -54,7 +63,15 @@ export function pageMetadata({
 }
 
 export function propertyHeadline(p: Pick<PublicProperty, 'title' | 'locality' | 'city'>) {
-  return `${p.title} in ${p.locality.name}, ${p.city.name}`;
+  // Owners often write the area or city into the title already; don't repeat it
+  // ("... Road, Jaipur in Ajmer Road, Jaipur").
+  const t = p.title.trim();
+  const has = (name: string) => t.toLowerCase().includes(name.toLowerCase());
+  const loc = p.locality.name;
+  const city = p.city.name;
+  if (has(loc)) return has(city) ? t : `${t}, ${city}`;
+  if (has(city)) return `${t}, ${loc}`;
+  return `${t} in ${loc}, ${city}`;
 }
 
 export function propertyDescription(p: PublicProperty | PropertyCard): string {
