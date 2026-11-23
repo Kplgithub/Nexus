@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import {
+  ADMIN_PATH,
   PROJECT_STATUSES,
   PROJECT_STATUS_LABELS,
   formatIndianPhone,
@@ -62,7 +63,7 @@ export default function AdminProjectsPage() {
                   </span>
                 </div>
                 <h2 className="mt-1 font-sans text-lg font-semibold">
-                  <Link href={`/admin/projects/${p.id}`} className="hover:text-brand">
+                  <Link href={`${ADMIN_PATH}/projects/${p.id}`} className="hover:text-brand">
                     {p.name}
                   </Link>
                 </h2>
@@ -74,7 +75,7 @@ export default function AdminProjectsPage() {
                 {p.builder && (
                   <p className="mt-1 text-sm">
                     <Link
-                      href={`/admin/users/${p.builder.id}`}
+                      href={`${ADMIN_PATH}/users/${p.builder.id}`}
                       className="font-medium hover:text-brand"
                     >
                       {p.builder.name}
@@ -85,7 +86,7 @@ export default function AdminProjectsPage() {
                   </p>
                 )}
               </div>
-              <Link href={`/admin/projects/${p.id}`} className="btn btn-outline btn-sm">
+              <Link href={`${ADMIN_PATH}/projects/${p.id}`} className="btn btn-outline btn-sm">
                 Open
               </Link>
             </div>

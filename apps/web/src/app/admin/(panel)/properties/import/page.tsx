@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { formatPrice } from '@nexus/shared';
+import { ADMIN_PATH, formatPrice } from '@nexus/shared';
 import { PageTitle, useAdmin } from '@/components/admin/AdminShell';
 import { errMsg } from '@/components/admin/useApi';
 import { apiFetch } from '@/lib/client-api';
@@ -61,7 +61,7 @@ export default function ImportPropertiesPage() {
   return (
     <div className="max-w-4xl">
       <PageTitle title="Import listings from a sheet">
-        <Link href="/admin/properties" className="btn btn-outline">
+        <Link href={`${ADMIN_PATH}/properties`} className="btn btn-outline">
           Back to properties
         </Link>
       </PageTitle>
@@ -147,7 +147,7 @@ export default function ImportPropertiesPage() {
                         <td className="py-2">
                           {r.id ? (
                             <Link
-                              href={`/admin/properties/${r.id}`}
+                              href={`${ADMIN_PATH}/properties/${r.id}`}
                               className="text-brand underline"
                             >
                               Add photos

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import {
+  ADMIN_PATH,
   POSTER_LABELS,
   PROPERTY_STATUSES,
   PROPERTY_STATUS_LABELS,
@@ -84,10 +85,10 @@ function PropertiesList() {
   return (
     <>
       <PageTitle title="Properties">
-        <Link href="/admin/properties/import" className="btn btn-outline">
+        <Link href={`${ADMIN_PATH}/properties/import`} className="btn btn-outline">
           Import from sheet
         </Link>
-        <Link href="/admin/properties/new" className="btn btn-primary">
+        <Link href={`${ADMIN_PATH}/properties/new`} className="btn btn-primary">
           Add property
         </Link>
       </PageTitle>
@@ -219,7 +220,7 @@ function PropertiesList() {
               <tr key={p.id} className="align-top">
                 <td className="px-4 py-3">
                   <Link
-                    href={`/admin/properties/${p.id}`}
+                    href={`${ADMIN_PATH}/properties/${p.id}`}
                     className="font-semibold hover:text-brand"
                   >
                     {p.title}
@@ -253,7 +254,7 @@ function PropertiesList() {
                   {p.enquiryCount ? (
                     <Link
                       className="text-brand hover:underline"
-                      href={`/admin/enquiries?propertyId=${p.id}`}
+                      href={`${ADMIN_PATH}/enquiries?propertyId=${p.id}`}
                     >
                       {p.enquiryCount}
                     </Link>
@@ -266,11 +267,17 @@ function PropertiesList() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap justify-end gap-1.5">
-                    <Link href={`/admin/properties/${p.id}`} className="btn btn-outline btn-sm">
+                    <Link
+                      href={`${ADMIN_PATH}/properties/${p.id}`}
+                      className="btn btn-outline btn-sm"
+                    >
                       Edit
                     </Link>
                     {p.status === 'pending' && (
-                      <Link href={`/admin/review#${p.id}`} className="btn btn-primary btn-sm">
+                      <Link
+                        href={`${ADMIN_PATH}/review#${p.id}`}
+                        className="btn btn-primary btn-sm"
+                      >
                         Review
                       </Link>
                     )}

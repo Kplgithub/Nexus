@@ -2,7 +2,13 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { FEATURE_DAYS, formatPrice, type AdminProperty, type FeaturedListing } from '@nexus/shared';
+import {
+  ADMIN_PATH,
+  FEATURE_DAYS,
+  formatPrice,
+  type AdminProperty,
+  type FeaturedListing,
+} from '@nexus/shared';
 import { PageTitle, Skeleton, useAdmin } from '@/components/admin/AdminShell';
 import { A } from '@/components/admin/AdminIcons';
 import { errMsg, useApi } from '@/components/admin/useApi';
@@ -148,7 +154,7 @@ export default function FeaturedPage() {
                   <tr key={f.id}>
                     <td>
                       <Link
-                        href={`/admin/properties/${f.id}`}
+                        href={`${ADMIN_PATH}/properties/${f.id}`}
                         className="font-semibold hover:text-brand"
                       >
                         {f.title}

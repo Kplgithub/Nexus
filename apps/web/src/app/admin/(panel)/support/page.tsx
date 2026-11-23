@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import {
+  ADMIN_PATH,
   SUPPORT_STATUSES,
   SUPPORT_STATUS_LABELS,
   SUPPORT_TOPICS,
@@ -164,7 +165,10 @@ function TicketPanel({
               {data.userInfo?.premiumUntil && new Date(data.userInfo.premiumUntil) > new Date() && (
                 <span>· Premium plan</span>
               )}
-              <Link href={`/admin/users/${data.user.id}`} className="font-semibold text-brand">
+              <Link
+                href={`${ADMIN_PATH}/users/${data.user.id}`}
+                className="font-semibold text-brand"
+              >
                 Profile
               </Link>
             </div>

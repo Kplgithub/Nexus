@@ -6,6 +6,7 @@
 import { mkdirSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { ADMIN_PATH } from '@nexus/shared';
 
 const png = Buffer.from(
   readFileSync(new URL('./fixtures/room.png.b64', import.meta.url), 'utf8').trim(),
@@ -192,16 +193,16 @@ test('admin screens and workflow', async ({ page }, info) => {
   const p = info.project.name;
   test.setTimeout(240_000);
 
-  await page.goto('/admin/login');
+  await page.goto(`${ADMIN_PATH}/login`);
   await shot(page, p, 'admin-login', false);
   await page.getByLabel('Email', { exact: true }).fill(process.env.E2E_ADMIN_EMAIL!);
   await page.getByLabel('Password', { exact: true }).fill(process.env.E2E_ADMIN_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page).toHaveURL(new RegExp(`${ADMIN_PATH}$`));
   await expect(page.getByText('Total properties')).toBeVisible();
   await shot(page, p, 'admin-dashboard');
 
-  await page.goto('/admin/review');
+  await page.goto(`${ADMIN_PATH}/review`);
   await shot(page, p, 'admin-review-queue');
   const reject = page.getByRole('button', { name: 'Reject', exact: true }).first();
   if (await reject.count()) {
@@ -213,7 +214,7 @@ test('admin screens and workflow', async ({ page }, info) => {
     await shot(page, p, 'admin-review-reject-note', false);
   }
 
-  await page.goto('/admin/properties');
+  await page.goto(`${ADMIN_PATH}/properties`);
   await expect(page.getByRole('table')).toBeVisible();
   await shot(page, p, 'admin-properties');
 
@@ -221,11 +222,11 @@ test('admin screens and workflow', async ({ page }, info) => {
   await expect(page.getByRole('heading', { name: 'Edit property' })).toBeVisible();
   await shot(page, p, 'admin-property-editor');
 
-  await page.goto('/admin/properties/new');
+  await page.goto(`${ADMIN_PATH}/properties/new`);
   await page.getByRole('button', { name: 'Save & publish' }).click();
   await shot(page, p, 'admin-new-property-validation', false);
 
-  await page.goto('/admin/enquiries');
+  await page.goto(`${ADMIN_PATH}/enquiries`);
   await expect(page.getByRole('table')).toBeVisible();
   await shot(page, p, 'admin-enquiries');
   const lead = page.getByRole('button', { name: /^NX-E-/ }).first();
@@ -245,15 +246,15 @@ test('admin screens and workflow', async ({ page }, info) => {
     await page.getByRole('button', { name: 'Close' }).click();
   }
 
-  await page.goto('/admin/users');
+  await page.goto(`${ADMIN_PATH}/users`);
   await expect(page.getByRole('table')).toBeVisible();
   await shot(page, p, 'admin-users');
   await page.getByRole('table').getByRole('link').first().click();
   await shot(page, p, 'admin-user-detail');
-  await page.goto('/admin/locations');
+  await page.goto(`${ADMIN_PATH}/locations`);
   await shot(page, p, 'admin-locations');
-  await page.goto('/admin/faqs');
+  await page.goto(`${ADMIN_PATH}/faqs`);
   await shot(page, p, 'admin-faqs');
-  await page.goto('/admin/settings');
+  await page.goto(`${ADMIN_PATH}/settings`);
   await shot(page, p, 'admin-settings');
 });

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import {
+  ADMIN_PATH,
   REPORT_REASON_LABELS,
   REPORT_STATUSES,
   type ListingReport,
@@ -80,7 +81,7 @@ export default function ReportsPage() {
                 {r.property ? (
                   <p className="mt-1 text-sm">
                     <Link
-                      href={`/admin/properties/${r.property.id}`}
+                      href={`${ADMIN_PATH}/properties/${r.property.id}`}
                       className="font-medium hover:text-brand"
                     >
                       {r.property.title}

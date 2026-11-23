@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { ADMIN_PATH } from '@nexus/shared';
 
 const email = process.env.E2E_ADMIN_EMAIL;
 const password = process.env.E2E_ADMIN_PASSWORD;
@@ -9,11 +10,11 @@ const png = Buffer.from(
 );
 
 async function adminLogin(page: Page) {
-  await page.goto('/admin/login');
+  await page.goto(`${ADMIN_PATH}/login`);
   await page.getByLabel('Email', { exact: true }).fill(email!);
   await page.getByLabel('Password', { exact: true }).fill(password!);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page).toHaveURL(new RegExp(`${ADMIN_PATH}$`));
 }
 
 async function uploadPhoto(page: Page) {
@@ -64,7 +65,7 @@ test.describe('journeys', () => {
       const title = `E2E ${c.kind} ${c.deal} listing ${stamp}`;
       await adminLogin(page);
 
-      await page.goto('/admin/properties/new');
+      await page.goto(`${ADMIN_PATH}/properties/new`);
       if (c.deal === 'rent') await page.getByText('Rent out', { exact: true }).click();
       if (c.kind === 'commercial')
         await page.getByText('Commercial', { exact: true }).first().click();
@@ -87,7 +88,7 @@ test.describe('journeys', () => {
         );
       await page.getByRole('button', { name: 'Save & publish' }).click();
       await expect(page.getByText('Saved and published')).toBeVisible();
-      await expect(page).toHaveURL(/\/admin\/properties\/[a-f0-9]{24}/);
+      await expect(page).toHaveURL(new RegExp(`${ADMIN_PATH}/properties/[a-f0-9]{24}`));
 
       await expect(async () => {
         await page.goto(c.url);
@@ -106,7 +107,7 @@ test.describe('journeys', () => {
       await expect(page.getByText('Enquiry received')).toBeVisible();
       const ref = await page.getByText(/NX-E-\d{4}-\d{5}/).textContent();
 
-      await page.goto('/admin/enquiries');
+      await page.goto(`${ADMIN_PATH}/enquiries`);
       await page.getByPlaceholder(/Name, phone/).fill(ref!.trim());
       await page.getByRole('button', { name: 'Search' }).click();
       await page.getByRole('button', { name: ref!.trim() }).click();
@@ -179,7 +180,7 @@ test.describe('journeys', () => {
     expect(paid.ok()).toBeTruthy();
 
     // Staff approves from the review queue
-    await page.goto('/admin/review');
+    await page.goto(`${ADMIN_PATH}/review`);
     const item = page.locator('li', { hasText: title });
     await item.getByRole('button', { name: 'Approve & publish' }).click();
     await expect(page.getByText('Approved and published')).toBeVisible();

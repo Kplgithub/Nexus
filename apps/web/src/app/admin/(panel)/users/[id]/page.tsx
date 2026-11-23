@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import {
+  ADMIN_PATH,
   USER_ROLE_LABELS,
   VERIFICATION_STATUS_LABELS,
   formatIndianPhone,
@@ -55,10 +56,10 @@ export default function AdminUserPage() {
   return (
     <>
       <PageTitle title={u.companyName || u.name}>
-        <Link href="/admin/users" className="btn btn-ghost">
+        <Link href={`${ADMIN_PATH}/users`} className="btn btn-ghost">
           Back
         </Link>
-        <Link href={`/admin/properties?userId=${u.id}`} className="btn btn-outline">
+        <Link href={`${ADMIN_PATH}/properties?userId=${u.id}`} className="btn btn-outline">
           Listings ({u.listingCount})
         </Link>
       </PageTitle>

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { ADMIN_PATH } from '@nexus/shared';
 
 test.describe('public site', () => {
   test('home page renders brand, search and metadata', async ({ page }) => {
@@ -39,7 +40,10 @@ test.describe('public site', () => {
 
   test('robots and sitemap', async ({ request }) => {
     const robots = await (await request.get('/robots.txt')).text();
-    expect(robots).toContain('Disallow: /admin');
+    expect(robots).toContain('Disallow: /api/');
+    // The admin address is never advertised.
+    expect(robots).not.toContain('/admin');
+    expect(robots).not.toContain(ADMIN_PATH);
     expect(robots).toContain('Sitemap:');
     const sitemap = await request.get('/sitemap.xml');
     expect(sitemap.status()).toBe(200);
@@ -48,9 +52,15 @@ test.describe('public site', () => {
     expect(xml).toContain('/rent');
   });
 
-  test('admin redirects to login and is noindex', async ({ page }) => {
-    await page.goto('/admin');
-    await expect(page).toHaveURL(/\/admin\/login/);
+  test('admin answers only at its secret address, redirects to login and is noindex', async ({
+    page,
+  }) => {
+    for (const guess of ['/admin', '/admin/login', '/admin/enquiries']) {
+      const res = await page.goto(guess);
+      expect(res?.status(), guess).toBe(404);
+    }
+    await page.goto(ADMIN_PATH);
+    await expect(page).toHaveURL(new RegExp(`${ADMIN_PATH}/login`));
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   });
 

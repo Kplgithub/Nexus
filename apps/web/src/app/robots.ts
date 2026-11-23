@@ -8,10 +8,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        // Admin, accounts and API are private; images under /uploads stay crawlable.
+        // Accounts and API are private (the admin address is left out on purpose, so it isn't advertised); images under /uploads stay crawlable.
         disallow: [
-          '/admin',
-          '/admin/',
           '/api/',
           '/dashboard',
           '/invoice/',

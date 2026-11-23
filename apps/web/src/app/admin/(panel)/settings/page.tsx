@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
+  ADMIN_PATH,
   DEFAULT_FARMS,
   DEFAULT_HOME_LOAN,
   DEFAULT_SITE_SECTIONS,
@@ -670,7 +671,7 @@ function PasswordForm() {
   async function logoutAll() {
     if (!window.confirm('Sign out of every device, including this one?')) return;
     await apiFetch('/admin/auth/logout-all', { method: 'POST' }).catch(() => undefined);
-    router.replace('/admin/login');
+    router.replace(`${ADMIN_PATH}/login`);
   }
 
   return (

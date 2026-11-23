@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
+  ADMIN_PATH,
   PROJECT_STATUSES,
   PROJECT_STATUS_LABELS,
   formatIndianPhone,
@@ -68,7 +69,7 @@ function Editor({ project: p, reload }: { project: AdminProject; reload: () => v
     try {
       await apiFetch(`/admin/projects/${p.id}`, { method: 'DELETE' });
       toast('Project deleted');
-      router.push('/admin/projects');
+      router.push(`${ADMIN_PATH}/projects`);
     } catch (err) {
       toast(err instanceof ApiClientError ? err.message : 'Could not delete', 'error');
     }
@@ -88,7 +89,7 @@ function Editor({ project: p, reload }: { project: AdminProject; reload: () => v
         <p className="-mt-3 mb-5 text-sm text-ink-muted">
           Builder:{' '}
           <Link
-            href={`/admin/users/${p.builder.id}`}
+            href={`${ADMIN_PATH}/users/${p.builder.id}`}
             className="font-medium text-ink hover:text-brand"
           >
             {p.builder.name}

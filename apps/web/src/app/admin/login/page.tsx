@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
+import { ADMIN_PATH } from '@nexus/shared';
 
 function LoginForm() {
   const router = useRouter();
@@ -23,7 +24,9 @@ function LoginForm() {
       });
       const next = params.get('next');
       // Only allow same-site admin paths as redirect targets.
-      router.replace(next && next.startsWith('/admin') && !next.startsWith('//') ? next : '/admin');
+      router.replace(
+        next && next.startsWith(`${ADMIN_PATH}/`) && !next.startsWith('//') ? next : ADMIN_PATH,
+      );
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Sign-in failed. Please try again.');

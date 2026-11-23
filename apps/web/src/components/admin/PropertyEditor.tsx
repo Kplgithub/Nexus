@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import {
+  ADMIN_PATH,
   LISTING_VISIBILITY,
   PROPERTY_STATUSES,
   PROPERTY_STATUS_LABELS,
@@ -62,7 +63,7 @@ export function PropertyEditor({ property }: { property?: AdminProperty }) {
         : await apiFetch<AdminProperty>('/admin/properties', { method: 'POST', body });
       toast(statusOverride === 'published' ? 'Saved and published' : 'Saved');
       setDirty(false);
-      if (!property) router.replace(`/admin/properties/${data.id}`);
+      if (!property) router.replace(`${ADMIN_PATH}/properties/${data.id}`);
       else {
         setFState(formFromListing(data));
         router.refresh();
@@ -94,7 +95,7 @@ export function PropertyEditor({ property }: { property?: AdminProperty }) {
           )}
         </div>
         <div className="flex gap-2">
-          <Link href="/admin/properties" className="btn btn-ghost">
+          <Link href={`${ADMIN_PATH}/properties`} className="btn btn-ghost">
             Back
           </Link>
           {property && ['published', 'rented', 'sold'].includes(property.status) && (
@@ -124,7 +125,10 @@ export function PropertyEditor({ property }: { property?: AdminProperty }) {
               {formatIndianPhone(property.postedBy.phone)} · {property.postedBy.email}
             </p>
           </div>
-          <Link href={`/admin/users/${property.postedBy.id}`} className="btn btn-outline btn-sm">
+          <Link
+            href={`${ADMIN_PATH}/users/${property.postedBy.id}`}
+            className="btn btn-outline btn-sm"
+          >
             View user
           </Link>
         </section>
@@ -332,7 +336,7 @@ export function ModerationBar({
 }: {
   property: Pick<AdminProperty, 'id' | 'title'>;
   onDone?: () => void;
-  /** Same review flow for projects: '/admin/projects'. */
+  /** Same review flow for projects: `${ADMIN_PATH}/projects`. */
   basePath?: string;
 }) {
   const { toast } = useAdmin();

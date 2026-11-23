@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import {
+  ADMIN_PATH,
   ADMIN_ROLE_LABELS,
   LOAN_RATES_STALE_DAYS,
   type SiteSettings,
@@ -66,7 +67,7 @@ export default function DashboardPage() {
           Home loan rates on the website were last checked{' '}
           {loanChecked ? `on ${loanChecked.toLocaleDateString('en-IN')}` : 'never'}. Please check
           the banks’ websites and{' '}
-          <Link href="/admin/settings#home-loan" className="font-semibold underline">
+          <Link href={`${ADMIN_PATH}/settings#home-loan`} className="font-semibold underline">
             update them in Settings
           </Link>
           .
@@ -106,7 +107,7 @@ export default function DashboardPage() {
             ))}
           </div>
           <Link
-            href="/admin/properties/new"
+            href={`${ADMIN_PATH}/properties/new`}
             className="btn btn-primary hidden gap-1.5 sm:inline-flex"
           >
             <A.plus width={16} height={16} />
@@ -158,21 +159,21 @@ export default function DashboardPage() {
           icon="review"
           n={c?.today.toReview}
           label="listings to review"
-          href="/admin/review"
+          href={`${ADMIN_PATH}/review`}
           cta="Review"
         />
         <TodoCell
           icon="phone"
           n={c?.today.newLeads}
           label="new leads to call"
-          href="/admin/enquiries?status=new"
+          href={`${ADMIN_PATH}/enquiries?status=new`}
           cta="Open"
         />
         <TodoCell
           icon="clock"
           n={c?.today.followUpsOverdue}
           label="follow-ups due"
-          href="/admin/enquiries?followUpDue=true"
+          href={`${ADMIN_PATH}/enquiries?followUpDue=true`}
           cta="See"
         />
       </section>
@@ -181,19 +182,19 @@ export default function DashboardPage() {
         (c.today.visitsToday > 0 || c.today.openReports > 0 || c.today.pendingVerification > 0) && (
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             {c.today.visitsToday > 0 && (
-              <Link href="/admin/visits" className="chip">
+              <Link href={`${ADMIN_PATH}/visits`} className="chip">
                 <A.calendar width={15} height={15} /> {c.today.visitsToday} site visit
                 {c.today.visitsToday === 1 ? '' : 's'} today
               </Link>
             )}
             {c.today.openReports > 0 && (
-              <Link href="/admin/reports" className="chip">
+              <Link href={`${ADMIN_PATH}/reports`} className="chip">
                 <A.flag width={15} height={15} /> {c.today.openReports} open report
                 {c.today.openReports === 1 ? '' : 's'}
               </Link>
             )}
             {c.today.pendingVerification > 0 && (
-              <Link href="/admin/verification" className="chip">
+              <Link href={`${ADMIN_PATH}/verification`} className="chip">
                 <A.badge width={15} height={15} /> {c.today.pendingVerification} to verify
               </Link>
             )}
@@ -210,28 +211,28 @@ export default function DashboardPage() {
           kpi={c?.kpis.liveListings}
           change="abs"
           note={`since ${period === 'today' ? 'yesterday' : 'start'}`}
-          href="/admin/properties?status=published"
+          href={`${ADMIN_PATH}/properties?status=published`}
         />
         <KpiCard
           label="New leads"
           kpi={c?.kpis.newLeads}
           change="pct"
           note={vs}
-          href="/admin/enquiries"
+          href={`${ADMIN_PATH}/enquiries`}
         />
         <KpiCard
           label="Leads closed"
           kpi={c?.kpis.closedLeads}
           change="abs"
           note={vs}
-          href="/admin/enquiries?status=closed"
+          href={`${ADMIN_PATH}/enquiries?status=closed`}
         />
         <KpiCard
           label="New sign-ups"
           kpi={c?.kpis.signups}
           change="pct"
           note={vs}
-          href="/admin/users"
+          href={`${ADMIN_PATH}/users`}
           color={SERIES.rent}
         />
       </section>
@@ -272,7 +273,7 @@ export default function DashboardPage() {
           )}
           {c && c.uncontacted24h > 0 && (
             <Link
-              href="/admin/enquiries?status=new"
+              href={`${ADMIN_PATH}/enquiries?status=new`}
               className="mt-4 block rounded-lg bg-accent-50 px-3 py-2.5 text-sm font-semibold text-accent-700 hover:underline"
             >
               {nf(c.uncontacted24h)} lead{c.uncontacted24h === 1 ? '' : 's'} still not called after
@@ -291,7 +292,7 @@ export default function DashboardPage() {
                 Where enquiries come from · {period}
               </p>
             </div>
-            <Link href="/admin/locations" className="btn btn-outline btn-sm">
+            <Link href={`${ADMIN_PATH}/locations`} className="btn btn-outline btn-sm">
               All
             </Link>
           </header>
@@ -334,7 +335,7 @@ export default function DashboardPage() {
               <h2 className="text-xl">Latest enquiries</h2>
               <p className="text-xs font-semibold text-ink-muted">Newest first</p>
             </div>
-            <Link href="/admin/enquiries" className="btn btn-outline btn-sm">
+            <Link href={`${ADMIN_PATH}/enquiries`} className="btn btn-outline btn-sm">
               Open inbox
             </Link>
           </header>
@@ -355,7 +356,7 @@ export default function DashboardPage() {
                   <tr key={e.id}>
                     <td>
                       <Link
-                        href={`/admin/enquiries?open=${e.id}`}
+                        href={`${ADMIN_PATH}/enquiries?open=${e.id}`}
                         className="font-semibold hover:text-brand"
                       >
                         {e.name}
@@ -408,7 +409,7 @@ export default function DashboardPage() {
               </p>
             </div>
             {isSuper && (
-              <Link href="/admin/activity" className="btn btn-outline btn-sm">
+              <Link href={`${ADMIN_PATH}/activity`} className="btn btn-outline btn-sm">
                 Full log
               </Link>
             )}

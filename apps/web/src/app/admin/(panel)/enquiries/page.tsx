@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import {
+  ADMIN_PATH,
   ENQUIRY_STATUSES,
   LOAN_EMPLOYMENT_LABELS,
   LOAN_PURPOSE_LABELS,
@@ -98,7 +99,7 @@ function EnquiriesInner() {
           Home loan rates on the website were last checked{' '}
           {checked ? `on ${new Date(checked).toLocaleDateString('en-IN')}` : 'never'}. Check them
           with the banks and update them in{' '}
-          <Link href="/admin/settings#home-loan" className="font-semibold underline">
+          <Link href={`${ADMIN_PATH}/settings#home-loan`} className="font-semibold underline">
             Settings
           </Link>
           .
@@ -187,7 +188,7 @@ function EnquiriesInner() {
       {propertyId && (
         <p className="mb-3 text-sm text-ink-muted">
           Showing enquiries for one property.{' '}
-          <Link href="/admin/enquiries" className="text-brand underline">
+          <Link href={`${ADMIN_PATH}/enquiries`} className="text-brand underline">
             Show all
           </Link>
         </p>

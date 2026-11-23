@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { EyeIcon } from '../icons';
+import { ADMIN_PATH } from '@nexus/shared';
 
 export type FieldErrors = Record<string, string[] | undefined>;
 
@@ -216,7 +217,11 @@ export function useCountdown(seconds: number) {
 
 /** Accept only same-site paths as post-login destinations. */
 export function safeNext(next: string | null | undefined, fallback = '/dashboard') {
-  return next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/admin')
+  return next &&
+    next.startsWith('/') &&
+    !next.startsWith('//') &&
+    !next.startsWith('/admin') &&
+    !next.startsWith(ADMIN_PATH)
     ? next
     : fallback;
 }

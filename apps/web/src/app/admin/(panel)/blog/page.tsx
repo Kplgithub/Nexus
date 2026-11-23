@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import {
+  ADMIN_PATH,
   BLOG_CATEGORIES,
   BLOG_CATEGORY_LABELS,
   BLOG_STATUSES,
@@ -58,14 +59,14 @@ export default function AdminBlogPage() {
   return (
     <>
       <PageTitle title="Blog">
-        <Link href="/admin/blog/analytics" className="btn btn-outline">
+        <Link href={`${ADMIN_PATH}/blog/analytics`} className="btn btn-outline">
           Reader analytics
         </Link>
         <Link href="/blog" target="_blank" className="btn btn-outline">
           View blog
         </Link>
         {can('editor') && (
-          <Link href="/admin/blog/new" className="btn btn-primary">
+          <Link href={`${ADMIN_PATH}/blog/new`} className="btn btn-primary">
             Write article
           </Link>
         )}
@@ -137,7 +138,10 @@ export default function AdminBlogPage() {
         <div className="card p-10 text-center text-ink-muted">
           No articles yet.{' '}
           {can('editor') && (
-            <Link href="/admin/blog/new" className="font-semibold text-brand hover:underline">
+            <Link
+              href={`${ADMIN_PATH}/blog/new`}
+              className="font-semibold text-brand hover:underline"
+            >
               Write the first one
             </Link>
           )}
@@ -174,7 +178,7 @@ export default function AdminBlogPage() {
                 <span className="text-sm text-ink-muted">{BLOG_CATEGORY_LABELS[p.category]}</span>
               </div>
               <h2 className="mt-1 truncate font-sans text-base font-semibold">
-                <Link href={`/admin/blog/${p.id}`} className="hover:text-brand">
+                <Link href={`${ADMIN_PATH}/blog/${p.id}`} className="hover:text-brand">
                   {p.title}
                 </Link>
               </h2>
@@ -185,7 +189,7 @@ export default function AdminBlogPage() {
               </p>
               {p.status === 'published' && p.stats && (
                 <Link
-                  href={`/admin/blog/${p.id}/analytics`}
+                  href={`${ADMIN_PATH}/blog/${p.id}/analytics`}
                   className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-soft hover:text-brand"
                   title="Open reader analytics"
                 >
@@ -211,11 +215,14 @@ export default function AdminBlogPage() {
                 </Link>
               )}
               {p.status === 'published' && (
-                <Link href={`/admin/blog/${p.id}/analytics`} className="btn btn-ghost btn-sm">
+                <Link
+                  href={`${ADMIN_PATH}/blog/${p.id}/analytics`}
+                  className="btn btn-ghost btn-sm"
+                >
                   Stats
                 </Link>
               )}
-              <Link href={`/admin/blog/${p.id}`} className="btn btn-outline btn-sm">
+              <Link href={`${ADMIN_PATH}/blog/${p.id}`} className="btn btn-outline btn-sm">
                 Edit
               </Link>
               {can('editor') &&
