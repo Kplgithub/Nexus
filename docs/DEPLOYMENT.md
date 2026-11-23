@@ -194,7 +194,7 @@ With PM2, export the same variables (e.g. via `pm2 ecosystem` file outside the r
 
 Old JS/CSS files from the previous release are copied into the new one, so a visitor who opened a page just before the switch does not get missing-file errors.
 
-**One-time switch-over (automatic):** the first run finds `nexus-web` still running in fork mode from `DEPLOY_PATH/apps/web`, deletes it and starts it from `nexus-web-releases/ecosystem.config.cjs` (written by the script). That single restart takes under a second; if it fails, the old in-place process is started again. Requirements: the deploy user can create `<parent of DEPLOY_PATH>/nexus-web-releases` (override with `RELEASES_DIR`), port 3100 is free on the server, about 1 GB of free disk, and any website environment variables live in `.env*` files (not only in the old PM2 process environment).
+**One-time switch-over (automatic):** the first run finds `nexus-web` still running in fork mode from `DEPLOY_PATH/apps/web`, deletes it and starts it from `nexus-web-releases/ecosystem.config.cjs` (written by the script). That single restart takes under a second; if it fails, the old in-place process is started again. Requirements: the releases folder is `<parent of DEPLOY_PATH>/nexus-web-releases` when the deploy user can write there, otherwise `~/nexus-web-releases` (override with `RELEASES_DIR`), port 3100 is free on the server, about 1 GB of free disk, and any website environment variables live in `.env*` files (not only in the old PM2 process environment).
 
 Manual rollback: `ln -sfn <older release folder> nexus-web-releases/current && pm2 reload nexus-web`.
 
