@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import {
+  ADMIN_PATH,
   USER_ROLES,
   USER_ROLE_LABELS,
   formatIndianPhone,
@@ -125,7 +126,10 @@ function UsersList() {
             {data?.map((u) => (
               <tr key={u.id}>
                 <td className="px-4 py-3">
-                  <Link href={`/admin/users/${u.id}`} className="font-semibold hover:text-brand">
+                  <Link
+                    href={`${ADMIN_PATH}/users/${u.id}`}
+                    className="font-semibold hover:text-brand"
+                  >
                     {u.companyName || u.name}
                   </Link>
                   <div className="text-xs text-ink-muted">
@@ -147,7 +151,7 @@ function UsersList() {
                   {u.listingCount ? (
                     <Link
                       className="text-brand hover:underline"
-                      href={`/admin/properties?userId=${u.id}`}
+                      href={`${ADMIN_PATH}/properties?userId=${u.id}`}
                     >
                       {u.listingCount}
                     </Link>

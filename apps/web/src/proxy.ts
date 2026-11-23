@@ -8,7 +8,7 @@ import {
   sectionsOn,
   type SectionsOn,
 } from '@/lib/sections';
-import type { SectionOffAction, SiteSettings } from '@nexus/shared';
+import { ADMIN_PATH, type SectionOffAction, type SiteSettings } from '@nexus/shared';
 
 /**
  * Where the visitor's IP placed them: an index into the geo table, or "x" for unknown.
@@ -163,6 +163,35 @@ async function cityHome(req: NextRequest) {
   return res;
 }
 
+function under(pathname: string, base: string) {
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+/**
+ * The admin panel answers only at its secret address (ADMIN_PATH), which is mapped onto the
+ * pages under app/admin. Asking for /admin directly gets the ordinary "page not found", so the
+ * sign-in page can't be found by guessing. No session cookie → the admin sign-in page.
+ */
+function adminGate(req: NextRequest, next: string): NextResponse | null {
+  const { pathname } = req.nextUrl;
+  if (under(pathname, '/admin')) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/admin-page-not-found';
+    url.search = '';
+    return NextResponse.rewrite(url);
+  }
+  if (!under(pathname, ADMIN_PATH)) return null;
+  const rest = pathname.slice(ADMIN_PATH.length);
+  const url = req.nextUrl.clone();
+  if (!under(rest, '/login') && !req.cookies.get('nexus_session')) {
+    url.pathname = `${ADMIN_PATH}/login`;
+    url.search = `?next=${next}`;
+    return NextResponse.redirect(url);
+  }
+  url.pathname = `/admin${rest}`;
+  return NextResponse.rewrite(url);
+}
+
 /**
  * Fast gates for signed-in areas: no session cookie → the matching login page.
  * This is only a UX shortcut; every API call is still authorised by the API.
@@ -171,17 +200,12 @@ async function cityHome(req: NextRequest) {
 export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   if (pathname === '/') return cityHome(req);
-  const gate = await sectionGate(req);
+  const isAdmin = under(pathname, ADMIN_PATH) || under(pathname, '/admin');
+  const gate = isAdmin ? null : await sectionGate(req);
   if (gate) return gate;
   const next = encodeURIComponent(pathname + search);
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
-    if (!req.cookies.get('nexus_session')) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/admin/login';
-      url.search = `?next=${next}`;
-      return NextResponse.redirect(url);
-    }
-  }
+  const admin = adminGate(req, next);
+  if (admin) return admin;
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
     if (!req.cookies.get('nexus_user')) {
       const url = req.nextUrl.clone();
@@ -196,6 +220,10 @@ export async function proxy(req: NextRequest) {
 export const config = {
   matcher: [
     '/',
+    // Keep in step with ADMIN_PATH (@nexus/shared); a matcher must be a plain string.
+    '/nx-tx298a2v',
+    '/nx-tx298a2v/:path*',
+    '/admin',
     '/admin/:path*',
     '/dashboard',
     '/dashboard/:path*',

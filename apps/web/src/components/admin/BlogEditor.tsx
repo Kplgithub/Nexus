@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ADMIN_PATH,
   BLOG_CATEGORIES,
   BLOG_CATEGORY_LABELS,
   IMAGE_MAX_BYTES,
@@ -244,7 +245,7 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
             ? 'Article moved to drafts'
             : 'Saved',
       );
-      if (!current) router.replace(`/admin/blog/${data.id}`);
+      if (!current) router.replace(`${ADMIN_PATH}/blog/${data.id}`);
     } catch (err) {
       const details = (err as { details?: Record<string, string[]> }).details;
       if (details) setErrors(details);
@@ -260,7 +261,7 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
       await apiFetch(`/admin/blog/${current.id}`, { method: 'DELETE' });
       setSaved(form);
       toast('Article deleted');
-      router.replace('/admin/blog');
+      router.replace(`${ADMIN_PATH}/blog`);
     } catch (err) {
       toast(errMsg(err), 'error');
     }
@@ -292,11 +293,11 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
           </Link>
         )}
         {current?.publishedAt && (
-          <Link href={`/admin/blog/${current.id}/analytics`} className="btn btn-outline">
+          <Link href={`${ADMIN_PATH}/blog/${current.id}/analytics`} className="btn btn-outline">
             Reader analytics
           </Link>
         )}
-        <Link href="/admin/blog" className="btn btn-ghost">
+        <Link href={`${ADMIN_PATH}/blog`} className="btn btn-ghost">
           All articles
         </Link>
       </PageTitle>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { SITE_VISIT_STATUS_LABELS, type SiteVisit } from '@nexus/shared';
+import { ADMIN_PATH, SITE_VISIT_STATUS_LABELS, type SiteVisit } from '@nexus/shared';
 import { PageTitle, Skeleton, StatusPill, useAdmin } from '@/components/admin/AdminShell';
 import { A } from '@/components/admin/AdminIcons';
 import { Modal } from '@/components/admin/Modal';
@@ -218,7 +218,7 @@ function VisitDetail({
             <A.phone width={14} height={14} /> {v.phone}
           </a>
           {v.enquiry && (
-            <Link className="chip" href={`/admin/enquiries?open=${v.enquiry.id}`}>
+            <Link className="chip" href={`${ADMIN_PATH}/enquiries?open=${v.enquiry.id}`}>
               Lead {v.enquiry.leadId}
             </Link>
           )}

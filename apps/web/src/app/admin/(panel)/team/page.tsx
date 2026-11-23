@@ -2,7 +2,13 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { ADMIN_ROLE_LABELS, isSuperAdmin, type TeamMember, type TeamRole } from '@nexus/shared';
+import {
+  ADMIN_PATH,
+  ADMIN_ROLE_LABELS,
+  isSuperAdmin,
+  type TeamMember,
+  type TeamRole,
+} from '@nexus/shared';
 import {
   Avatar,
   PageTitle,
@@ -158,14 +164,18 @@ function Team() {
                 <Stat
                   label="Open leads"
                   value={m.stats.openLeads}
-                  href={`/admin/enquiries?assignee=${m.id}`}
+                  href={`${ADMIN_PATH}/enquiries?assignee=${m.id}`}
                 />
                 <Stat label="Leads closed" value={m.stats.closedLeads} />
-                <Stat label="Upcoming visits" value={m.stats.upcomingVisits} href="/admin/visits" />
+                <Stat
+                  label="Upcoming visits"
+                  value={m.stats.upcomingVisits}
+                  href={`${ADMIN_PATH}/visits`}
+                />
                 <Stat
                   label="Actions (30 days)"
                   value={m.stats.actions30d}
-                  href={`/admin/activity?actor=${m.id}`}
+                  href={`${ADMIN_PATH}/activity?actor=${m.id}`}
                 />
               </dl>
             </article>

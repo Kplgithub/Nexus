@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect } from 'react';
-import type { PaymentInvoice } from '@nexus/shared';
+import { ADMIN_PATH, type PaymentInvoice } from '@nexus/shared';
 import { useApi } from '@/components/admin/useApi';
 
 const money = (n: number) =>
@@ -38,7 +38,7 @@ export function InvoiceView({ id, admin }: { id: string; admin: boolean }) {
     if (inv) document.title = `NEXUS ${title} ${inv.number.replaceAll('/', '-')}`;
   }, [inv, title]);
 
-  const back = admin ? '/admin/payments' : '/dashboard/payments';
+  const back = admin ? `${ADMIN_PATH}/payments` : '/dashboard/payments';
 
   return (
     <div className="min-h-dvh bg-[#eef1f6] px-3 py-5 sm:px-6 sm:py-8 print:bg-white print:p-0">
@@ -62,7 +62,7 @@ export function InvoiceView({ id, admin }: { id: string; admin: boolean }) {
           <p className="font-semibold">This invoice could not be opened.</p>
           <p className="mt-1 text-sm text-ink-muted">{error}</p>
           <Link
-            href={admin ? '/admin/login' : '/login?next=/dashboard/payments'}
+            href={admin ? `${ADMIN_PATH}/login` : '/login?next=/dashboard/payments'}
             className="btn btn-outline mt-4"
           >
             Log in again

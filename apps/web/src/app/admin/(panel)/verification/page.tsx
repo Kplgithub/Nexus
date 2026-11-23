@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
+  ADMIN_PATH,
   USER_ROLE_LABELS,
   VERIFICATION_STATUS_LABELS,
   formatIndianPhone,
@@ -156,7 +157,7 @@ export default function VerificationPage() {
                 size={40}
               />
               <div className="min-w-0 flex-1">
-                <Link href={`/admin/users/${u.id}`} className="font-bold hover:text-brand">
+                <Link href={`${ADMIN_PATH}/users/${u.id}`} className="font-bold hover:text-brand">
                   {u.companyName || u.name}
                 </Link>
                 <p className="text-xs text-ink-muted">

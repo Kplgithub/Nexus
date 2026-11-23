@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
+  ADMIN_PATH,
+  adminHref,
   ADMIN_ROLE_LABELS,
   isSuperAdmin,
   type AdminBadges,
@@ -43,63 +45,68 @@ type NavItem = {
 };
 
 const NAV: { group: string | null; items: NavItem[] }[] = [
-  { group: null, items: [{ href: '/admin', label: 'Dashboard', icon: 'home' }] },
+  { group: null, items: [{ href: ADMIN_PATH, label: 'Dashboard', icon: 'home' }] },
   {
     group: 'Listings',
     items: [
       {
-        href: '/admin/review',
+        href: `${ADMIN_PATH}/review`,
         label: 'Review queue',
         icon: 'review',
         badge: (b) => b.review + b.projects,
       },
-      { href: '/admin/properties', label: 'Properties', icon: 'building' },
-      { href: '/admin/projects', label: 'Projects', icon: 'crane' },
-      { href: '/admin/featured', label: 'Featured', icon: 'star' },
-      { href: '/admin/reports', label: 'Reports', icon: 'flag', badge: (b) => b.reports },
+      { href: `${ADMIN_PATH}/properties`, label: 'Properties', icon: 'building' },
+      { href: `${ADMIN_PATH}/projects`, label: 'Projects', icon: 'crane' },
+      { href: `${ADMIN_PATH}/featured`, label: 'Featured', icon: 'star' },
+      { href: `${ADMIN_PATH}/reports`, label: 'Reports', icon: 'flag', badge: (b) => b.reports },
     ],
   },
   {
     group: 'Leads & people',
     items: [
-      { href: '/admin/enquiries', label: 'Enquiries', icon: 'inbox', badge: (b) => b.leads },
-      { href: '/admin/visits', label: 'Site visits', icon: 'calendar' },
-      { href: '/admin/users', label: 'Website users', icon: 'users' },
+      { href: `${ADMIN_PATH}/enquiries`, label: 'Enquiries', icon: 'inbox', badge: (b) => b.leads },
+      { href: `${ADMIN_PATH}/visits`, label: 'Site visits', icon: 'calendar' },
+      { href: `${ADMIN_PATH}/users`, label: 'Website users', icon: 'users' },
       {
-        href: '/admin/verification',
+        href: `${ADMIN_PATH}/verification`,
         label: 'Verification',
         icon: 'badge',
         badge: (b) => b.verification,
       },
-      { href: '/admin/support', label: 'Support', icon: 'chat', badge: (b) => b.support },
+      { href: `${ADMIN_PATH}/support`, label: 'Support', icon: 'chat', badge: (b) => b.support },
     ],
   },
   {
     group: 'Content',
     items: [
-      { href: '/admin/blog', label: 'Blog', icon: 'pen' },
-      { href: '/admin/locations', label: 'Locations & SEO', icon: 'pin' },
-      { href: '/admin/faqs', label: 'FAQs', icon: 'help' },
-      { href: '/admin/search-insights', label: 'Search insights', icon: 'search' },
+      { href: `${ADMIN_PATH}/blog`, label: 'Blog', icon: 'pen' },
+      { href: `${ADMIN_PATH}/locations`, label: 'Locations & SEO', icon: 'pin' },
+      { href: `${ADMIN_PATH}/faqs`, label: 'FAQs', icon: 'help' },
+      { href: `${ADMIN_PATH}/search-insights`, label: 'Search insights', icon: 'search' },
     ],
   },
   {
     group: 'Super Admin',
     items: [
-      { href: '/admin/team', label: 'Team', icon: 'team', superOnly: true },
-      { href: '/admin/activity', label: 'Activity log', icon: 'clock', superOnly: true },
-      { href: '/admin/payments', label: 'Plans & payments', icon: 'rupee', superOnly: true },
-      { href: '/admin/alerts', label: 'Alerts', icon: 'bell', superOnly: true },
-      { href: '/admin/settings', label: 'Settings', icon: 'cog', superOnly: true },
+      { href: `${ADMIN_PATH}/team`, label: 'Team', icon: 'team', superOnly: true },
+      { href: `${ADMIN_PATH}/activity`, label: 'Activity log', icon: 'clock', superOnly: true },
+      { href: `${ADMIN_PATH}/payments`, label: 'Plans & payments', icon: 'rupee', superOnly: true },
+      { href: `${ADMIN_PATH}/alerts`, label: 'Alerts', icon: 'bell', superOnly: true },
+      { href: `${ADMIN_PATH}/settings`, label: 'Settings', icon: 'cog', superOnly: true },
     ],
   },
 ];
 
 const TABS: NavItem[] = [
-  { href: '/admin', label: 'Home', icon: 'home' },
-  { href: '/admin/review', label: 'Review', icon: 'review', badge: (b) => b.review + b.projects },
-  { href: '/admin/enquiries', label: 'Leads', icon: 'inbox', badge: (b) => b.leads },
-  { href: '/admin/support', label: 'Support', icon: 'chat', badge: (b) => b.support },
+  { href: ADMIN_PATH, label: 'Home', icon: 'home' },
+  {
+    href: `${ADMIN_PATH}/review`,
+    label: 'Review',
+    icon: 'review',
+    badge: (b) => b.review + b.projects,
+  },
+  { href: `${ADMIN_PATH}/enquiries`, label: 'Leads', icon: 'inbox', badge: (b) => b.leads },
+  { href: `${ADMIN_PATH}/support`, label: 'Support', icon: 'chat', badge: (b) => b.support },
 ];
 
 const initials = (name: string) =>
@@ -149,7 +156,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       .then(({ data }) => alive && setAdmin(data.admin))
       .catch((err) => {
         if (err instanceof ApiClientError && err.status === 401)
-          router.replace(`/admin/login?next=${encodeURIComponent(path)}`);
+          router.replace(`${ADMIN_PATH}/login?next=${encodeURIComponent(path)}`);
       });
     return () => {
       alive = false;
@@ -191,7 +198,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   async function logout() {
     await apiFetch('/admin/auth/logout', { method: 'POST' }).catch(() => undefined);
-    router.replace('/admin/login');
+    router.replace(`${ADMIN_PATH}/login`);
   }
 
   if (!admin) {
@@ -207,7 +214,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const isSuper = isSuperAdmin(admin.role);
   const isActive = (href: string) =>
-    href === '/admin' ? path === '/admin' : path.startsWith(href);
+    href === ADMIN_PATH ? path === ADMIN_PATH : path.startsWith(href);
   const current = NAV.flatMap((g) => g.items).find((n) => isActive(n.href));
 
   const navLinks = NAV.map((g) => ({
@@ -222,7 +229,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="adm-side flex h-full flex-col text-[#c9d3ee]">
       <div className="flex items-center gap-2.5 px-4 pb-2 pt-3.5">
         <Link
-          href="/admin"
+          href={ADMIN_PATH}
           aria-label="Admin home"
           className="shrink-0 rounded-[10px] bg-white px-1.5 py-1"
         >
@@ -469,7 +476,7 @@ function NotificationBell({
         () => undefined,
       );
     onChange();
-    if (n.link) router.push(n.link);
+    if (n.link) router.push(adminHref(n.link));
   }
 
   return (
@@ -620,7 +627,7 @@ export function SuperOnly({ children }: { children: React.ReactNode }) {
       <p className="mt-2 text-sm text-ink-muted">
         This page is for Super Admins. Ask a Super Admin if something here needs changing.
       </p>
-      <Link href="/admin" className="btn btn-primary mt-5">
+      <Link href={ADMIN_PATH} className="btn btn-primary mt-5">
         Back to dashboard
       </Link>
     </div>

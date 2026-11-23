@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import type { BlogAnalyticsOverview } from '@nexus/shared';
+import { ADMIN_PATH, type BlogAnalyticsOverview } from '@nexus/shared';
 import { PageTitle, StatusPill } from '@/components/admin/AdminShell';
 import {
   RangePicker,
@@ -24,7 +24,7 @@ export default function BlogAnalyticsPage() {
   return (
     <>
       <PageTitle title="Blog analytics">
-        <Link href="/admin/blog" className="btn btn-outline">
+        <Link href={`${ADMIN_PATH}/blog`} className="btn btn-outline">
           All articles
         </Link>
       </PageTitle>
@@ -76,7 +76,7 @@ export default function BlogAnalyticsPage() {
                       <tr key={p.id} className="hover:bg-surface/60">
                         <td className="max-w-[22rem] px-4 py-3 sm:px-5">
                           <Link
-                            href={`/admin/blog/${p.id}/analytics`}
+                            href={`${ADMIN_PATH}/blog/${p.id}/analytics`}
                             className="line-clamp-2 font-semibold hover:text-brand"
                           >
                             {p.title}
@@ -102,7 +102,7 @@ export default function BlogAnalyticsPage() {
                         <td className="px-3 py-3 text-right tabular-nums">{p.completionRate}%</td>
                         <td className="px-4 py-3 text-right sm:px-5">
                           <Link
-                            href={`/admin/blog/${p.id}/analytics`}
+                            href={`${ADMIN_PATH}/blog/${p.id}/analytics`}
                             className="btn btn-outline btn-sm"
                           >
                             Details

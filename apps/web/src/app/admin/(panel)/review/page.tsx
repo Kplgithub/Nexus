@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  ADMIN_PATH,
   POSTER_LABELS,
   PROPERTY_TYPE_LABELS,
   formatArea,
@@ -61,7 +62,7 @@ export default function ReviewQueuePage() {
                   {PROPERTY_TYPE_LABELS[p.propertyType]} · {p.locality.name}, {p.city.name}
                 </p>
                 <h2 className="mt-1 font-sans text-lg font-semibold">
-                  <Link href={`/admin/properties/${p.id}`} className="hover:text-brand">
+                  <Link href={`${ADMIN_PATH}/properties/${p.id}`} className="hover:text-brand">
                     {p.title}
                   </Link>
                 </h2>
@@ -77,7 +78,7 @@ export default function ReviewQueuePage() {
                   <p className="mt-3 text-sm">
                     <span className="text-ink-muted">{POSTER_LABELS[p.poster.type]}:</span>{' '}
                     <Link
-                      href={`/admin/users/${p.postedBy.id}`}
+                      href={`${ADMIN_PATH}/users/${p.postedBy.id}`}
                       className="font-medium hover:text-brand"
                     >
                       {p.poster.companyName

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { use, useState } from 'react';
-import type { BlogPostAnalytics } from '@nexus/shared';
+import { ADMIN_PATH, type BlogPostAnalytics } from '@nexus/shared';
 import { PageTitle, StatusPill } from '@/components/admin/AdminShell';
 import {
   BarList,
@@ -47,7 +47,7 @@ export default function BlogPostAnalyticsPage({ params }: { params: Promise<{ id
   return (
     <>
       <div className="mb-2 text-sm">
-        <Link href="/admin/blog/analytics" className="text-brand hover:underline">
+        <Link href={`${ADMIN_PATH}/blog/analytics`} className="text-brand hover:underline">
           ← Blog analytics
         </Link>
       </div>
@@ -57,7 +57,7 @@ export default function BlogPostAnalyticsPage({ params }: { params: Promise<{ id
             View article
           </Link>
         )}
-        <Link href={`/admin/blog/${data.post.id}`} className="btn btn-outline">
+        <Link href={`${ADMIN_PATH}/blog/${data.post.id}`} className="btn btn-outline">
           Edit article
         </Link>
       </PageTitle>

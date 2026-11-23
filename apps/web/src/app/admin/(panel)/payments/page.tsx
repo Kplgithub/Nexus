@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import {
+  ADMIN_PATH,
   AUTO_REFRESH_DAYS,
   LISTING_ROLES,
   MAX_COMPARE_PLANS,
@@ -470,7 +471,10 @@ function PaymentRow({ p, onDone }: { p: Payment; onDone: () => void }) {
     <tr>
       <td>
         {p.user ? (
-          <Link href={`/admin/users/${p.user.id}`} className="font-semibold hover:text-brand">
+          <Link
+            href={`${ADMIN_PATH}/users/${p.user.id}`}
+            className="font-semibold hover:text-brand"
+          >
             {p.user.name}
           </Link>
         ) : (
@@ -510,7 +514,7 @@ function PaymentCard({ p, onDone }: { p: Payment; onDone: () => void }) {
         <div className="min-w-0">
           {p.user ? (
             <Link
-              href={`/admin/users/${p.user.id}`}
+              href={`${ADMIN_PATH}/users/${p.user.id}`}
               className="block truncate font-semibold hover:text-brand"
             >
               {p.user.name}
