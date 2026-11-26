@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
+import { trackJourneyStep } from '@/lib/journey-tracker';
 import { Honeypot, honeypotValue } from './Honeypot';
 import { CheckIcon } from '../icons';
 import { useOptionalSession } from '../session/SessionProvider';
@@ -46,8 +47,18 @@ export function EnquiryForm({
     openedAt.current = Date.now();
   }, []);
 
+  function markStarted() {
+    trackJourneyStep({
+      flow: 'browse',
+      step: 'enquiry_started',
+      stepIndex: 3,
+      path: sourcePage,
+    });
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    markStarted();
     const fd = new FormData(e.currentTarget);
     setErrors({});
     setFormError(null);
@@ -82,6 +93,13 @@ export function EnquiryForm({
         },
       });
       // Only claim success once the API confirmed the save.
+      trackJourneyStep({
+        flow: 'browse',
+        step: 'enquiry_submitted',
+        stepIndex: 4,
+        completed: true,
+        path: sourcePage,
+      });
       setLeadId(data.leadId);
       setState('done');
     } catch (err) {
@@ -123,6 +141,7 @@ export function EnquiryForm({
     <form
       key={me?.id ?? 'guest'}
       onSubmit={onSubmit}
+      onFocusCapture={markStarted}
       noValidate
       className="space-y-4"
       aria-describedby={formError ? `${uid}-error` : undefined}

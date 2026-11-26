@@ -382,6 +382,7 @@ export function ListingFields({
   f,
   setF,
   errors,
+  clearError,
   cities,
   step,
   uploadPath,
@@ -392,6 +393,7 @@ export function ListingFields({
   f: ListingFormState;
   setF: (fn: (s: ListingFormState) => ListingFormState) => void;
   errors: Errors;
+  clearError?: (key: string) => void;
   cities: City[];
   step?: StepId;
   uploadPath: string;
@@ -401,15 +403,19 @@ export function ListingFields({
   /** Admin can switch new farm listings off; an existing farm listing stays editable. */
   farmsAllowed?: boolean;
 }) {
-  const set = <K extends keyof ListingFormState>(k: K, v: ListingFormState[K]) =>
+  const set = <K extends keyof ListingFormState>(k: K, v: ListingFormState[K]) => {
+    clearError?.(k);
     setF((s) => ({ ...s, [k]: v }));
-  const toggle = (k: 'amenities' | 'preferredTenants' | 'pgSharing' | 'farmFeatures', v: string) =>
+  };
+  const toggle = (k: 'amenities' | 'preferredTenants' | 'pgSharing' | 'farmFeatures', v: string) => {
+    clearError?.(k);
     setF((s) => ({
       ...s,
       [k]: (s[k] as string[]).includes(v)
         ? (s[k] as string[]).filter((x) => x !== v)
         : [...s[k], v],
     }));
+  };
   const err = (k: string) => errors[k]?.[0];
   const show = (id: StepId) => !step || step === id;
 

@@ -17,6 +17,7 @@ import {
 } from '@nexus/shared';
 import { apiFetch } from '@/lib/client-api';
 import { SITE_URL } from '@/lib/site';
+import { htmlToMarkdown, markdownToHtml } from '@/lib/blog-rich-text';
 import { Markdown } from '@/components/blog/Markdown';
 import { canOptimise } from '@/components/blog/BlogCard';
 import { PageTitle, StatusPill, useAdmin } from './AdminShell';
@@ -117,11 +118,12 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
   const [saved, setSaved] = useState<Form>(() => fromPost(post, admin.name));
   const [current, setCurrent] = useState<AdminBlogPost | undefined>(post);
   const [slugTouched, setSlugTouched] = useState(!!post);
-  const [tab, setTab] = useState<'write' | 'preview'>('write');
+  const [tab, setTab] = useState<'visual' | 'markdown' | 'preview'>('visual');
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState<'cover' | 'inline' | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const visualRef = useRef<HTMLDivElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
   const inlineInput = useRef<HTMLInputElement>(null);
 
@@ -170,7 +172,49 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
     requestAnimationFrame(() => el.focus());
   }
 
+  useEffect(() => {
+    if (tab !== 'visual' || !visualRef.current) return;
+    visualRef.current.innerHTML = form.content ? markdownToHtml(form.content) : '';
+    // Populate visual canvas only when entering visual mode or switching articles.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, current?.id]);
+
+  function syncFromVisual() {
+    if (!visualRef.current) return;
+    set('content', htmlToMarkdown(visualRef.current));
+  }
+
+  function applyVisualTool(t: Tool) {
+    const el = visualRef.current;
+    if (!el) return;
+    el.focus();
+    if (t.label === 'H2') document.execCommand('formatBlock', false, 'h2');
+    else if (t.label === 'H3') document.execCommand('formatBlock', false, 'h3');
+    else if (t.label === 'B') document.execCommand('bold');
+    else if (t.label === 'I') document.execCommand('italic');
+    else if (t.label === '• List') document.execCommand('insertUnorderedList');
+    else if (t.label === '1. List') document.execCommand('insertOrderedList');
+    else if (t.label === '❝ Quote') document.execCommand('formatBlock', false, 'blockquote');
+    else if (t.label === 'Link') {
+      const url = window.prompt('Enter link URL (https://...)');
+      if (url && /^https?:\/\/|^\//i.test(url.trim())) {
+        document.execCommand('createLink', false, url.trim());
+      }
+    } else if (t.label === 'Table') {
+      document.execCommand(
+        'insertHTML',
+        false,
+        '<table><thead><tr><th>Locality</th><th>Avg. price / sq ft</th></tr></thead><tbody><tr><td>Vaishali Nagar</td><td>₹5,500</td></tr></tbody></table><p><br /></p>',
+      );
+    }
+    syncFromVisual();
+  }
+
   function applyTool(t: Tool) {
+    if (tab === 'visual') {
+      applyVisualTool(t);
+      return;
+    }
     if ('wrap' in t) wrap(...t.wrap);
     else prefixLines(t.prefix === 'numbered' ? (i) => `${i + 1}. ` : t.prefix);
   }
@@ -196,7 +240,17 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
     try {
       const img = await uploadOne(file);
       const alt = file.name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ');
-      wrap(`\n![${alt}](${img.url})\n`);
+      if (tab === 'visual' && visualRef.current) {
+        visualRef.current.focus();
+        document.execCommand(
+          'insertHTML',
+          false,
+          `<p><img src="${img.url}" alt="${alt.replace(/"/g, '&quot;')}" /></p>`,
+        );
+        syncFromVisual();
+      } else {
+        wrap(`\n![${alt}](${img.url})\n`);
+      }
     } catch (err) {
       toast(err instanceof Error ? err.message : errMsg(err), 'error');
     } finally {
@@ -375,7 +429,7 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
           <section className="card overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-3 py-2">
               <div role="tablist" aria-label="Editor mode" className="flex gap-1">
-                {(['write', 'preview'] as const).map((t) => (
+                {(['visual', 'markdown', 'preview'] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -388,8 +442,22 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
                   </button>
                 ))}
               </div>
-              {tab === 'write' && !readOnly && (
+              {tab !== 'preview' && !readOnly && (
                 <div className="flex flex-wrap gap-1" aria-label="Formatting">
+                  {tab === 'visual' && (
+                    <button
+                      type="button"
+                      title="Normal paragraph"
+                      className="btn btn-ghost btn-sm px-2 font-semibold"
+                      onClick={() => {
+                        visualRef.current?.focus();
+                        document.execCommand('formatBlock', false, 'p');
+                        syncFromVisual();
+                      }}
+                    >
+                      Normal
+                    </button>
+                  )}
                   {TOOLS.map((t) => (
                     <button
                       key={t.label}
@@ -420,7 +488,27 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
                 </div>
               )}
             </div>
-            {tab === 'write' ? (
+            {tab === 'visual' ? (
+              <div className="relative">
+                {!form.content.trim() && (
+                  <p className="pointer-events-none absolute left-5 top-5 text-sm text-ink-muted">
+                    Start typing your article here… Use the toolbar above for headings, bold,
+                    lists, links, tables, and images.
+                  </p>
+                )}
+                <div
+                  ref={visualRef}
+                  contentEditable={!readOnly}
+                  suppressContentEditableWarning
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label="Article content"
+                  onInput={syncFromVisual}
+                  onBlur={syncFromVisual}
+                  className="prose-nexus prose-blog min-h-[32rem] max-w-none p-5 focus:outline-none"
+                />
+              </div>
+            ) : tab === 'markdown' ? (
               <textarea
                 ref={textarea}
                 aria-label="Article content (Markdown)"
@@ -442,8 +530,9 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
               </div>
             )}
             <p className="border-t border-line px-5 py-2 text-xs text-ink-muted">
-              Formatting uses Markdown: ## heading, **bold**, _italic_, - list, &gt; quote,
-              [text](link).
+              {tab === 'visual'
+                ? 'Visual editor: write normally and use the toolbar buttons to format. Switch to Markdown anytime for raw editing.'
+                : 'Formatting uses Markdown: ## heading, **bold**, _italic_, - list, > quote, [text](link).'}
               {fieldError('content')}
             </p>
           </section>

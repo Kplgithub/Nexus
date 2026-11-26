@@ -29,6 +29,11 @@ export const A = {
       <path d="m20 20-3.5-3.5" />
     </I>
   ),
+  funnel: (p: P) => (
+    <I {...p}>
+      <path d="M3 5h18l-7 8v5l-4 2v-7z" />
+    </I>
+  ),
   home: (p: P) => (
     <I {...p}>
       <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />

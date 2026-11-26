@@ -67,6 +67,7 @@ const NAV: { group: string | null; items: NavItem[] }[] = [
       { href: `${ADMIN_PATH}/enquiries`, label: 'Enquiries', icon: 'inbox', badge: (b) => b.leads },
       { href: `${ADMIN_PATH}/visits`, label: 'Site visits', icon: 'calendar' },
       { href: `${ADMIN_PATH}/users`, label: 'Website users', icon: 'users' },
+      { href: `${ADMIN_PATH}/user-journey`, label: 'User journey', icon: 'funnel' },
       {
         href: `${ADMIN_PATH}/verification`,
         label: 'Verification',

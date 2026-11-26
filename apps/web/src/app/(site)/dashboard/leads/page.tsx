@@ -1,12 +1,104 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatIndianPhone, whatsappLink, type PlanUsage, type ReceivedLead } from '@nexus/shared';
 import { useApi } from '@/components/admin/useApi';
 import { SectionTitle } from '@/components/dashboard/DashboardShell';
-import { MailIcon, PhoneIcon, WhatsAppIcon } from '@/components/icons';
+import { CheckIcon, MailIcon, PhoneIcon, WhatsAppIcon } from '@/components/icons';
 import { apiFetch } from '@/lib/client-api';
+
+function EmailLeadButton({
+  email,
+  name,
+  propertyTitle,
+}: {
+  email: string;
+  name: string;
+  propertyTitle?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (
+        e instanceof KeyboardEvent ? e.key === 'Escape' : !box.current?.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [open]);
+
+  const subject = propertyTitle
+    ? `Regarding your enquiry for "${propertyTitle}" on NEXUS Estate`
+    : 'Regarding your enquiry on NEXUS Estate';
+  const body = `Hello ${name},\n\nThank you for your enquiry on NEXUS Estate.`;
+  const mailtoHref = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const gmailHref = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  async function copyEmail() {
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked */
+    }
+  }
+
+  return (
+    <div ref={box} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="btn btn-ghost btn-sm"
+      >
+        <MailIcon size={15} /> Email
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1.5 w-64 rounded-xl border border-line bg-white p-1.5 text-sm shadow-lift">
+          <p className="truncate border-b border-line px-2.5 py-1.5 text-xs font-medium text-ink-muted">
+            {email}
+          </p>
+          <a
+            href={gmailHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="mt-1 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left font-medium hover:bg-surface"
+          >
+            Open in Gmail
+          </a>
+          <a
+            href={mailtoHref}
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left font-medium hover:bg-surface"
+          >
+            Open default Mail app
+          </a>
+          <button
+            type="button"
+            onClick={copyEmail}
+            className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left font-medium hover:bg-surface"
+          >
+            <span>{copied ? 'Copied!' : 'Copy email address'}</span>
+            {copied && <CheckIcon size={14} className="text-success" />}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function LeadsPage() {
   const [page, setPage] = useState(1);
@@ -139,9 +231,11 @@ export default function LeadsPage() {
                   <WhatsAppIcon size={15} /> WhatsApp
                 </a>
                 {l.email && (
-                  <a href={`mailto:${l.email}`} className="btn btn-ghost btn-sm">
-                    <MailIcon size={15} /> Email
-                  </a>
+                  <EmailLeadButton
+                    email={l.email}
+                    name={l.name}
+                    propertyTitle={l.property?.title}
+                  />
                 )}
               </div>
             </li>

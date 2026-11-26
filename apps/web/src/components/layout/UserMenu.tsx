@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { USER_ROLE_LABELS, canListProperty } from '@nexus/shared';
 import { POST_PROPERTY_PATH } from '@/lib/site';
 import { useSession } from '../session/SessionProvider';
+import { UserNotificationBell } from './UserNotificationBell';
 import {
   ChevronDown,
   GridIcon,
@@ -60,7 +61,9 @@ export function UserMenu() {
           </Link>
         </div>
       ) : (
-        <div ref={ref} className="relative">
+        <>
+          <UserNotificationBell />
+          <div ref={ref} className="relative">
           <button
             type="button"
             aria-expanded={open}
@@ -116,7 +119,8 @@ export function UserMenu() {
               </button>
             </div>
           )}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

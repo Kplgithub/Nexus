@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { POST_PROPERTY_PATH } from '@/lib/site';
+import { trackJourneyStep } from '@/lib/journey-tracker';
 import {
   USER_ROLE_DESCRIPTIONS,
   USER_ROLE_LABELS,
@@ -72,7 +73,23 @@ export function SignupWizard({ config, cities }: { config: AuthConfig; cities: C
     : ['Account type', 'Your details'];
   const stepIndex = step === 'role' ? 0 : step === 'details' ? 1 : 2;
 
+  useEffect(() => {
+    trackJourneyStep({
+      flow: 'signup',
+      step,
+      stepIndex,
+      totalSteps: steps.length + 1,
+    });
+  }, [step, stepIndex, steps.length]);
+
   async function finish() {
+    trackJourneyStep({
+      flow: 'signup',
+      step: 'completed',
+      stepIndex: 3,
+      totalSteps: 4,
+      completed: true,
+    });
     await refresh();
     router.replace(next);
     router.refresh();

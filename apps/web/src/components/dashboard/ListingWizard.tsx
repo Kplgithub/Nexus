@@ -15,6 +15,7 @@ import {
   type SiteSettings,
 } from '@nexus/shared';
 import { ApiClientError, apiFetch } from '@/lib/client-api';
+import { trackJourneyStep } from '@/lib/journey-tracker';
 import {
   ListingFields,
   ListingPreview,
@@ -97,6 +98,17 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
   }, [f, listing]);
 
   const idx = ORDER.indexOf(step);
+
+  useEffect(() => {
+    if (listing) return;
+    trackJourneyStep({
+      flow: 'listing',
+      step,
+      stepIndex: idx,
+      totalSteps: ORDER.length + 1,
+    });
+  }, [listing, step, idx]);
+
   const go = (s: WizardStep) => {
     setStep(s);
     top.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -113,7 +125,18 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
       const { data: saved } = listing
         ? await apiFetch<OwnListing>(`/me/properties/${listing.id}`, { method: 'PATCH', body })
         : await apiFetch<OwnListing>('/me/properties', { method: 'POST', body });
-      if (!listing) writeDraft(null);
+      if (!listing) {
+        writeDraft(null);
+        if (intent === 'pending') {
+          trackJourneyStep({
+            flow: 'listing',
+            step: 'completed',
+            stepIndex: ORDER.length,
+            totalSteps: ORDER.length + 1,
+            completed: true,
+          });
+        }
+      }
       // No free listing left and no plan: it is saved, and the plan page takes over.
       if (saved.awaitingPlan) router.push(`/dashboard/plans?saved=${saved.id}`);
       else router.push(`/dashboard/listings?status=${intent}`);
@@ -328,6 +351,14 @@ export function ListingWizard({ listing }: { listing?: OwnListing }) {
               f={f}
               setF={setF}
               errors={errors}
+              clearError={(k) =>
+                setErrors((prev) => {
+                  if (!prev[k]) return prev;
+                  const next = { ...prev };
+                  delete next[k];
+                  return next;
+                })
+              }
               cities={cities}
               step={step}
               uploadPath="/me/uploads"
