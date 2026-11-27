@@ -29,8 +29,7 @@ function inlineMarkdownToHtml(raw: string): string {
   // Links [label](url)
   out = out.replace(
     /\[([^\]]+)\]\(([^)\s]+)\)/g,
-    (_, label: string, url: string) =>
-      `<a href="${escapeHtml(safeUrl(url))}">${label}</a>`,
+    (_, label: string, url: string) => `<a href="${escapeHtml(safeUrl(url))}">${label}</a>`,
   );
   // Bold **text**
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -69,7 +68,9 @@ export function markdownToHtml(md: string): string {
         qLines.push(lines[i]!.replace(/^>\s?/, ''));
         i++;
       }
-      blocks.push(`<blockquote><p>${qLines.map(inlineMarkdownToHtml).join('<br />')}</p></blockquote>`);
+      blocks.push(
+        `<blockquote><p>${qLines.map(inlineMarkdownToHtml).join('<br />')}</p></blockquote>`,
+      );
       continue;
     }
 

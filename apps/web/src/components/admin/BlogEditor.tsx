@@ -492,8 +492,8 @@ export function BlogEditor({ post }: { post?: AdminBlogPost }) {
               <div className="relative">
                 {!form.content.trim() && (
                   <p className="pointer-events-none absolute left-5 top-5 text-sm text-ink-muted">
-                    Start typing your article here… Use the toolbar above for headings, bold,
-                    lists, links, tables, and images.
+                    Start typing your article here… Use the toolbar above for headings, bold, lists,
+                    links, tables, and images.
                   </p>
                 )}
                 <div

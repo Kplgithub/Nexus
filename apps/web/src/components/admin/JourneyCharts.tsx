@@ -1,11 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import type {
-  JourneyDailyPoint,
-  JourneyFlowSummary,
-  JourneySourceGroup,
-} from '@nexus/shared';
+import type { JourneyDailyPoint, JourneyFlowSummary, JourneySourceGroup } from '@nexus/shared';
 import { Legend, MeterBar, nf } from './charts';
 
 export const SOURCE_COLORS = {

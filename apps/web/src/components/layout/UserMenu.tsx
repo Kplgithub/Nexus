@@ -64,61 +64,61 @@ export function UserMenu() {
         <>
           <UserNotificationBell />
           <div ref={ref} className="relative">
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-haspopup="true"
-            onClick={() => setOpen((o) => !o)}
-            className="flex items-center gap-2 rounded-full border border-line py-1 pl-1 pr-3 hover:border-brand"
-          >
-            <span className="grid size-9 place-items-center rounded-full bg-brand text-sm font-bold text-white">
-              {user.name.trim().charAt(0).toUpperCase()}
-            </span>
-            <span className="hidden max-w-28 truncate text-sm font-semibold sm:block">
-              {user.name.split(' ')[0]}
-            </span>
-            <ChevronDown size={14} />
-          </button>
-          {open && (
-            <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-line bg-white p-2 shadow-lift">
-              <div className="border-b border-line px-3 pb-3 pt-2">
-                <p className="truncate font-semibold">{user.companyName || user.name}</p>
-                <p className="text-xs text-ink-muted">{USER_ROLE_LABELS[user.role]}</p>
-              </div>
-              <ul className="py-1 text-sm" onClick={() => setOpen(false)}>
-                <MenuLink href="/dashboard" icon={<GridIcon size={17} />}>
-                  Dashboard
-                </MenuLink>
-                {canListProperty(user.role) ? (
-                  <>
-                    <MenuLink href="/dashboard/listings" icon={<HomeIcon size={17} />}>
-                      My listings
-                    </MenuLink>
-                    <MenuLink href="/dashboard/leads" icon={<InboxIcon size={17} />}>
-                      Leads
-                    </MenuLink>
-                  </>
-                ) : (
-                  <MenuLink href="/dashboard/enquiries" icon={<InboxIcon size={17} />}>
-                    My enquiries
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-haspopup="true"
+              onClick={() => setOpen((o) => !o)}
+              className="flex items-center gap-2 rounded-full border border-line py-1 pl-1 pr-3 hover:border-brand"
+            >
+              <span className="grid size-9 place-items-center rounded-full bg-brand text-sm font-bold text-white">
+                {user.name.trim().charAt(0).toUpperCase()}
+              </span>
+              <span className="hidden max-w-28 truncate text-sm font-semibold sm:block">
+                {user.name.split(' ')[0]}
+              </span>
+              <ChevronDown size={14} />
+            </button>
+            {open && (
+              <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-line bg-white p-2 shadow-lift">
+                <div className="border-b border-line px-3 pb-3 pt-2">
+                  <p className="truncate font-semibold">{user.companyName || user.name}</p>
+                  <p className="text-xs text-ink-muted">{USER_ROLE_LABELS[user.role]}</p>
+                </div>
+                <ul className="py-1 text-sm" onClick={() => setOpen(false)}>
+                  <MenuLink href="/dashboard" icon={<GridIcon size={17} />}>
+                    Dashboard
                   </MenuLink>
-                )}
-                <MenuLink href="/dashboard/saved" icon={<HeartIcon size={17} />}>
-                  Saved
-                </MenuLink>
-                <MenuLink href="/dashboard/profile" icon={<SettingsIcon size={17} />}>
-                  Profile and settings
-                </MenuLink>
-              </ul>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="flex w-full items-center gap-2.5 rounded-lg border-t border-line px-3 py-2.5 text-left text-sm text-ink-soft hover:bg-surface"
-              >
-                <LogoutIcon size={17} /> Log out
-              </button>
-            </div>
-          )}
+                  {canListProperty(user.role) ? (
+                    <>
+                      <MenuLink href="/dashboard/listings" icon={<HomeIcon size={17} />}>
+                        My listings
+                      </MenuLink>
+                      <MenuLink href="/dashboard/leads" icon={<InboxIcon size={17} />}>
+                        Leads
+                      </MenuLink>
+                    </>
+                  ) : (
+                    <MenuLink href="/dashboard/enquiries" icon={<InboxIcon size={17} />}>
+                      My enquiries
+                    </MenuLink>
+                  )}
+                  <MenuLink href="/dashboard/saved" icon={<HeartIcon size={17} />}>
+                    Saved
+                  </MenuLink>
+                  <MenuLink href="/dashboard/profile" icon={<SettingsIcon size={17} />}>
+                    Profile and settings
+                  </MenuLink>
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => void logout()}
+                  className="flex w-full items-center gap-2.5 rounded-lg border-t border-line px-3 py-2.5 text-left text-sm text-ink-soft hover:bg-surface"
+                >
+                  <LogoutIcon size={17} /> Log out
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
