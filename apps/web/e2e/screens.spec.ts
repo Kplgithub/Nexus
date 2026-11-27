@@ -199,7 +199,7 @@ test('admin screens and workflow', async ({ page }, info) => {
   await page.getByLabel('Password', { exact: true }).fill(process.env.E2E_ADMIN_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(new RegExp(`${ADMIN_PATH}$`));
-  await expect(page.getByText('Total properties')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Key numbers' })).toBeVisible();
   await shot(page, p, 'admin-dashboard');
 
   await page.goto(`${ADMIN_PATH}/review`);
