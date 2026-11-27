@@ -719,6 +719,20 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export const PAYMENT_METHODS = ['online', 'manual'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+/** Razorpay subscription states for a plan's auto-renew (card mandate or UPI Autopay). */
+export const AUTOPAY_STATUSES = [
+  'created',
+  'authenticated',
+  'active',
+  'pending',
+  'halted',
+  'cancelled',
+  'completed',
+] as const;
+export type AutopayStatus = (typeof AUTOPAY_STATUSES)[number];
+/** Days a plan stays on after an auto-renew debit fails, while Razorpay retries. */
+export const AUTOPAY_GRACE_DAYS = 3;
+
 export const ALERT_EVENTS = [
   'lead',
   'listing',
@@ -874,10 +888,7 @@ export const JOURNEY_FLOW_LABELS: Record<JourneyFlow, string> = {
   browse: 'Browse & enquiry',
 };
 
-export const JOURNEY_FLOW_STEPS: Record<
-  JourneyFlow,
-  readonly { id: string; label: string }[]
-> = {
+export const JOURNEY_FLOW_STEPS: Record<JourneyFlow, readonly { id: string; label: string }[]> = {
   signup: [
     { id: 'role', label: 'Choose account type' },
     { id: 'details', label: 'Enter details' },

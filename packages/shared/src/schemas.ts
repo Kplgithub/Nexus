@@ -1468,6 +1468,15 @@ export const paymentQuerySchema = z.object({
   limit: queryNumber(1, 100).transform((v) => v ?? 20),
 });
 
+export const autopayVerifySchema = z.object({
+  subscriptionId: z.string().trim().min(5).max(64),
+  paymentId: z.string().trim().min(5).max(64),
+  signature: z
+    .string()
+    .trim()
+    .regex(/^[a-f0-9]{64}$/i, 'Invalid signature'),
+});
+
 export const paymentVerifySchema = z.object({
   orderId: z.string().trim().min(5).max(64),
   paymentId: z.string().trim().min(5).max(64),
@@ -1584,6 +1593,9 @@ export type JourneyEventInput = z.output<typeof journeyEventSchema>;
 
 export const journeyAnalyticsQuerySchema = z.object({
   days: queryNumber(1, 365).transform((v) => v ?? 30),
-  source: z.enum(['all', 'invite', 'search', 'direct', 'social', 'other']).optional().default('all'),
+  source: z
+    .enum(['all', 'invite', 'search', 'direct', 'social', 'other'])
+    .optional()
+    .default('all'),
   flow: z.enum(['all', 'signup', 'listing', 'browse']).optional().default('all'),
 });
