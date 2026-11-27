@@ -122,10 +122,38 @@ function buildSampleData(days: number): JourneyAnalytics {
         topDropOffStep: 'verify',
         topDropOffLabel: 'Verify mobile OTP',
         steps: [
-          { step: 'role', label: 'Choose account type', stepIndex: 0, reached: 620, stoppedHere: 74, dropOffRate: 12 },
-          { step: 'details', label: 'Enter details', stepIndex: 1, reached: 546, stoppedHere: 92, dropOffRate: 17 },
-          { step: 'verify', label: 'Verify mobile OTP', stepIndex: 2, reached: 454, stoppedHere: 186, dropOffRate: 41 },
-          { step: 'completed', label: 'Account created', stepIndex: 3, reached: 268, stoppedHere: 0, dropOffRate: 0 },
+          {
+            step: 'role',
+            label: 'Choose account type',
+            stepIndex: 0,
+            reached: 620,
+            stoppedHere: 74,
+            dropOffRate: 12,
+          },
+          {
+            step: 'details',
+            label: 'Enter details',
+            stepIndex: 1,
+            reached: 546,
+            stoppedHere: 92,
+            dropOffRate: 17,
+          },
+          {
+            step: 'verify',
+            label: 'Verify mobile OTP',
+            stepIndex: 2,
+            reached: 454,
+            stoppedHere: 186,
+            dropOffRate: 41,
+          },
+          {
+            step: 'completed',
+            label: 'Account created',
+            stepIndex: 3,
+            reached: 268,
+            stoppedHere: 0,
+            dropOffRate: 0,
+          },
         ],
       },
       {
@@ -137,13 +165,62 @@ function buildSampleData(days: number): JourneyAnalytics {
         topDropOffStep: 'photos',
         topDropOffLabel: 'Photos & description',
         steps: [
-          { step: 'basics', label: 'Property basics', stepIndex: 0, reached: 210, stoppedHere: 12, dropOffRate: 6 },
-          { step: 'location', label: 'Location', stepIndex: 1, reached: 198, stoppedHere: 14, dropOffRate: 7 },
-          { step: 'price', label: 'Price & terms', stepIndex: 2, reached: 184, stoppedHere: 18, dropOffRate: 10 },
-          { step: 'details', label: 'Details & rooms', stepIndex: 3, reached: 166, stoppedHere: 16, dropOffRate: 10 },
-          { step: 'photos', label: 'Photos & description', stepIndex: 4, reached: 150, stoppedHere: 26, dropOffRate: 17 },
-          { step: 'review', label: 'Review & submit', stepIndex: 5, reached: 124, stoppedHere: 8, dropOffRate: 6 },
-          { step: 'completed', label: 'Listing submitted', stepIndex: 6, reached: 116, stoppedHere: 0, dropOffRate: 0 },
+          {
+            step: 'basics',
+            label: 'Property basics',
+            stepIndex: 0,
+            reached: 210,
+            stoppedHere: 12,
+            dropOffRate: 6,
+          },
+          {
+            step: 'location',
+            label: 'Location',
+            stepIndex: 1,
+            reached: 198,
+            stoppedHere: 14,
+            dropOffRate: 7,
+          },
+          {
+            step: 'price',
+            label: 'Price & terms',
+            stepIndex: 2,
+            reached: 184,
+            stoppedHere: 18,
+            dropOffRate: 10,
+          },
+          {
+            step: 'details',
+            label: 'Details & rooms',
+            stepIndex: 3,
+            reached: 166,
+            stoppedHere: 16,
+            dropOffRate: 10,
+          },
+          {
+            step: 'photos',
+            label: 'Photos & description',
+            stepIndex: 4,
+            reached: 150,
+            stoppedHere: 26,
+            dropOffRate: 17,
+          },
+          {
+            step: 'review',
+            label: 'Review & submit',
+            stepIndex: 5,
+            reached: 124,
+            stoppedHere: 8,
+            dropOffRate: 6,
+          },
+          {
+            step: 'completed',
+            label: 'Listing submitted',
+            stepIndex: 6,
+            reached: 116,
+            stoppedHere: 0,
+            dropOffRate: 0,
+          },
         ],
       },
       {
@@ -155,11 +232,46 @@ function buildSampleData(days: number): JourneyAnalytics {
         topDropOffStep: 'property_view',
         topDropOffLabel: 'Property page',
         steps: [
-          { step: 'landing', label: 'Landing / Home', stepIndex: 0, reached: 1380, stoppedHere: 290, dropOffRate: 21 },
-          { step: 'search_results', label: 'Search results', stepIndex: 1, reached: 1090, stoppedHere: 310, dropOffRate: 28 },
-          { step: 'property_view', label: 'Property page', stepIndex: 2, reached: 780, stoppedHere: 295, dropOffRate: 38 },
-          { step: 'enquiry_started', label: 'Started enquiry', stepIndex: 3, reached: 485, stoppedHere: 88, dropOffRate: 18 },
-          { step: 'enquiry_submitted', label: 'Submitted enquiry', stepIndex: 4, reached: 397, stoppedHere: 0, dropOffRate: 0 },
+          {
+            step: 'landing',
+            label: 'Landing / Home',
+            stepIndex: 0,
+            reached: 1380,
+            stoppedHere: 290,
+            dropOffRate: 21,
+          },
+          {
+            step: 'search_results',
+            label: 'Search results',
+            stepIndex: 1,
+            reached: 1090,
+            stoppedHere: 310,
+            dropOffRate: 28,
+          },
+          {
+            step: 'property_view',
+            label: 'Property page',
+            stepIndex: 2,
+            reached: 780,
+            stoppedHere: 295,
+            dropOffRate: 38,
+          },
+          {
+            step: 'enquiry_started',
+            label: 'Started enquiry',
+            stepIndex: 3,
+            reached: 485,
+            stoppedHere: 88,
+            dropOffRate: 18,
+          },
+          {
+            step: 'enquiry_submitted',
+            label: 'Submitted enquiry',
+            stepIndex: 4,
+            reached: 397,
+            stoppedHere: 0,
+            dropOffRate: 0,
+          },
         ],
       },
     ],
@@ -184,14 +296,15 @@ export default function UserJourneyPage() {
     ...(flow !== 'all' && { flow }),
   });
 
-  const { data: apiData, loading, error } = useApi<JourneyAnalytics>(
-    `/admin/journey-analytics?${qs}`,
-  );
+  const {
+    data: apiData,
+    loading,
+    error,
+  } = useApi<JourneyAnalytics>(`/admin/journey-analytics?${qs}`);
 
   const data = previewSample ? buildSampleData(days) : apiData;
 
-  const filteredFlows =
-    data?.flows.filter((f) => flow === 'all' || f.flow === flow) ?? [];
+  const filteredFlows = data?.flows.filter((f) => flow === 'all' || f.flow === flow) ?? [];
   const filteredSources =
     data?.sourceGroups.filter((g) => source === 'all' || g.source === source) ?? [];
 
@@ -338,7 +451,8 @@ export default function UserJourneyPage() {
                     Invite vs Search traffic over time
                   </h2>
                   <p className="text-xs text-ink-muted">
-                    Daily visitors grouped by how they arrived ({data.range.from} to {data.range.to})
+                    Daily visitors grouped by how they arrived ({data.range.from} to {data.range.to}
+                    )
                   </p>
                 </div>
               </div>

@@ -488,7 +488,7 @@ function PaymentRow({ p, onDone }: { p: Payment; onDone: () => void }) {
       </td>
       <td className="font-semibold whitespace-nowrap">{rupees(p.amount)}</td>
       <td>
-        {p.method === 'online' ? 'Online' : 'Recorded'}
+        {p.autopay ? 'Auto-renew' : p.method === 'online' ? 'Online' : 'Recorded'}
         {(p.reference || p.paymentId) && (
           <span className="block max-w-[10rem] truncate text-xs text-ink-muted">
             {p.reference || p.paymentId}
@@ -543,7 +543,7 @@ function PaymentCard({ p, onDone }: { p: Payment; onDone: () => void }) {
         <div className="min-w-0">
           <dt className="text-xs text-ink-muted">How</dt>
           <dd>
-            {p.method === 'online' ? 'Online' : 'Recorded'}
+            {p.autopay ? 'Auto-renew' : p.method === 'online' ? 'Online' : 'Recorded'}
             {(p.reference || p.paymentId) && (
               <span className="block truncate text-xs text-ink-muted">
                 {p.reference || p.paymentId}
@@ -605,6 +605,33 @@ function PaymentActions({ p, onDone }: { p: Payment; onDone: () => void }) {
           }}
         >
           Refund
+        </button>
+      )}
+      {p.status === 'paid' && p.autopay && (
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          disabled={busy}
+          onClick={async () => {
+            if (
+              !window.confirm(
+                'Stop auto-renew for this user? No more automatic payments; the days they paid for stay.',
+              )
+            )
+              return;
+            setBusy(true);
+            try {
+              await apiFetch(`/admin/payments/${p.id}/stop-autopay`, { method: 'POST' });
+              toast('Auto-renew stopped.');
+              onDone();
+            } catch (err) {
+              toast(errMsg(err), 'error');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Stop auto-renew
         </button>
       )}
     </>

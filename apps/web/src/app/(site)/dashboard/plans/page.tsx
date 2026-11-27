@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import {
   SEARCH_RANKS,
+  type MyAutopay,
   type MySubscription,
   type Payment,
   type Plan,
@@ -13,6 +14,9 @@ import {
 import { useApi } from '@/components/admin/useApi';
 import { SectionTitle, useDashboardData } from '@/components/dashboard/DashboardShell';
 import {
+  AutopayBox,
+  AutoRenewToggle,
+  canAutoRenew,
   MembershipHeader,
   PayMessage,
   PlanValidity,
@@ -23,6 +27,7 @@ import {
 type Res = {
   plans: Plan[];
   subscription: MySubscription;
+  autopay: MyAutopay;
   payments: Payment[];
   usage: PlanUsage;
   featureAddons: { days: number; price: number; label: string }[];
@@ -98,7 +103,8 @@ function MyPlan() {
   const oldFeatureLink = params.get('feature');
   const { data, error, reload } = useApi<Res>('/me/plans');
   const dash = useDashboardData();
-  const { pay, busy, msg } = useCheckout(() => {
+  const [autoRenew, setAutoRenew] = useState(true);
+  const { buyPlan, busy, msg } = useCheckout(() => {
     reload();
     dash.reload();
   });
@@ -122,6 +128,10 @@ function MyPlan() {
     sub?.plan.id ??
     data?.payments.find((p) => p.kind !== 'featured' && p.status === 'paid')?.plan.id;
   const renewPlan = paidPlans.find((p) => p.id === lastPlanId) ?? paidPlans[0];
+  // Auto-renew already on (or waiting on the bank): new buys are one-time payments.
+  const autopayOn = !!data?.autopay && data.autopay.status !== 'halted';
+  const offerAutoRenew = !!data?.onlineEnabled && !autopayOn && paidPlans.some(canAutoRenew);
+  const auto = offerAutoRenew && autoRenew;
 
   return (
     <div className="space-y-8">
@@ -137,18 +147,23 @@ function MyPlan() {
         <PlanValidity
           sub={sub ?? null}
           payments={data.payments}
+          autoRenews={autopayOn}
           busy={!!renewPlan && busy === renewPlan.id}
           onRenew={
             renewPlan && data.onlineEnabled
               ? () =>
-                  void pay(
-                    renewPlan.id,
-                    `/me/plans/${renewPlan.id}/checkout`,
-                    undefined,
-                    `Payment received. ${renewPlan.name} is renewed.`,
-                  )
+                  void buyPlan(renewPlan, auto, `Payment received. ${renewPlan.name} is renewed.`)
               : undefined
           }
+        />
+      )}
+      {data?.autopay && (
+        <AutopayBox
+          autopay={data.autopay}
+          onChange={() => {
+            reload();
+            dash.reload();
+          }}
         />
       )}
       {savedListing && (
@@ -176,6 +191,10 @@ function MyPlan() {
             Online payment is not open yet. Call or WhatsApp us to buy a plan and we will switch it
             on for you.
           </p>
+        )}
+
+        {offerAutoRenew && (
+          <AutoRenewToggle on={autoRenew} onChange={setAutoRenew} className="mb-5 max-w-3xl" />
         )}
 
         {data && (
@@ -247,12 +266,7 @@ function MyPlan() {
                       className={`btn mt-auto w-full py-3.5 ${highlight ? 'btn-accent' : 'btn-outline'}`}
                       disabled={!data.onlineEnabled || busy !== null}
                       onClick={() =>
-                        void pay(
-                          p.id,
-                          `/me/plans/${p.id}/checkout`,
-                          undefined,
-                          `Payment received. ${p.name} is now active.`,
-                        )
+                        void buyPlan(p, auto, `Payment received. ${p.name} is now active.`)
                       }
                     >
                       {busy === p.id

@@ -56,6 +56,7 @@ export default function PaymentsPage() {
                   </p>
                   <p className="truncate text-xs text-ink-muted">
                     Paid {longDate(p.paidAt ?? p.createdAt)}
+                    {p.autopay && ' · auto-renew'}
                     {p.invoiceNo && ` · ${p.invoiceNo}`}
                   </p>
                   {p.status === 'paid' && p.startsAt && p.endsAt && (

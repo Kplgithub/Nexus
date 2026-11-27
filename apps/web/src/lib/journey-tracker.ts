@@ -55,10 +55,7 @@ export function detectAcquisitionSource(
 ): AcquisitionInfo {
   const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
   const inviteParam =
-    params.get('invite') ??
-    params.get('ref') ??
-    params.get('referral') ??
-    params.get('inviteCode');
+    params.get('invite') ?? params.get('ref') ?? params.get('referral') ?? params.get('inviteCode');
   const utmSource = (params.get('utm_source') ?? '').toLowerCase();
   const utmMedium = (params.get('utm_medium') ?? '').toLowerCase();
 
@@ -163,7 +160,11 @@ export function trackJourneyStep(opts: {
   const visitorId = getVisitorId();
   const steps = JOURNEY_FLOW_STEPS[opts.flow];
   const resolvedIndex =
-    opts.stepIndex ?? Math.max(0, steps.findIndex((s) => s.id === opts.step));
+    opts.stepIndex ??
+    Math.max(
+      0,
+      steps.findIndex((s) => s.id === opts.step),
+    );
   const totalSteps = opts.totalSteps ?? steps.length;
 
   const dedupeKey = `${SENT_PREFIX}${session.sessionId}:${opts.flow}:${opts.step}`;

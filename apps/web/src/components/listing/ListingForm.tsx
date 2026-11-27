@@ -407,7 +407,10 @@ export function ListingFields({
     clearError?.(k);
     setF((s) => ({ ...s, [k]: v }));
   };
-  const toggle = (k: 'amenities' | 'preferredTenants' | 'pgSharing' | 'farmFeatures', v: string) => {
+  const toggle = (
+    k: 'amenities' | 'preferredTenants' | 'pgSharing' | 'farmFeatures',
+    v: string,
+  ) => {
     clearError?.(k);
     setF((s) => ({
       ...s,

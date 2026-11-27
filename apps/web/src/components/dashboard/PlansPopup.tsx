@@ -12,7 +12,7 @@ import {
 import { useApi } from '@/components/admin/useApi';
 import { useSession } from '@/components/session/SessionProvider';
 import { PartnerBadge, RefreshedChip } from '@/components/property/plan-perks';
-import { PayMessage, rupees, useCheckout } from './membership';
+import { AutoRenewToggle, canAutoRenew, PayMessage, rupees, useCheckout } from './membership';
 
 type Res = { plans: Plan[]; subscription: MySubscription; onlineEnabled: boolean };
 
@@ -490,7 +490,8 @@ export function PlansPopup({ delays = POPUP_DELAYS_MS }: { delays?: number[] }) 
   const [view, setView] = useState<'plans' | 'sample'>('plans');
   const [paid, setPaid] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
-  const { pay, busy, msg } = useCheckout(() => {
+  const [autoRenew, setAutoRenew] = useState(true);
+  const { buyPlan, busy, msg } = useCheckout(() => {
     setPaid(true);
     setOpen(false);
     reload();
@@ -580,6 +581,11 @@ export function PlansPopup({ delays = POPUP_DELAYS_MS }: { delays?: number[] }) 
             <PayMessage msg={msg} />
           </div>
         )}
+        {view === 'plans' && (data?.onlineEnabled ?? false) && plans.some(canAutoRenew) && (
+          <div className="mx-5 mt-12 lg:mx-9 lg:mt-14">
+            <AutoRenewToggle on={autoRenew} onChange={setAutoRenew} />
+          </div>
+        )}
         {view === 'sample' ? (
           <Sample onBack={() => setView('plans')} />
         ) : (
@@ -588,14 +594,7 @@ export function PlansPopup({ delays = POPUP_DELAYS_MS }: { delays?: number[] }) 
             onlineEnabled={data?.onlineEnabled ?? false}
             busy={busy}
             onSample={() => setView('sample')}
-            onBuy={(p) =>
-              void pay(
-                p.id,
-                `/me/plans/${p.id}/checkout`,
-                undefined,
-                `Payment received. ${p.name} is now active.`,
-              )
-            }
+            onBuy={(p) => void buyPlan(p, autoRenew, `Payment received. ${p.name} is now active.`)}
           />
         )}
       </div>

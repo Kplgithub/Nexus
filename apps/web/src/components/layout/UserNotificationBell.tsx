@@ -29,7 +29,9 @@ function readStoredIds(key: string): Set<string> {
     const raw = localStorage.getItem(key);
     if (!raw) return new Set();
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? new Set(arr.filter((x): x is string => typeof x === 'string')) : new Set();
+    return Array.isArray(arr)
+      ? new Set(arr.filter((x): x is string => typeof x === 'string'))
+      : new Set();
   } catch {
     return new Set();
   }
@@ -160,8 +162,7 @@ export function UserNotificationBell() {
       lister ? apiFetch<UserDashboard>('/me/dashboard') : Promise.resolve(null),
       apiFetch<{ unread: number }>('/me/support/unread'),
     ]);
-    const listings =
-      propsRes.status === 'fulfilled' && propsRes.value ? propsRes.value.data : [];
+    const listings = propsRes.status === 'fulfilled' && propsRes.value ? propsRes.value.data : [];
     const dash = dashRes.status === 'fulfilled' && dashRes.value ? dashRes.value.data : null;
     const supportUnread =
       supRes.status === 'fulfilled' && supRes.value ? supRes.value.data.unread : 0;
@@ -260,9 +261,7 @@ export function UserNotificationBell() {
             )}
           </div>
           <ul className="max-h-[60vh] divide-y divide-line overflow-y-auto">
-            {!items && (
-              <li className="px-4 py-6 text-center text-sm text-ink-muted">Loading…</li>
-            )}
+            {!items && <li className="px-4 py-6 text-center text-sm text-ink-muted">Loading…</li>}
             {items?.length === 0 && (
               <li className="px-4 py-8 text-center text-sm text-ink-muted">
                 No updates yet. When you post a property, its approval status will appear here.
